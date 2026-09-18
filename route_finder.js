@@ -2652,9 +2652,24 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       });
 
       candidates.sort((a, b) => {
+        // 1. Primary sort: Star rating descending (highest stars first)
+        const starsA = a.cand.demand?.stars || 1;
+        const starsB = b.cand.demand?.stars || 1;
+        if (starsA !== starsB) return starsB - starsA;
+
+        // 2. Exact fit preference within the same star level
         if (a.isExactFit && !b.isExactFit) return -1;
         if (!a.isExactFit && b.isExactFit) return 1;
+
+        // 3. Average demand score descending
+        const avgA = a.cand.demand?.avg || 0;
+        const avgB = b.cand.demand?.avg || 0;
+        if (Math.abs(avgA - avgB) > 0.001) return avgB - avgA;
+
+        // 4. Closest to filling gap (less remaining free hours)
         if (a.remainingAfter !== b.remainingAfter) return a.remainingAfter - b.remainingAfter;
+
+        // 5. Airport category descending
         return b.cand.category - a.cand.category;
       });
 
@@ -2674,11 +2689,15 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
 
       grid.innerHTML = topSuggestions.map(s => {
         const c = s.cand;
+        const demand = c.demand || rf_computeAirportDemandStats(c.airport);
+        const starsText = demand?.starsText || '★';
+        const avgFormatted = demand?.avgFormatted || '0.0';
+        const demandLabel = demand?.label || '';
         return `
           <div class="glass-panel p-3.5 rounded-xl border ${s.isExactFit ? 'border-emerald-500/60 ring-1 ring-emerald-500/30' : 'border-slate-800'} space-y-2.5">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-cyan-300 font-bold font-mono text-xs">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-cyan-300 font-bold font-mono text-xs shrink-0">
                   ${c.dstIata}
                 </span>
                 <div class="min-w-0">
@@ -2686,7 +2705,13 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
                   <p class="text-[10px] text-slate-400 truncate">${c.country} (Cat. ${c.category})</p>
                 </div>
               </div>
-              ${s.isExactFit ? '<span class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-bold font-mono">⚡ EXACT FIT</span>' : ''}
+              <div class="flex flex-col items-end shrink-0">
+                <div class="flex items-center gap-1" title="Demand Index: ${avgFormatted}${demandLabel ? ' · ' + demandLabel : ''}">
+                  <span class="text-amber-400 font-bold tracking-tight text-xs">${starsText}</span>
+                  <span class="text-slate-400 font-mono text-[10px]">(${avgFormatted})</span>
+                </div>
+                ${s.isExactFit ? '<span class="mt-0.5 px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 text-[9px] font-bold font-mono">⚡ EXACT FIT</span>' : ''}
+              </div>
             </div>
 
             <div class="p-2 rounded-lg bg-slate-900/90 border border-slate-800/80 text-[11px] font-mono-num space-y-1">

@@ -76,6 +76,11 @@
   // Storage Keys
   const CF_OWNED_HUBS_KEY = 'amt_circuit_finder_owned_hubs_v1';
   const CF_SHARED_SAVED_CIRCUITS_KEY = 'am_saved_circuits_v1';
+  const CF_STATE_KEY = 'amt_circuit_finder_state_v1';
+
+  // Persistence State Guards
+  let isRestoringCircuitFinderState = false;
+  let isResettingCircuitFinder = false;
 
   // State Engine
   let cf_ownedHubs = [];
@@ -220,9 +225,6 @@
         }
       }
     } catch (e) {}
-    cf_activeHubIata = '';
-    const hubInput = document.getElementById('cf_circuit_hub');
-    if (hubInput) hubInput.value = '';
     cf_updateOwnedHubsBadge();
   }
 
@@ -974,6 +976,8 @@
   }
 
   function cf_debouncedFindCircuits() {
+    if (isRestoringCircuitFinderState) return;
+    cf_saveStateToLocalStorage();
     clearTimeout(cf_searchDebounceTimer);
     cf_searchDebounceTimer = setTimeout(() => {
       cf_executeCircuitSearch();
@@ -984,6 +988,7 @@
   // CORE COMBINATORIAL CIRCUIT SOLVER (< 15ms)
   // =========================================================================
   function cf_executeCircuitSearch() {
+    cf_saveStateToLocalStorage();
     const startBenchmark = performance.now();
     const aircraft = cf_getAircraft(cf_activeAircraftId);
     if (!aircraft) return;
@@ -1559,6 +1564,7 @@
     if (btnExact) btnExact.className = filter === 'exact' ? activeClass : inactiveClass;
     if (btnHarmony) btnHarmony.className = filter === 'high_harmony' ? activeClass : inactiveClass;
 
+    cf_saveStateToLocalStorage();
     cf_renderCircuits();
   }
 
@@ -1587,7 +1593,266 @@
     cf_showToast('Relaxed constraints: Slack ≤ 2h, duration bounds widened', 'info');
   }
 
+  // =========================================================================
+  // LOCALSTORAGE PERSISTENCE ENGINE (amt_circuit_finder_state_v1)
+  // =========================================================================
+  function cf_saveStateToLocalStorage() {
+    if (isRestoringCircuitFinderState || isResettingCircuitFinder || typeof localStorage === 'undefined') return;
+
+    try {
+      const hubInput = document.getElementById('cf_circuit_hub');
+      const hubIata = (hubInput?.value || cf_activeHubIata || '').trim().toUpperCase();
+      const isMultiHubSearch = !!cf_isMultiHubSearch;
+      const aircraftId = cf_activeAircraftId || 'a380-800';
+      const targetDuration = document.getElementById('cf_target_duration_select')?.value || '168';
+      const slackTolerance = document.getElementById('cf_slack_tolerance_select')?.value || '0';
+      const routeType = cf_activeRouteType || 'lh';
+      const routeCount = document.getElementById('cf_route_count_select')?.value || 'any';
+      const classStrategy = document.getElementById('cf_class_strategy_select')?.value || 'tri_class';
+
+      const customWeights = {
+        eco: parseInt(document.getElementById('cf_weight_eco')?.value, 10) || 60,
+        bus: parseInt(document.getElementById('cf_weight_bus')?.value, 10) || 25,
+        first: parseInt(document.getElementById('cf_weight_first')?.value, 10) || 15,
+        cargo: parseInt(document.getElementById('cf_weight_cargo')?.value, 10) || 0
+      };
+
+      const optimizationMetric = document.getElementById('cf_optimization_metric_select')?.value || 'stars_desc';
+      const catMatchOnly = document.getElementById('cf_cat_filter_check') ? document.getElementById('cf_cat_filter_check').checked : true;
+      const excludeOwnedHubs = !!(document.getElementById('cf_toggle_exclude_owned_hubs')?.checked || document.getElementById('cf_toggle_exclude_owned_hubs_tier3')?.checked);
+      const minStarRating = document.getElementById('cf_star_filter_select')?.value || '3';
+      const continent = document.getElementById('cf_continent_filter_select')?.value || 'all';
+      const isMaxDistLimitEnabled = !!cf_isMaxDistLimitEnabled;
+      const maxRouteDistance = document.getElementById('cf_max_route_dist_input')?.value || '';
+      const includedAirports = Array.isArray(cf_includedAirports) ? cf_includedAirports : [];
+      const excludedAirports = Array.isArray(cf_excludedAirports) ? cf_excludedAirports : [];
+      const minLegDur = document.getElementById('cf_min_leg_dur')?.value || '';
+      const maxLegDur = document.getElementById('cf_max_leg_dur')?.value || '';
+      const quickResultsFilter = cf_quickResultsFilter || 'all';
+
+      const state = {
+        hubIata,
+        isMultiHubSearch,
+        aircraftId,
+        targetDuration,
+        slackTolerance,
+        routeType,
+        routeCount,
+        classStrategy,
+        customWeights,
+        optimizationMetric,
+        catMatchOnly,
+        excludeOwnedHubs,
+        minStarRating,
+        continent,
+        isMaxDistLimitEnabled,
+        maxRouteDistance,
+        includedAirports,
+        excludedAirports,
+        minLegDur,
+        maxLegDur,
+        quickResultsFilter
+      };
+
+      localStorage.setItem(CF_STATE_KEY, JSON.stringify(state));
+    } catch (err) {
+      console.warn('Could not save Circuit Finder state to localStorage:', err);
+    }
+  }
+
+  function cf_restoreStateFromLocalStorage() {
+    if (typeof localStorage === 'undefined') return false;
+    let raw = null;
+    try {
+      raw = localStorage.getItem(CF_STATE_KEY);
+    } catch (e) {
+      return false;
+    }
+    if (!raw) return false;
+
+    isRestoringCircuitFinderState = true;
+    try {
+      const data = JSON.parse(raw);
+      if (!data || typeof data !== 'object') {
+        isRestoringCircuitFinderState = false;
+        return false;
+      }
+
+      // 1. Restore Aircraft Model
+      if (data.aircraftId && cf_getAircraft(data.aircraftId)) {
+        cf_activeAircraftId = data.aircraftId;
+        const acSelect = document.getElementById('cf_aircraft_select');
+        if (acSelect) acSelect.value = data.aircraftId;
+      } else {
+        cf_activeAircraftId = 'a380-800';
+        const acSelect = document.getElementById('cf_aircraft_select');
+        if (acSelect) acSelect.value = 'a380-800';
+      }
+
+      // 2. Restore Hub & Multi-Hub Search
+      if (data.isMultiHubSearch !== undefined) {
+        cf_isMultiHubSearch = !!data.isMultiHubSearch;
+        const multiCheck = document.getElementById('cf_toggle_multi_hub_search');
+        if (multiCheck) multiCheck.checked = cf_isMultiHubSearch;
+      }
+      if (data.hubIata !== undefined) {
+        const hubInput = document.getElementById('cf_circuit_hub');
+        if (hubInput) hubInput.value = data.hubIata;
+        cf_activeHubIata = cf_getAirport(data.hubIata) ? data.hubIata : '';
+      }
+
+      // 3. Restore Target Duration & Route Count
+      const targetHours = parseFloat(data.targetDuration) || 168;
+      const targetDurSel = document.getElementById('cf_target_duration_select');
+      if (targetDurSel) targetDurSel.value = String(targetHours);
+      cf_onTargetDurationChange(targetHours);
+
+      if (data.routeCount !== undefined) {
+        const rcSelect = document.getElementById('cf_route_count_select');
+        if (rcSelect) {
+          const hasOption = Array.from(rcSelect.options).some(o => o.value === String(data.routeCount));
+          rcSelect.value = hasOption ? String(data.routeCount) : 'any';
+        }
+      }
+
+      // 4. Restore Slack Tolerance
+      if (data.slackTolerance !== undefined) {
+        const slackSel = document.getElementById('cf_slack_tolerance_select');
+        if (slackSel) slackSel.value = String(data.slackTolerance);
+      }
+
+      // 5. Restore Route Type (mix, sh, mh, lh)
+      if (data.routeType) {
+        cf_setRouteType(data.routeType, false);
+      }
+
+      // 6. Restore Custom Bounds if present
+      if (data.minLegDur !== undefined && data.minLegDur !== '') {
+        const minInput = document.getElementById('cf_min_leg_dur');
+        if (minInput) minInput.value = data.minLegDur;
+      }
+      if (data.maxLegDur !== undefined && data.maxLegDur !== '') {
+        const maxInput = document.getElementById('cf_max_leg_dur');
+        if (maxInput) maxInput.value = data.maxLegDur;
+      }
+
+      // 7. Restore Custom Weights & Class Strategy
+      if (data.customWeights && typeof data.customWeights === 'object') {
+        const wEco = document.getElementById('cf_weight_eco');
+        const wBus = document.getElementById('cf_weight_bus');
+        const wFirst = document.getElementById('cf_weight_first');
+        const wCargo = document.getElementById('cf_weight_cargo');
+        const lEco = document.getElementById('cf_label_weight_eco');
+        const lBus = document.getElementById('cf_label_weight_bus');
+        const lFirst = document.getElementById('cf_label_weight_first');
+        const lCargo = document.getElementById('cf_label_weight_cargo');
+
+        if (wEco && data.customWeights.eco !== undefined) {
+          wEco.value = data.customWeights.eco;
+          if (lEco) lEco.textContent = `${data.customWeights.eco}%`;
+        }
+        if (wBus && data.customWeights.bus !== undefined) {
+          wBus.value = data.customWeights.bus;
+          if (lBus) lBus.textContent = `${data.customWeights.bus}%`;
+        }
+        if (wFirst && data.customWeights.first !== undefined) {
+          wFirst.value = data.customWeights.first;
+          if (lFirst) lFirst.textContent = `${data.customWeights.first}%`;
+        }
+        if (wCargo && data.customWeights.cargo !== undefined) {
+          wCargo.value = data.customWeights.cargo;
+          if (lCargo) lCargo.textContent = `${data.customWeights.cargo}%`;
+        }
+      }
+
+      const stratSel = document.getElementById('cf_class_strategy_select');
+      if (stratSel && data.classStrategy) {
+        stratSel.value = data.classStrategy;
+      }
+      cf_onClassStrategyChange(data.classStrategy || 'tri_class');
+
+      // 8. Restore Optimization Metric
+      if (data.optimizationMetric) {
+        const optSel = document.getElementById('cf_optimization_metric_select');
+        if (optSel) optSel.value = data.optimizationMetric;
+      }
+
+      // 9. Restore Network Filters
+      if (data.catMatchOnly !== undefined) {
+        const catCheck = document.getElementById('cf_cat_filter_check');
+        if (catCheck) catCheck.checked = !!data.catMatchOnly;
+      }
+      if (data.excludeOwnedHubs !== undefined) {
+        const ex1 = document.getElementById('cf_toggle_exclude_owned_hubs');
+        const ex2 = document.getElementById('cf_toggle_exclude_owned_hubs_tier3');
+        if (ex1) ex1.checked = !!data.excludeOwnedHubs;
+        if (ex2) ex2.checked = !!data.excludeOwnedHubs;
+      }
+      if (data.minStarRating !== undefined) {
+        const starSelect = document.getElementById('cf_star_filter_select');
+        if (starSelect) starSelect.value = String(data.minStarRating);
+      }
+      if (data.continent) {
+        const contSel = document.getElementById('cf_continent_filter_select');
+        if (contSel) contSel.value = data.continent;
+      }
+
+      // 10. Restore Max Distance Cap
+      if (data.isMaxDistLimitEnabled !== undefined) {
+        cf_isMaxDistLimitEnabled = !!data.isMaxDistLimitEnabled;
+        const distLimitCheck = document.getElementById('cf_toggle_max_dist_limit');
+        if (distLimitCheck) distLimitCheck.checked = cf_isMaxDistLimitEnabled;
+        const maxDistInput = document.getElementById('cf_max_route_dist_input');
+        if (maxDistInput) {
+          maxDistInput.disabled = !cf_isMaxDistLimitEnabled;
+          if (data.maxRouteDistance !== undefined && data.maxRouteDistance !== '') {
+            maxDistInput.value = data.maxRouteDistance;
+          }
+        }
+      }
+
+      // 11. Restore Include / Exclude Airports
+      if (Array.isArray(data.includedAirports)) {
+        cf_includedAirports = data.includedAirports.filter(c => typeof c === 'string' && c.trim().length > 0);
+        const incInput = document.getElementById('cf_include_airports_input');
+        if (incInput) incInput.value = cf_includedAirports.join(' ');
+        cf_renderIncludeAirportsChips();
+      }
+      if (Array.isArray(data.excludedAirports)) {
+        cf_excludedAirports = data.excludedAirports.filter(c => typeof c === 'string' && c.trim().length > 0);
+        const excInput = document.getElementById('cf_exclude_airports_input');
+        if (excInput) excInput.value = cf_excludedAirports.join(' ');
+        cf_renderExcludeAirportsChips();
+      }
+
+      // 12. Restore Quick Filter
+      if (data.quickResultsFilter) {
+        cf_setQuickResultsFilter(data.quickResultsFilter);
+      }
+
+      // 13. Synchronize All Displays & UI Badges
+      cf_updateAircraftDisplay();
+      cf_renderAircraftComboboxList();
+      cf_updateHubInfoDisplay();
+      cf_renderOwnedHubs();
+      cf_updateHeaderContext();
+      cf_updateRouteTypeCounter();
+
+      isRestoringCircuitFinderState = false;
+      return true;
+    } catch (err) {
+      console.warn('Could not restore Circuit Finder state:', err);
+      isRestoringCircuitFinderState = false;
+      return false;
+    }
+  }
+
   function cf_resetCircuitFinderFilters() {
+    isResettingCircuitFinder = true;
+    try {
+      localStorage.removeItem(CF_STATE_KEY);
+    } catch (e) {}
+
     // 1. Departure Hub
     cf_activeHubIata = '';
     const hubInput = document.getElementById('cf_circuit_hub');
@@ -1600,10 +1865,15 @@
     const acSelect = document.getElementById('cf_aircraft_select');
     if (acSelect) acSelect.value = 'a380-800';
     cf_updateAircraftDisplay();
+    cf_renderAircraftComboboxList();
 
     // 3. Duration and Slack
     const targetDurSel = document.getElementById('cf_target_duration_select');
     if (targetDurSel) targetDurSel.value = '168';
+    const subtext = document.getElementById('cf_target_dur_subtext');
+    if (subtext) subtext.innerHTML = 'Requires a fleet of <strong class="text-cyan-300">7 identical aircraft</strong>';
+    const utilBadge = document.getElementById('cf_target_util_badge');
+    if (utilBadge) utilBadge.textContent = '100% Target';
     const slackSel = document.getElementById('cf_slack_tolerance_select');
     if (slackSel) slackSel.value = '0';
 
@@ -1616,6 +1886,26 @@
     if (contSel) contSel.value = 'all';
     const catCheck = document.getElementById('cf_cat_filter_check');
     if (catCheck) catCheck.checked = true;
+
+    // Reset Custom Sliders & Drawer
+    const wEco = document.getElementById('cf_weight_eco');
+    const wBus = document.getElementById('cf_weight_bus');
+    const wFirst = document.getElementById('cf_weight_first');
+    const wCargo = document.getElementById('cf_weight_cargo');
+    if (wEco) wEco.value = '60';
+    if (wBus) wBus.value = '25';
+    if (wFirst) wFirst.value = '15';
+    if (wCargo) wCargo.value = '0';
+    const lEco = document.getElementById('cf_label_weight_eco');
+    const lBus = document.getElementById('cf_label_weight_bus');
+    const lFirst = document.getElementById('cf_label_weight_first');
+    const lCargo = document.getElementById('cf_label_weight_cargo');
+    if (lEco) lEco.textContent = '60%';
+    if (lBus) lBus.textContent = '25%';
+    if (lFirst) lFirst.textContent = '15%';
+    if (lCargo) lCargo.textContent = '0%';
+    const drawer = document.getElementById('cf_custom_weights_drawer');
+    if (drawer) drawer.classList.add('hidden');
 
     // Hub Checkboxes
     if (document.getElementById('cf_toggle_exclude_owned_hubs')) document.getElementById('cf_toggle_exclude_owned_hubs').checked = false;
@@ -1655,12 +1945,16 @@
     const rcSelect = document.getElementById('cf_route_count_select');
     if (rcSelect) rcSelect.value = 'any';
 
+    // 9. Quick Results Filter to 'all'
+    cf_setQuickResultsFilter('all');
+
     cf_updateHeaderContext();
     cf_applyRouteTypeBounds();
     cf_updateRouteTypeCounter();
     cf_onClassStrategyChange('tri_class');
 
     cf_executeCircuitSearch();
+    isResettingCircuitFinder = false;
     cf_showToast('Filters reset to default configuration', 'info');
   }
 
@@ -1962,19 +2256,24 @@
     cf_loadOwnedHubs();
     cf_initAircraftCombobox();
     cf_renderOwnedHubs();
-    cf_updateHubInfoDisplay();
-    cf_updateAircraftDisplay();
-    cf_updateHeaderContext();
-    cf_updateRouteCountOptions(168);
-    cf_setRouteType('lh', false);
 
-    const rcSelect = document.getElementById('cf_route_count_select');
-    if (rcSelect) rcSelect.value = 'any';
-    const starSelect = document.getElementById('cf_star_filter_select');
-    if (starSelect) starSelect.value = '3';
+    const restored = cf_restoreStateFromLocalStorage();
 
-    cf_renderIncludeAirportsChips();
-    cf_renderExcludeAirportsChips();
+    if (!restored) {
+      cf_updateHubInfoDisplay();
+      cf_updateAircraftDisplay();
+      cf_updateHeaderContext();
+      cf_updateRouteCountOptions(168);
+      cf_setRouteType('lh', false);
+
+      const rcSelect = document.getElementById('cf_route_count_select');
+      if (rcSelect) rcSelect.value = 'any';
+      const starSelect = document.getElementById('cf_star_filter_select');
+      if (starSelect) starSelect.value = '3';
+
+      cf_renderIncludeAirportsChips();
+      cf_renderExcludeAirportsChips();
+    }
 
     // Click outside aircraft combobox popover to close
     document.addEventListener('click', (e) => {
@@ -1989,6 +2288,8 @@
 
   // Expose public API on window
   window.initCircuitFinder = initCircuitFinder;
+  window.cf_saveStateToLocalStorage = cf_saveStateToLocalStorage;
+  window.cf_restoreStateFromLocalStorage = cf_restoreStateFromLocalStorage;
   window.cf_setActiveHub = cf_setActiveHub;
   window.cf_addOwnedHubFromInput = cf_addOwnedHubFromInput;
   window.cf_removeOwnedHub = cf_removeOwnedHub;
