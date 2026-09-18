@@ -716,7 +716,6 @@ function updateStrategyButtonUI() {
   const btnMax = document.getElementById('sc_strategy_btn_maxprofit');
   const btnZero = document.getElementById('sc_strategy_btn_zeroempty');
   const badge = document.getElementById('circuit_strategy_badge');
-  const desc = document.getElementById('circuit_strategy_desc');
 
   if (strat === 'max_profit') {
     if (btnMax) {
@@ -729,9 +728,6 @@ function updateStrategyButtonUI() {
       badge.className = 'text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold';
       badge.textContent = '💰 Profit Maximized • Balanced Demand';
     }
-    if (desc) {
-      desc.textContent = 'Calculates optimal fleet size and seating to maximize circuit profit across all routes, balancing demand and converting excess payload to cargo.';
-    }
   } else {
     if (btnMax) {
       btnMax.className = 'px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200 border border-transparent';
@@ -743,9 +739,14 @@ function updateStrategyButtonUI() {
       badge.className = 'text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold';
       badge.textContent = '🛡️ Zero Empty Seats • Strict Bottleneck';
     }
-    if (desc) {
-      desc.textContent = 'Caps fleet sizing at the lowest-demand route in the circuit so zero empty passenger seats fly on any leg.';
-    }
+  }
+
+  const activeAc = (typeof getActiveAircraft === 'function') ? getActiveAircraft() : null;
+  if (activeAc) {
+    const stratName = document.getElementById('sc_strategy_aircraft_name');
+    const stratCat = document.getElementById('sc_strategy_aircraft_cat');
+    if (stratName) stratName.textContent = activeAc.name;
+    if (stratCat) stratCat.textContent = `Cat. ${activeAc.category}`;
   }
 }
 window.updateStrategyButtonUI = updateStrategyButtonUI;
@@ -1154,6 +1155,8 @@ function updateAircraftBadges(aircraft) {
   const badgePayload = document.getElementById('sc_badge_payload');
   const badgePrice = document.getElementById('sc_badge_price');
   const legSpeedRef = document.getElementById('sc_leg_speed_ref');
+  const stratName = document.getElementById('sc_strategy_aircraft_name');
+  const stratCat = document.getElementById('sc_strategy_aircraft_cat');
 
   if (catBadge) catBadge.textContent = `Cat. ${aircraft.category}`;
   if (typeBadge) typeBadge.textContent = aircraft.type;
@@ -1169,6 +1172,8 @@ function updateAircraftBadges(aircraft) {
   if (badgePayload) badgePayload.textContent = `${aircraft.payload_ton} T`;
   if (badgePrice) badgePrice.textContent = priceShort;
   if (legSpeedRef) legSpeedRef.textContent = `@ ${aircraft.speed_kmh} km/h`;
+  if (stratName) stratName.textContent = aircraft.name;
+  if (stratCat) stratCat.textContent = `Cat. ${aircraft.category}`;
 }
 
 // Leg Destination Input Change (Enhanced with Saved Route Audits Auto-fill)
@@ -1536,11 +1541,17 @@ function deleteLeg(id) {
 window.deleteLeg = deleteLeg;
 
 function clearAllLegs() {
+  if (!window.CIRCUIT_LEGS || window.CIRCUIT_LEGS.length === 0) {
+    showToast('Circuit is already empty', 'info');
+    return;
+  }
   window.CIRCUIT_LEGS = [];
+  window.CURRENT_SAVED_CIRCUIT_ID = null;
+  window.CURRENT_SAVED_CIRCUIT_NAME = null;
   cancelLegEdit();
   renderCircuitAll();
   saveSeatConfigToLocalStorage();
-  showToast('Circuit cleared');
+  showToast('Circuit cleared', 'info');
 }
 window.clearAllLegs = clearAllLegs;
 
@@ -2893,41 +2904,30 @@ function renderActivePlanDetails() {
       
       <!-- Top Fleet Summary Row -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-800/80">
-        <div class="space-y-1">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="px-2.5 py-1 rounded-lg text-xs ${plan.strategy === 'max_profit' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-cyan-950 text-cyan-300 border border-cyan-800'} font-bold flex items-center gap-1.5">
-              <span>${plan.strategy === 'max_profit' ? '💰' : '🛡️'}</span>
-              <span>${plan.strategy === 'max_profit' ? 'Max Profit Solution' : 'Zero Empty Seats Solution'}</span>
-            </span>
-            <span class="text-xs px-2.5 py-1 rounded-lg bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono-num font-bold">
-              ✈️ ${plan.totalPlanes} Total Aircraft Required ${plan.is168h ? `(${plan.totalUnits} Wave${plan.totalUnits > 1 ? 's' : ''} of 7)` : ''}
-            </span>
-            <span class="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 font-mono-num">
-              💰 Capital: ${formatCurrency(plan.totalFleetCost)}
-            </span>
-            <span class="text-xs px-2.5 py-1 rounded-lg bg-blue-950/80 text-blue-300 border border-blue-800/80 font-mono-num font-semibold">
-              📈 ${plan.circuitLoadFactor}% Load Factor
-            </span>
-            <span class="text-xs px-2.5 py-1 rounded-lg ${allFleetFulfilled ? 'bg-emerald-950 text-emerald-300 border border-emerald-600 font-bold shadow-sm' : (totalFleetFulfilled > 0 ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/80 font-semibold' : 'bg-slate-800 text-slate-400 border border-slate-700')} font-mono-num flex items-center gap-1.5" title="${totalFleetFulfilled} of ${totalFleetPlanes} aircraft configured">
-              <span>${allFleetFulfilled ? '✓' : '📋'}</span>
-              <span>${totalFleetFulfilled} / ${totalFleetPlanes} Aircraft Configured (${totalFleetPlanes > 0 ? Math.round((totalFleetFulfilled/totalFleetPlanes)*100) : 0}%)</span>
-              ${totalFleetPlanes > 0 ? `
-                <span class="text-slate-600">|</span>
-                ${allFleetFulfilled 
-                  ? `<button type="button" onclick="setAllConfigsFulfilled(false)" class="text-[10px] text-slate-400 hover:text-amber-300 underline font-normal">Reset all</button>`
-                  : `<button type="button" onclick="setAllConfigsFulfilled(true)" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline font-normal">Mark all</button>`}
-              ` : ''}
-            </span>
-          </div>
-          <h4 class="text-sm font-bold text-white tracking-tight">
-            ${plan.is168h ? `${plan.totalUnits} Wave(s) of 7 Aircraft (Daily Service on all ${plan.routeResults.length} Routes)` : `${plan.totalPlanes} Aircraft Operating Daily 24h Rotation`}
-          </h4>
-          <p class="text-xs text-slate-400">
-            ${plan.strategy === 'max_profit'
-              ? `Fleet sized for <strong>Maximum Circuit Profit</strong> across all routes. Lower-demand routes balance higher-demand routes with an overall passenger load factor of <strong>${plan.circuitLoadFactor}%</strong>.`
-              : `Strict bottleneck configuration: Every passenger seat offered is 100% matched to demand with <strong>$0 empty seat loss</strong> across all routes.`}
-            Each Round-Trip flight provides <strong>2× cabin capacity</strong> (outbound + inbound). All excess aircraft payload is converted to belly cargo.
-          </p>
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="px-2.5 py-1 rounded-lg text-xs ${plan.strategy === 'max_profit' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-cyan-950 text-cyan-300 border border-cyan-800'} font-bold flex items-center gap-1.5">
+            <span>${plan.strategy === 'max_profit' ? '💰' : '🛡️'}</span>
+            <span>${plan.strategy === 'max_profit' ? 'Max Profit Solution' : 'Zero Empty Seats Solution'}</span>
+          </span>
+          <span class="text-xs px-2.5 py-1 rounded-lg bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono-num font-bold">
+            ✈️ ${plan.totalPlanes} Total Aircraft Required ${plan.is168h ? `(${plan.totalUnits} Wave${plan.totalUnits > 1 ? 's' : ''} of 7)` : ''}
+          </span>
+          <span class="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 font-mono-num">
+            💰 Capital: ${formatCurrency(plan.totalFleetCost)}
+          </span>
+          <span class="text-xs px-2.5 py-1 rounded-lg bg-blue-950/80 text-blue-300 border border-blue-800/80 font-mono-num font-semibold">
+            📈 ${plan.circuitLoadFactor}% Load Factor
+          </span>
+          <span class="text-xs px-2.5 py-1 rounded-lg ${allFleetFulfilled ? 'bg-emerald-950 text-emerald-300 border border-emerald-600 font-bold shadow-sm' : (totalFleetFulfilled > 0 ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/80 font-semibold' : 'bg-slate-800 text-slate-400 border border-slate-700')} font-mono-num flex items-center gap-1.5" title="${totalFleetFulfilled} of ${totalFleetPlanes} aircraft configured">
+            <span>${allFleetFulfilled ? '✓' : '📋'}</span>
+            <span>${totalFleetFulfilled} / ${totalFleetPlanes} Aircraft Configured (${totalFleetPlanes > 0 ? Math.round((totalFleetFulfilled/totalFleetPlanes)*100) : 0}%)</span>
+            ${totalFleetPlanes > 0 ? `
+              <span class="text-slate-600">|</span>
+              ${allFleetFulfilled 
+                ? `<button type="button" onclick="setAllConfigsFulfilled(false)" class="text-[10px] text-slate-400 hover:text-amber-300 underline font-normal">Reset all</button>`
+                : `<button type="button" onclick="setAllConfigsFulfilled(true)" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline font-normal">Mark all</button>`}
+            ` : ''}
+          </span>
         </div>
         <div class="flex items-baseline gap-4 sm:text-right shrink-0 flex-wrap">
           <div>
@@ -3264,6 +3264,124 @@ function closeConfigFinancialPopover() {
 }
 window.closeConfigFinancialPopover = closeConfigFinancialPopover;
 
+/**
+ * Toggle Floating Aircraft Details Popover in Seat Config
+ */
+function toggleAircraftDetailsPopover(event) {
+  if (event) event.stopPropagation();
+  const popover = document.getElementById('sc_aircraft_details_popover');
+  if (!popover) return;
+
+  if (!popover.classList.contains('hidden')) {
+    closeAircraftDetailsPopover();
+    return;
+  }
+
+  // Close financial popover if open
+  closeConfigFinancialPopover();
+
+  const aircraft = (typeof getActiveAircraft === 'function') ? getActiveAircraft() : null;
+  if (!aircraft) {
+    if (typeof showToast === 'function') showToast('No aircraft currently selected', 'warning');
+    return;
+  }
+
+  const priceShort = typeof formatAircraftPriceShort === 'function' ? formatAircraftPriceShort(aircraft.price) : `$${(aircraft.price / 1e6).toFixed(1)}M`;
+  const priceFull = typeof formatCurrency === 'function' ? formatCurrency(aircraft.price) : `$${aircraft.price?.toLocaleString()}`;
+
+  popover.innerHTML = `
+    <div class="flex items-center justify-between pb-2.5 border-b border-slate-800">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <span class="w-8 h-8 rounded-xl bg-cyan-950 text-cyan-400 flex items-center justify-center text-sm font-bold border border-cyan-800/80 shadow-inner shrink-0">✈️</span>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h4 class="text-xs font-bold text-white tracking-tight truncate">${aircraft.name}</h4>
+            <span class="text-[10px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/80 font-mono">Cat. ${aircraft.category}</span>
+            <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700">${aircraft.type || 'Passenger'}</span>
+          </div>
+          <div class="text-[10px] text-slate-400 truncate">${aircraft.manufacturer || 'Aircraft Manufacturer'}</div>
+        </div>
+      </div>
+      <button type="button" onclick="closeAircraftDetailsPopover()" class="text-slate-400 hover:text-white text-base leading-none p-1 rounded hover:bg-slate-800 transition shrink-0">&times;</button>
+    </div>
+
+    <!-- Specs Grid -->
+    <div class="grid grid-cols-2 gap-2 text-xs font-mono-num">
+      <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800/90">
+        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-medium">Passenger Seats</div>
+        <div class="text-sm font-bold text-white mt-0.5">${aircraft.seats} seats</div>
+        <div class="text-[9px] text-slate-500">Max single class</div>
+      </div>
+      <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800/90">
+        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-medium">Max Payload</div>
+        <div class="text-sm font-bold text-cyan-300 mt-0.5">${aircraft.payload_ton} T</div>
+        <div class="text-[9px] text-slate-500">${Math.round(aircraft.payload_ton * 1000).toLocaleString()} kg</div>
+      </div>
+      <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800/90">
+        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-medium">Catalog Price</div>
+        <div class="text-sm font-bold text-emerald-400 mt-0.5">${priceShort}</div>
+        <div class="text-[9px] text-slate-500 truncate" title="${priceFull}">${priceFull}</div>
+      </div>
+      <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800/90">
+        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-medium">Cruising Speed</div>
+        <div class="text-sm font-bold text-slate-200 mt-0.5">${aircraft.speed_kmh} km/h</div>
+        <div class="text-[9px] text-slate-500">${Math.round(aircraft.speed_kmh * 0.621371)} mph</div>
+      </div>
+      <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800/90">
+        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-medium">Flight Range</div>
+        <div class="text-sm font-bold text-blue-300 mt-0.5">${aircraft.range_km.toLocaleString()} km</div>
+        <div class="text-[9px] text-slate-500">${Math.round(aircraft.range_km * 0.539957).toLocaleString()} NM</div>
+      </div>
+      <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800/90">
+        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-medium">Fuel &amp; Wear</div>
+        <div class="text-xs font-semibold text-slate-300 mt-1 truncate" title="Fuel: ${aircraft.fuel_consumption || 'N/A'}">${aircraft.fuel_consumption ? `${aircraft.fuel_consumption}/seat` : 'Standard'}</div>
+        <div class="text-[9px] text-slate-500">Wear: ${aircraft.wear_rate ? `${aircraft.wear_rate}/100h` : 'Standard'}</div>
+      </div>
+    </div>
+
+    <!-- Quick Footer Actions -->
+    <div class="flex items-center justify-between pt-1 border-t border-slate-800/80 text-xs">
+      <button type="button" onclick="closeAircraftDetailsPopover(); openAircraftModal();" class="text-cyan-400 hover:text-cyan-300 font-semibold hover:underline flex items-center gap-1 text-[11px]">
+        <span>Full Catalog &rarr;</span>
+      </button>
+      <button type="button" onclick="closeAircraftDetailsPopover(); toggleAircraftCombobox();" class="text-slate-400 hover:text-white font-medium hover:underline text-[11px]">
+        Change Aircraft
+      </button>
+    </div>
+  `;
+
+  popover.classList.remove('hidden');
+
+  // Positioning
+  const btn = event.currentTarget || document.getElementById('sc_aircraft_details_btn');
+  if (btn) {
+    const rect = btn.getBoundingClientRect();
+    const popWidth = Math.min(360, window.innerWidth - 20);
+    let left = rect.left;
+    if (left + popWidth > window.innerWidth - 10) {
+      left = window.innerWidth - popWidth - 10;
+    }
+    if (left < 10) left = 10;
+
+    let top = rect.bottom + 8;
+    const estimatedHeight = 310;
+    if (top + estimatedHeight > window.innerHeight && rect.top - estimatedHeight - 8 > 10) {
+      top = rect.top - estimatedHeight - 8;
+    }
+    popover.style.left = `${left}px`;
+    popover.style.top = `${top}px`;
+  }
+}
+window.toggleAircraftDetailsPopover = toggleAircraftDetailsPopover;
+
+function closeAircraftDetailsPopover() {
+  const popover = document.getElementById('sc_aircraft_details_popover');
+  if (popover) {
+    popover.classList.add('hidden');
+  }
+}
+window.closeAircraftDetailsPopover = closeAircraftDetailsPopover;
+
 // Global listeners for popover dismissal
 if (typeof window !== 'undefined') {
   window.addEventListener('click', (e) => {
@@ -3271,9 +3389,19 @@ if (typeof window !== 'undefined') {
     if (pop && !pop.classList.contains('hidden') && !pop.contains(e.target)) {
       closeConfigFinancialPopover();
     }
+    const popAc = document.getElementById('sc_aircraft_details_popover');
+    if (popAc && !popAc.classList.contains('hidden') && !popAc.contains(e.target)) {
+      const btn = document.getElementById('sc_aircraft_details_btn');
+      if (!btn || !btn.contains(e.target)) {
+        closeAircraftDetailsPopover();
+      }
+    }
   });
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeConfigFinancialPopover();
+    if (e.key === 'Escape') {
+      closeConfigFinancialPopover();
+      closeAircraftDetailsPopover();
+    }
   });
 }
 
