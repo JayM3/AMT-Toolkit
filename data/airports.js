@@ -9019,21 +9019,6 @@ const AIRPORTS_DATABASE = [
     "cargo": 37.79
   },
   {
-    "iata": "TXL",
-    "name": "Tegel Otto Lilienthal Airport",
-    "city": "Berlin",
-    "country": "Germany",
-    "lat": 52.5597,
-    "lon": 13.2877,
-    "cat": 9,
-    "flightTax": 5456,
-    "grossPrice": 7421912903,
-    "economy": 40.84,
-    "business": 24.85,
-    "first": 23.1,
-    "cargo": 44.41
-  },
-  {
     "iata": "TFS",
     "name": "Tenerife Sur Airport",
     "city": "Tenerife Island",
