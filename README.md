@@ -1,9 +1,12 @@
 # ✈️ AMT Toolkit — Airlines Manager Tycoon Toolkit
 
+[![Website](https://img.shields.io/badge/Website-jaym3.github.io%2FAMT--Toolkit-blue?logo=googlechrome&logoColor=white)](https://jaym3.github.io/AMT-Toolkit/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/HTML5)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.x-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+> 🌐 **Live Website**: Access the toolkit directly online at **[https://jaym3.github.io/AMT-Toolkit/](https://jaym3.github.io/AMT-Toolkit/)**
 
 A high-performance, client-side web application suite tailored for players of **Airlines Manager: Tycoon**. The toolkit helps airline managers optimize ticket pricing to capture 100% of unsatisfied demand, configure multi-class aircraft cabin layouts, find profitable routes, and schedule 168-hour flight circuits without idle downtime.
 
@@ -172,10 +175,13 @@ AMT-Toolkit/
 
 No build tools, compilers, or server installations are required! The web application runs completely client-side.
 
-1. **Direct Browser Launch**:
+1. **Access Online (Instant)**:
+   - Launch the live application directly in your browser: **[https://jaym3.github.io/AMT-Toolkit/](https://jaym3.github.io/AMT-Toolkit/)**
+
+2. **Direct Browser Launch**:
    - Double-click `index.html` or open it with any modern web browser (Google Chrome, Microsoft Edge, Mozilla Firefox, Safari).
 
-2. **Using a Local Static Server (Optional)**:
+3. **Using a Local Static Server (Optional)**:
    ```bash
    # Using Python
    python -m http.server 8000
