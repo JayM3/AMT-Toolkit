@@ -1,0 +1,255 @@
+/* Modern Airlines Manager Tycoon Calculator Styles */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  --eco-accent: #06b6d4;
+  --bus-accent: #3b82f6;
+  --first-accent: #f59e0b;
+  --cargo-accent: #a855f7;
+  color-scheme: dark;
+}
+
+select {
+  color-scheme: dark;
+}
+
+select option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+select optgroup {
+  background-color: #0f172a !important;
+  color: #94a3b8 !important;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-mono-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Input spinners removal */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Glassmorphism effects */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: rgba(30, 41, 59, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.2s ease-in-out;
+}
+
+.glass-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.35);
+}
+
+.glass-card-fulfilled {
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  background: rgba(6, 78, 59, 0.15) !important;
+  box-shadow: 0 0 16px -2px rgba(16, 185, 129, 0.18) !important;
+}
+
+.glass-card-fulfilled:hover {
+  border-color: rgba(52, 211, 153, 0.7) !important;
+  box-shadow: 0 0 24px -2px rgba(16, 185, 129, 0.28) !important;
+}
+
+/* Tooltip transition */
+.tooltip-content {
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+  transform: translateY(4px);
+}
+
+.has-tooltip:hover .tooltip-content {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Seat distribution bar segments */
+.seat-bar-eco {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+}
+.seat-bar-bus {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+.seat-bar-first {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+.seat-bar-cargo {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+/* Tab button transition */
+.tab-btn-active {
+  background-color: rgba(6, 182, 212, 0.15);
+  color: #67e8f9;
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow: 0 0 15px -3px rgba(6, 182, 212, 0.2);
+}
+.tab-btn-inactive {
+  background-color: transparent;
+  color: #94a3b8;
+  border-color: transparent;
+}
+.tab-btn-inactive:hover {
+  background-color: rgba(30, 41, 59, 0.6);
+  color: #e2e8f0;
+}
+
+/* Drag and drop states for circuit legs */
+.circuit-leg-item {
+  cursor: grab;
+  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+.circuit-leg-item:active {
+  cursor: grabbing;
+}
+.circuit-leg-item.dragging {
+  opacity: 0.35;
+  transform: scale(0.99);
+  border-color: #06b6d4 !important;
+}
+.circuit-leg-item.drag-over {
+  border-color: #22d3ee !important;
+  background-color: rgba(6, 182, 212, 0.12) !important;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.25);
+}
+
+/* 24h & 168h Schedule Grid */
+.grid-cols-25 {
+  display: grid;
+  grid-template-columns: 50px repeat(24, minmax(0, 1fr));
+}
+.grid-cols-24 {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+}
+.col-span-24 {
+  grid-column: span 24 / span 24;
+}
+
+.timeline-day-track {
+  position: relative;
+  height: 34px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(51, 65, 85, 0.45);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.timeline-hour-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-right: 1px dashed rgba(51, 65, 85, 0.35);
+  pointer-events: none;
+}
+
+/* Flight Block in Timeline */
+.timeline-flight-block {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 0 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #ffffff;
+  overflow: hidden;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  transition: filter 0.15s ease, transform 0.15s ease;
+  z-index: 5;
+}
+.timeline-flight-block:hover {
+  filter: brightness(1.15);
+  z-index: 10;
+  transform: scaleY(1.05);
+}
+
+/* Accordion collapse utility */
+.accordion-collapsed {
+  display: none !important;
+}
+
+/* Saved Circuits Modal & Dropzone Styles */
+.circuit-dropzone {
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.circuit-dropzone:hover {
+  border-color: #06b6d4 !important;
+  background-color: rgba(6, 182, 212, 0.05) !important;
+}
+
+/* Timeline remaining slots striped pattern */
+.timeline-striped {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(30, 41, 59, 0.8),
+    rgba(30, 41, 59, 0.8) 10px,
+    rgba(15, 23, 42, 0.9) 10px,
+    rgba(15, 23, 42, 0.9) 20px
+  );
+}
+
+/* Floating Demand Basis Popover */
+#circuit_demand_popover {
+  animation: popoverFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+

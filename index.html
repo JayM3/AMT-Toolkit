@@ -1,0 +1,2512 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AMT Toolkit - Airlines Manager Tycoon Toolkit</title>
+  <meta name="description" content="Airlines Manager Tycoon Toolkit (AMT Toolkit) - Zero-out route price calculator and airline management tools.">
+  
+  <!-- Tailwind CSS CDN (v3) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfeff',
+              100: '#cffafe',
+              400: '#22d3ee',
+              500: '#06b6d4',
+              600: '#0891b2',
+              900: '#164e63',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-cyan-500 selection:text-slate-950">
+
+  <!-- Top Navigation Header -->
+  <header class="border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-md sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Brand & Title -->
+      <div class="flex items-center space-x-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/10 ring-1 ring-white/15">
+          <svg class="w-4 h-4 text-white transform -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base font-bold tracking-tight text-white">AMT Toolkit</h1>
+            <span class="text-xs text-slate-400 font-normal hidden sm:inline">&bull; Airlines Manager Tycoon Toolkit</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation for Tools -->
+      <nav class="flex items-center gap-1.5 sm:gap-2">
+        <button id="nav_zero_out" onclick="switchTab('zero-out')" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tab-btn-active border transition shadow-sm">
+          <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+          <span>Zero-Out Price</span>
+        </button>
+        <button id="nav_seat_config" onclick="switchTab('seat-config')" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium tab-btn-inactive border transition shadow-sm">
+          <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse hidden"></span>
+          <span>Seat Config</span>
+        </button>
+        <button id="nav_route_finder" onclick="switchTab('route-finder')" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium tab-btn-inactive border transition shadow-sm">
+          <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse hidden"></span>
+          <span>Route Finder</span>
+        </button>
+        <span class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-400 cursor-default hidden sm:flex items-center gap-1">
+          <span>Circuit Finder</span>
+          <span class="text-[9px] px-1 py-0.2 rounded bg-slate-800 border border-slate-700 text-slate-400">Soon</span>
+        </span>
+        <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
+        <button id="nav_saved_audits" onclick="openSavedAuditsModal()" type="button" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/90 hover:bg-slate-800 text-cyan-300 hover:text-cyan-200 border border-slate-700/80 hover:border-cyan-500/50 transition shadow-sm" title="View and manage saved route audits (4-Class & Remaining Demand)">
+          <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          <span>Route Audits</span>
+          <span id="nav_audits_badge" class="px-1.5 py-0.2 rounded-full bg-cyan-500 text-slate-950 font-bold text-[10px] font-mono-num">0</span>
+        </button>
+      </nav>
+      
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- Zero-Out Price Calculator View -->
+    <div id="view_zero_out" class="space-y-6">
+
+    <!-- Unified Tool Control & Summary Stats Box -->
+    <section class="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-xl space-y-4">
+      
+      <!-- Top Row: Tool Title & Tool Action Controls -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-800/80">
+        
+        <!-- Left: Tool Heading -->
+        <div>
+          <div class="flex items-center gap-2.5">
+            <h2 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+              <span>Zero-Out Price Calculator</span>
+            </h2>
+            <span id="zero_out_active_route_badge" class="hidden text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono font-bold"></span>
+          </div>
+          <p class="text-xs text-slate-400">Calculate target ticket prices to zero-out leftover demand</p>
+        </div>
+
+        <!-- Right: Action Buttons -->
+        <div class="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          
+          <!-- Cargo Toggle Switch -->
+          <label class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 cursor-pointer hover:bg-slate-800 transition text-xs font-medium text-slate-200 select-none">
+            <input type="checkbox" id="toggle_cargo" checked class="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 bg-slate-700 border-slate-600">
+            <span>Cargo</span>
+          </label>
+
+          <!-- Save to Audits Library Button -->
+          <button onclick="saveZeroOutToAudit()" type="button" id="btn_zero_out_save_audit" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-700/70 text-cyan-300 hover:text-white transition text-xs font-semibold shadow-sm" title="Save current route demands, remaining and audit prices into Route Audits library">
+            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+            </svg>
+            <span>Save as Audit</span>
+          </button>
+
+          <!-- Route Audits Library Trigger Button -->
+          <button onclick="openSavedAuditsModal()" type="button" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700/70 text-slate-300 hover:text-white transition text-xs font-medium shadow-sm" title="Browse saved route audits library">
+            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <span>Audits Library</span>
+          </button>
+
+          <!-- Copy All Button -->
+          <button onclick="copyAllPrices()" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700/70 text-slate-200 hover:text-white transition text-xs font-medium shadow-sm">
+            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+            </svg>
+            <span>Copy All</span>
+          </button>
+
+          <!-- Clear Table Button -->
+          <button onclick="clearTable()" type="button" id="btn_clear_table" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/50 text-rose-300 hover:text-rose-100 transition text-xs font-medium shadow-sm active:scale-95">
+            <svg class="w-3.5 h-3.5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            <span>Clear Table</span>
+          </button>
+
+        </div>
+
+      </div>
+
+      <!-- Bottom Row: The 3 Real-Time KPI Metric Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        
+        <div class="bg-slate-900/70 border border-slate-800/90 rounded-xl p-3.5 flex flex-col justify-between">
+          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Scheduled Offer (C)</span>
+          <div class="text-xl font-bold text-white font-mono-num my-1" id="summary_total_capacity">0</div>
+          <span class="text-[10px] text-slate-500">Seats & Cargo Units Scheduled</span>
+        </div>
+
+        <div class="bg-slate-900/70 border border-slate-800/90 rounded-xl p-3.5 flex flex-col justify-between">
+          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Target Daily Rev</span>
+          <div class="text-xl font-bold text-cyan-300 font-mono-num my-1" id="summary_total_revenue">$0</div>
+          <span class="text-[10px] text-slate-500">Projected Daily Route Revenue</span>
+        </div>
+
+        <div class="bg-slate-900/70 border border-emerald-500/25 bg-emerald-950/15 rounded-xl p-3.5 flex flex-col justify-between">
+          <span class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Daily Gain (Δ Rev)</span>
+          <div class="text-xl font-bold text-emerald-400 font-mono-num my-1" id="summary_delta_revenue">+$0/day</div>
+          <span class="text-[10px] text-emerald-500/70">Extra Profit from Zeroing Demand</span>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- 4 Horizontal Slim Strip Cards (Concept 2 - Economy, Business, First, Cargo) -->
+    <section class="space-y-3">
+      <div class="flex items-center justify-between px-1">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+          <span>Route Inputs</span>
+          <span class="text-xs font-normal normal-case text-slate-400">(updates in real time as you type)</span>
+        </h2>
+        <span class="text-xs text-slate-500 font-mono-num hidden sm:inline">Formula: C = D_sim − R &bull; P_target = P_audit &sdot; (1 + &frac13; &sdot; R / D_sim)</span>
+      </div>
+
+      <div class="space-y-2.5">
+        
+        <!-- Strip 1: Economy -->
+        <div id="card_eco" class="glass-card rounded-xl p-3 sm:py-2.5 sm:px-4 border-l-4 border-l-cyan-500 flex flex-col md:flex-row md:items-center justify-between gap-3 transition">
+          <!-- Class Identity -->
+          <div class="flex items-center gap-2.5 min-w-[150px]">
+            <span class="text-lg">💺</span>
+            <div>
+              <h3 class="font-bold text-white text-sm leading-tight">Economy</h3>
+              <span class="text-[10px] font-mono-num font-semibold text-cyan-400">Class Y</span>
+            </div>
+          </div>
+
+          <!-- 3 Inline Compact Inputs (Sim Demand -> Remaining -> Audit Price) -->
+          <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 flex-grow max-w-2xl">
+            <div class="flex-1 min-w-[110px]">
+              <span class="block text-[10px] uppercase font-semibold text-slate-400 mb-0.5">Sim Demand</span>
+              <input type="number" id="eco_dsim" placeholder="e.g. 2151" class="w-full px-2.5 py-1 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono-num text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none transition">
+            </div>
+
+            <div class="flex-1 min-w-[110px]">
+              <span class="block text-[10px] uppercase font-semibold text-cyan-400 mb-0.5">Remaining (R)</span>
+              <input type="number" id="eco_r" placeholder="e.g. 350" class="w-full px-2.5 py-1 bg-slate-900 border border-cyan-500/50 rounded-lg text-cyan-300 font-semibold font-mono-num text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none transition">
+            </div>
+
+            <div class="flex-1 min-w-[110px]">
+              <span class="block text-[10px] uppercase font-semibold text-slate-400 mb-0.5">Audit Price</span>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-2 flex items-center text-slate-500 text-xs">$</span>
+                <input type="number" id="eco_paudit" placeholder="e.g. 2390" class="w-full pl-5 pr-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono-num text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none transition">
+              </div>
+            </div>
+          </div>
+
+          <!-- Results Pill on the Right -->
+          <div class="flex items-center gap-3 border-t md:border-t-0 md:border-l border-slate-800 pt-2 md:pt-0 md:pl-4 min-w-[210px] justify-between">
+            <div>
+              <div class="text-[10px] text-slate-400 uppercase">Offer (C): <span class="font-mono-num font-bold text-white" id="eco_card_c">—</span></div>
+              <div class="text-[10px] text-emerald-400 font-mono-num" id="eco_card_deltap">—</div>
+            </div>
+            <div class="text-right">
+              <span class="text-[9px] uppercase font-semibold text-slate-400 block">Target Price</span>
+              <div class="flex items-center gap-1.5">
+                <span class="font-mono-num font-bold text-cyan-300 text-sm" id="eco_card_target">$—</span>
+                <button onclick="copyTargetPrice('eco')" id="copy_btn_eco_strip" type="button" title="Copy Target Price" class="p-1 rounded bg-slate-800 hover:bg-cyan-600 text-slate-300 hover:text-white transition">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Strip 2: Business -->
+        <div id="card_bus" class="glass-card rounded-xl p-3 sm:py-2.5 sm:px-4 border-l-4 border-l-blue-500 flex flex-col md:flex-row md:items-center justify-between gap-3 transition">
+          <!-- Class Identity -->
+          <div class="flex items-center gap-2.5 min-w-[150px]">
+            <span class="text-lg">💼</span>
+            <div>
+              <h3 class="font-bold text-white text-sm leading-tight">Business</h3>
+              <span class="text-[10px] font-mono-num font-semibold text-blue-400">Class J</span>
+            </div>
+          </div>
+
+          <!-- 3 Inline Compact Inputs (Sim Demand -> Remaining -> Audit Price) -->
+          <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 flex-grow max-w-2xl">
+            <div class="flex-1 min-w-[110px]">
+              <span class="block text-[10px] uppercase font-semibold text-slate-400 mb-0.5">Sim Demand</span>
+              <input type="number" id="bus_dsim" placeholder="e.g. 363" class="w-full px-2.5 py-1 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono-num text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+            </div>
+
+            <div class="flex-1 min-w-[110px]">
+              <span class="block text-[10px] uppercase font-semibold text-blue-400 mb-0.5">Remaining (R)</span>
+              <input type="number" id="bus_r" placeholder="e.g. 50" class="w-full px-2.5 py-1 bg-slate-900 border border-blue-500/50 rounded-lg text-blue-300 font-semibold font-mono-num text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+            </div>
+
+            <div class="flex-1 min-w-[110px]">
+              <span class="block text-[10px] uppercase font-semibold text-slate-400 mb-0.5">Audit Price</span>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-2 flex items-center text-slate-500 text-xs">$</span>
+                <input type="number" id="bus_paudit" placeholder="e.g. 3178" class="w-full pl-5 pr-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono-num text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+              </div>
+            </div>
+          </div>
+
+          <!-- Results Pill on the Right -->
+          <div class="flex items-center gap-3 border-t md:border-t-0 md:border-l border-slate-800 pt-2 md:pt-0 md:pl-4 min-w-[210px] justify-between">
+            <div>
+              <div class="text-[10px] text-slate-400 uppercase">Offer (C): <span class="font-mono-num font-bold text-white" id="bus_card_c">—</span></div>
+              <div class="text-[10px] text-emerald-400 font-mono-num" id="bus_card_deltap">—</div>
+            </div>
+            <div class="text-right">
+              <span class="text-[9px] uppercase font-semibold text-slate-400 block">Target Price</span>
+              <div class="flex items-center gap-1.5">
+                <span class="font-mono-num font-bold text-blue-300 text-sm" id="bus_card_target">$—</span>
+                <button onclick="copyTargetPrice('bus')" id="copy_btn_bus_strip" type="button" title="Copy Target Price" class="p-1 rounded bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white transition">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Strip 3: First Class -->
+        <div id="card_first" class="glass-card rounded-xl p-3 sm:py-2.5 sm:px-4 border-l-4 border-l-amber-500 flex flex-col md:flex-row md:items-center justify-between gap-3 transition">
+          <!-- Class Identity -->
+          <div class="flex items-center gap-2.5 min-w-[150px]">
+            <span class="text-lg">👑</span>
+            <div>
+              <h3 class="font-bold text-white text-sm leading-tight">First Class</h3>
+              <span class="text-[10px] font-mono-num font-semibold text-amber-400">Class F</span>
+            </div>
+          </div>
+
+          <!-- 3 Inline Compact Inputs (Sim Demand -> Remaining -> Audit Price) -->
+          <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 flex-grow max-w-2xl">
+            <div class="flex-1 min-w-[110px]">
+              <span class="block text-[10px] uppercase font-semibold text-slate-400 mb-0.5">Sim Demand</span>
+              <input type="number" id="first_dsim" placeholder="e.g. 108" class="w-full px-2.5 py-1 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono-num text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none transition">
+            </div>
+
+            <div class="flex-1 min-w-[110px]">
+              <span class="block text-[10px] uppercase font-semibold text-amber-400 mb-0.5">Remaining (R)</span>
+              <input type="number" id="first_r" placeholder="e.g. 18" class="w-full px-2.5 py-1 bg-slate-900 border border-amber-500/50 rounded-lg text-amber-300 font-semibold font-mono-num text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none transition">
+            </div>
+
+            <div class="flex-1 min-w-[110px]">
+              <span class="block text-[10px] uppercase font-semibold text-slate-400 mb-0.5">Audit Price</span>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-2 flex items-center text-slate-500 text-xs">$</span>
+                <input type="number" id="first_paudit" placeholder="e.g. 5497" class="w-full pl-5 pr-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono-num text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none transition">
+              </div>
+            </div>
+          </div>
+
+          <!-- Results Pill on the Right -->
+          <div class="flex items-center gap-3 border-t md:border-t-0 md:border-l border-slate-800 pt-2 md:pt-0 md:pl-4 min-w-[210px] justify-between">
+            <div>
+              <div class="text-[10px] text-slate-400 uppercase">Offer (C): <span class="font-mono-num font-bold text-white" id="first_card_c">—</span></div>
+              <div class="text-[10px] text-emerald-400 font-mono-num" id="first_card_deltap">—</div>
+            </div>
+            <div class="text-right">
+              <span class="text-[9px] uppercase font-semibold text-slate-400 block">Target Price</span>
+              <div class="flex items-center gap-1.5">
+                <span class="font-mono-num font-bold text-amber-300 text-sm" id="first_card_target">$—</span>
+                <button onclick="copyTargetPrice('first')" id="copy_btn_first_strip" type="button" title="Copy Target Price" class="p-1 rounded bg-slate-800 hover:bg-amber-600 text-slate-300 hover:text-white transition">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Strip 4: Cargo -->
+        <div id="card_cargo" class="glass-card rounded-xl p-3 sm:py-2.5 sm:px-4 border-l-4 border-l-purple-500 flex flex-col md:flex-row md:items-center justify-between gap-3 transition">
+          <!-- Class Identity -->
+          <div class="flex items-center gap-2.5 min-w-[150px]">
+            <span class="text-lg">📦</span>
+            <div>
+              <h3 class="font-bold text-white text-sm leading-tight">Cargo</h3>
+              <span class="text-[10px] font-mono-num font-semibold text-purple-400">Freight (Tons)</span>
+            </div>
+          </div>
+
+          <!-- 3 Inline Compact Inputs (Sim Demand -> Remaining -> Audit Price) -->
+          <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 flex-grow max-w-2xl">
+            <div class="flex-1 min-w-[110px]">
+              <span class="block text-[10px] uppercase font-semibold text-slate-400 mb-0.5">Sim Demand</span>
+              <input type="number" id="cargo_dsim" placeholder="e.g. 254" class="w-full px-2.5 py-1 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono-num text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none transition">
+            </div>
+
+            <div class="flex-1 min-w-[110px]">
+              <span class="block text-[10px] uppercase font-semibold text-purple-400 mb-0.5">Remaining (R)</span>
+              <input type="number" id="cargo_r" placeholder="e.g. 30" class="w-full px-2.5 py-1 bg-slate-900 border border-purple-500/50 rounded-lg text-purple-300 font-semibold font-mono-num text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none transition">
+            </div>
+
+            <div class="flex-1 min-w-[110px]">
+              <span class="block text-[10px] uppercase font-semibold text-slate-400 mb-0.5">Audit Price</span>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-2 flex items-center text-slate-500 text-xs">$</span>
+                <input type="number" id="cargo_paudit" placeholder="e.g. 6669" class="w-full pl-5 pr-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono-num text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none transition">
+              </div>
+            </div>
+          </div>
+
+          <!-- Results Pill on the Right -->
+          <div class="flex items-center gap-3 border-t md:border-t-0 md:border-l border-slate-800 pt-2 md:pt-0 md:pl-4 min-w-[210px] justify-between">
+            <div>
+              <div class="text-[10px] text-slate-400 uppercase">Offer (C): <span class="font-mono-num font-bold text-white" id="cargo_card_c">—</span></div>
+              <div class="text-[10px] text-emerald-400 font-mono-num" id="cargo_card_deltap">—</div>
+            </div>
+            <div class="text-right">
+              <span class="text-[9px] uppercase font-semibold text-slate-400 block">Target Price</span>
+              <div class="flex items-center gap-1.5">
+                <span class="font-mono-num font-bold text-purple-300 text-sm" id="cargo_card_target">$—</span>
+                <button onclick="copyTargetPrice('cargo')" id="copy_btn_cargo_strip" type="button" title="Copy Target Price" class="p-1 rounded bg-slate-800 hover:bg-purple-600 text-slate-300 hover:text-white transition">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Real-Time Results Table -->
+    <section class="glass-panel rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
+      <div class="px-5 py-4 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="font-bold text-white text-base flex items-center gap-2">
+            <span>Route Results & Zero-Out Pricing</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              Live Real-Time
+            </span>
+          </h2>
+          <p class="text-xs text-slate-400">In-game whole dollar target prices with one-click copy</p>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="border-b border-slate-800 text-xs font-semibold uppercase tracking-wider text-slate-400 bg-slate-900/60">
+              <th scope="col" class="py-3.5 px-4 sm:px-6">Class</th>
+              <th scope="col" class="py-3.5 px-3 text-right">Audit Price (P<sub>audit</sub>)</th>
+              <th scope="col" class="py-3.5 px-3 text-right">Sim Demand (D<sub>sim</sub>)</th>
+              <th scope="col" class="py-3.5 px-3 text-right">Offer (C)</th>
+              <th scope="col" class="py-3.5 px-3 text-right">Remaining (R)</th>
+              <th scope="col" class="py-3.5 px-4 text-right">Target Price (P<sub>target</sub>)</th>
+              <th scope="col" class="py-3.5 px-3 text-right">Price Change (Δ P)</th>
+              <th scope="col" class="py-3.5 px-4 text-right">Daily Impact (Δ Rev)</th>
+              <th scope="col" class="py-3.5 px-4 text-center">Copy</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60 font-mono-num">
+            
+            <!-- Row: Economy -->
+            <tr id="row_eco" class="hover:bg-slate-800/30 transition">
+              <td class="py-3.5 px-4 sm:px-6 font-sans">
+                <div class="flex items-center gap-2 font-medium text-white">
+                  <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+                  <span>Economy (Y)</span>
+                </div>
+              </td>
+              <td class="py-3.5 px-3 text-right text-slate-300" id="table_eco_paudit">—</td>
+              <td class="py-3.5 px-3 text-right text-slate-300" id="table_eco_dsim">—</td>
+              <td class="py-3.5 px-3 text-right font-medium text-white" id="table_eco_c">—</td>
+              <td class="py-3.5 px-3 text-right text-cyan-400 font-semibold" id="table_eco_r">—</td>
+              <td class="py-3.5 px-4 text-right">
+                <div class="font-bold text-base text-cyan-300" id="table_eco_target">—</div>
+                <div class="text-[10px] text-slate-500 font-normal" id="table_eco_exact"></div>
+              </td>
+              <td class="py-3.5 px-3 text-right" id="table_eco_delta_p">—</td>
+              <td class="py-3.5 px-4 text-right" id="table_eco_delta_rev">—</td>
+              <td class="py-3.5 px-4 text-center font-sans">
+                <button onclick="copyTargetPrice('eco')" id="copy_btn_eco" type="button" title="Copy Target Price to Clipboard" class="p-1.5 rounded-lg bg-slate-800 hover:bg-cyan-600 text-slate-300 hover:text-white transition disabled:opacity-30 disabled:pointer-events-none">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+
+            <!-- Row: Business -->
+            <tr id="row_bus" class="hover:bg-slate-800/30 transition">
+              <td class="py-3.5 px-4 sm:px-6 font-sans">
+                <div class="flex items-center gap-2 font-medium text-white">
+                  <span class="w-2.5 h-2.5 rounded-full bg-blue-400"></span>
+                  <span>Business (J)</span>
+                </div>
+              </td>
+              <td class="py-3.5 px-3 text-right text-slate-300" id="table_bus_paudit">—</td>
+              <td class="py-3.5 px-3 text-right text-slate-300" id="table_bus_dsim">—</td>
+              <td class="py-3.5 px-3 text-right font-medium text-white" id="table_bus_c">—</td>
+              <td class="py-3.5 px-3 text-right text-blue-400 font-semibold" id="table_bus_r">—</td>
+              <td class="py-3.5 px-4 text-right">
+                <div class="font-bold text-base text-blue-300" id="table_bus_target">—</div>
+                <div class="text-[10px] text-slate-500 font-normal" id="table_bus_exact"></div>
+              </td>
+              <td class="py-3.5 px-3 text-right" id="table_bus_delta_p">—</td>
+              <td class="py-3.5 px-4 text-right" id="table_bus_delta_rev">—</td>
+              <td class="py-3.5 px-4 text-center font-sans">
+                <button onclick="copyTargetPrice('bus')" id="copy_btn_bus" type="button" title="Copy Target Price to Clipboard" class="p-1.5 rounded-lg bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white transition disabled:opacity-30 disabled:pointer-events-none">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+
+            <!-- Row: First Class -->
+            <tr id="row_first" class="hover:bg-slate-800/30 transition">
+              <td class="py-3.5 px-4 sm:px-6 font-sans">
+                <div class="flex items-center gap-2 font-medium text-white">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                  <span>First Class (F)</span>
+                </div>
+              </td>
+              <td class="py-3.5 px-3 text-right text-slate-300" id="table_first_paudit">—</td>
+              <td class="py-3.5 px-3 text-right text-slate-300" id="table_first_dsim">—</td>
+              <td class="py-3.5 px-3 text-right font-medium text-white" id="table_first_c">—</td>
+              <td class="py-3.5 px-3 text-right text-amber-400 font-semibold" id="table_first_r">—</td>
+              <td class="py-3.5 px-4 text-right">
+                <div class="font-bold text-base text-amber-300" id="table_first_target">—</div>
+                <div class="text-[10px] text-slate-500 font-normal" id="table_first_exact"></div>
+              </td>
+              <td class="py-3.5 px-3 text-right" id="table_first_delta_p">—</td>
+              <td class="py-3.5 px-4 text-right" id="table_first_delta_rev">—</td>
+              <td class="py-3.5 px-4 text-center font-sans">
+                <button onclick="copyTargetPrice('first')" id="copy_btn_first" type="button" title="Copy Target Price to Clipboard" class="p-1.5 rounded-lg bg-slate-800 hover:bg-amber-600 text-slate-300 hover:text-white transition disabled:opacity-30 disabled:pointer-events-none">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+
+            <!-- Row: Cargo -->
+            <tr id="row_cargo" class="hover:bg-slate-800/30 transition">
+              <td class="py-3.5 px-4 sm:px-6 font-sans">
+                <div class="flex items-center gap-2 font-medium text-white">
+                  <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
+                  <span>Cargo (C)</span>
+                </div>
+              </td>
+              <td class="py-3.5 px-3 text-right text-slate-300" id="table_cargo_paudit">—</td>
+              <td class="py-3.5 px-3 text-right text-slate-300" id="table_cargo_dsim">—</td>
+              <td class="py-3.5 px-3 text-right font-medium text-white" id="table_cargo_c">—</td>
+              <td class="py-3.5 px-3 text-right text-purple-400 font-semibold" id="table_cargo_r">—</td>
+              <td class="py-3.5 px-4 text-right">
+                <div class="font-bold text-base text-purple-300" id="table_cargo_target">—</div>
+                <div class="text-[10px] text-slate-500 font-normal" id="table_cargo_exact"></div>
+              </td>
+              <td class="py-3.5 px-3 text-right" id="table_cargo_delta_p">—</td>
+              <td class="py-3.5 px-4 text-right" id="table_cargo_delta_rev">—</td>
+              <td class="py-3.5 px-4 text-center font-sans">
+                <button onclick="copyTargetPrice('cargo')" id="copy_btn_cargo" type="button" title="Copy Target Price to Clipboard" class="p-1.5 rounded-lg bg-slate-800 hover:bg-purple-600 text-slate-300 hover:text-white transition disabled:opacity-30 disabled:pointer-events-none">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Formula & Mechanics Guide Section -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      
+      <!-- Mathematical Formula Card -->
+      <div class="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-800/80 space-y-3">
+        <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+          </svg>
+          <span>Mathematical Formulation</span>
+        </h3>
+        <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 font-mono-num text-xs space-y-2 text-slate-300">
+          <div><span class="text-slate-500 font-sans">Scheduled Offer:</span> <span class="text-cyan-300 font-bold">C = D<sub>sim</sub> − R</span></div>
+          <div><span class="text-slate-500 font-sans">Target Zero-Out Price:</span></div>
+          <div class="pl-3 border-l-2 border-cyan-500/50 py-1 text-white font-semibold">
+            P<sub>target</sub> = P<sub>audit</sub> + &frac13; &sdot; P<sub>audit</sub> &sdot; (1 − C / D<sub>sim</sub>)
+          </div>
+          <div class="text-[11px] text-slate-400 pt-1">
+            &equiv; P<sub>audit</sub> &sdot; (1 + &frac13; &sdot; R / D<sub>sim</sub>)
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          In Airlines Manager Tycoon, price elasticity is approximately 3: every 1% price increase reduces passenger demand by ~3%. Therefore, multiplying remaining ratio <span class="font-mono-num text-cyan-300">R / D<sub>sim</sub></span> by <sup>1</sup>/<sub>3</sub> perfectly zeroes out unsatisfied demand.
+        </p>
+      </div>
+
+      <!-- In-Game Usage Tips -->
+      <div class="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-800/80 space-y-3">
+        <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          <span>Airlines Manager Pro Tips</span>
+        </h3>
+        <ul class="text-xs text-slate-300 space-y-2.5 list-disc list-inside">
+          <li>
+            <strong class="text-white">Whole Dollars:</strong> In-game ticket prices are integer amounts. The calculator automatically rounds <span class="font-mono-num text-amber-300">P<sub>target</sub></span> so you can paste it directly into your route pricing screen.
+          </li>
+          <li>
+            <strong class="text-white">Negative Remaining Demand:</strong> If <span class="font-mono-num text-cyan-300">R &lt; 0</span> (meaning you over-scheduled aircraft capacity), the price will automatically decrease to stimulate demand and fill all seats.
+          </li>
+          <li>
+            <strong class="text-white">Zero Leftover:</strong> When <span class="font-mono-num text-cyan-300">R = 0</span>, <span class="font-mono-num text-amber-300">P<sub>target</sub> = P<sub>audit</sub></span> since your current schedule exactly satisfies demand.
+          </li>
+        </ul>
+      </div>
+
+    </section>
+    </div><!-- End of #view_zero_out -->
+
+    <!-- Seat Configurator View -->
+    <div id="view_seat_config" class="space-y-6 hidden">
+
+      <!-- Section 1: Unified Seat Configurator Control & Summary Card -->
+      <section class="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-xl space-y-4 relative z-30">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-slate-800/80">
+          <div>
+            <h2 class="text-base font-bold text-white tracking-tight flex items-center gap-2 flex-wrap">
+              <span>Circuit Seat Configurator</span>
+              <span id="circuit_type_header_badge" class="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Multi-Route Circuit</span>
+              <!-- Active Loaded Circuit Indicator -->
+              <span id="active_circuit_indicator" class="hidden text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-800/70 font-medium items-center gap-1 shadow-sm">
+                <svg class="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span>Active: <span id="active_circuit_name">Custom Circuit</span></span>
+              </span>
+            </h2>
+            <p class="text-xs text-slate-400">Configure aircraft fleet seating to satisfy multi-route 24h or 168h circuit demand with maximum profit and zero passenger seat waste.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Save Circuit Action -->
+            <button onclick="openSaveCircuitModal()" type="button" class="px-2.5 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 hover:text-emerald-200 font-semibold text-xs border border-emerald-700/60 transition flex items-center gap-1.5 shadow-sm" title="Save current circuit, routes, demand, and prices into library">
+              <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+              </svg>
+              <span>Save Circuit</span>
+            </button>
+
+            <!-- Saved Circuits Manager Modal Trigger -->
+            <button onclick="openSavedCircuitsModal()" type="button" class="px-2.5 py-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 hover:text-cyan-200 font-semibold text-xs border border-cyan-700/60 transition flex items-center gap-1.5 shadow-sm" title="Open saved circuits manager">
+              <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+              </svg>
+              <span>Saved Circuits</span>
+              <span id="saved_circuits_count_badge" class="px-1.5 py-0.2 bg-cyan-500 text-slate-950 rounded-full font-bold text-[10px] font-mono-num">0</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Row: Fixed Hub & Aircraft Selection & Circuit Status -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+          <!-- Fixed Hub (3 cols on lg) -->
+          <div class="md:col-span-6 lg:col-span-3 min-w-0 space-y-1.5">
+            <label class="block text-xs font-semibold text-slate-300 truncate">Circuit Hub (Fixed Departure)</label>
+            <div class="relative">
+              <input type="text" id="sc_circuit_hub" list="airports_datalist" placeholder="e.g. OSL or DWC" value="OSL" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs uppercase font-mono-num focus:ring-2 focus:ring-cyan-500 focus:outline-none" oninput="onCircuitHubChange()">
+            </div>
+            <div id="sc_hub_info" class="text-[11px] text-cyan-400 truncate">Oslo Gardermoen, Norway (Cat. 9)</div>
+          </div>
+
+          <!-- Aircraft Model Selection (5 cols on lg) -->
+          <div class="md:col-span-6 lg:col-span-5 min-w-0 space-y-1.5 relative z-40" id="sc_aircraft_combobox_root">
+            <div class="flex items-center justify-between gap-1">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <label class="block text-xs font-semibold text-slate-300 truncate">Aircraft Model</label>
+                <span id="sc_aircraft_type_badge" class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700 shrink-0">Medium-Haul</span>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <span id="sc_aircraft_price_badge" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono font-bold">$97.0M</span>
+                <span id="sc_aircraft_category_badge" class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">Cat. 4</span>
+              </div>
+            </div>
+
+            <!-- Combobox Row -->
+            <div class="flex items-center gap-1.5 relative" id="sc_combobox_row">
+              <button type="button" id="sc_combobox_trigger" onclick="toggleAircraftCombobox()" class="flex-1 min-w-0 px-3 py-2 bg-slate-900 border border-slate-700 hover:border-cyan-500 rounded-lg text-white text-xs flex items-center justify-between group transition-colors focus:ring-2 focus:ring-cyan-500 focus:outline-none text-left">
+                <div class="flex items-center gap-1.5 min-w-0 truncate">
+                  <span id="sc_trigger_plane_name" class="font-bold text-white group-hover:text-cyan-300 transition-colors shrink-0">A320-200</span>
+                  <span id="sc_trigger_plane_details" class="text-[11px] text-slate-400 truncate">(180 seats • 828 km/h • 6,150 km)</span>
+                </div>
+                <svg class="w-4 h-4 text-slate-400 group-hover:text-cyan-400 shrink-0 ml-1.5 transition-transform" id="sc_combobox_chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+
+              <button type="button" onclick="openAircraftModal()" class="px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 hover:bg-cyan-950 text-cyan-400 hover:text-cyan-200 transition-colors text-xs font-semibold flex items-center gap-1.5 shrink-0 whitespace-nowrap shadow-sm" title="Browse full aircraft fleet catalog & comparator">
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                </svg>
+                <span>Browse</span>
+              </button>
+
+              <!-- Compare Aircraft Toggle Button -->
+              <button type="button" id="sc_btn_compare_aircraft" onclick="toggleSeatConfigComparator()" class="px-2.5 py-2 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-700/60 hover:border-cyan-400 text-cyan-300 hover:text-white transition-colors text-xs font-semibold flex items-center gap-1.5 shrink-0 whitespace-nowrap shadow-sm" title="Compare aircraft side-by-side on this circuit">
+                <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
+                </svg>
+                <span id="sc_compare_btn_label">Compare</span>
+                <span id="sc_compare_btn_badge" class="px-1.5 py-0.2 rounded-full bg-cyan-500 text-slate-950 font-bold text-[10px]">3</span>
+              </button>
+
+              <!-- Floating Searchable Combobox Popover Panel -->
+              <div id="sc_combobox_popover" class="hidden absolute top-full mt-1.5 left-0 right-0 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[260px]">
+                <div class="p-2 border-b border-slate-800 space-y-1.5 bg-slate-950/95 shrink-0">
+                  <div class="relative">
+                    <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <input type="text" id="sc_combobox_search" placeholder="Search aircraft (e.g. 777, A350, neo)..." class="w-full pl-8 pr-7 py-1 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none" oninput="renderAircraftComboboxList()">
+                    <button type="button" onclick="clearAircraftComboboxSearch()" id="sc_combobox_clear_btn" class="hidden absolute right-2.5 top-1.5 text-slate-400 hover:text-white text-xs">&times;</button>
+                  </div>
+                  <div class="flex items-center justify-between gap-1 flex-wrap text-[10px]">
+                    <div class="flex items-center gap-1">
+                      <button type="button" onclick="setComboboxHaul('all')" class="cb-haul-btn px-2 py-0.5 rounded bg-cyan-600 text-white font-medium" data-val="all">All</button>
+                      <button type="button" onclick="setComboboxHaul('Long-Haul')" class="cb-haul-btn px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium" data-val="Long-Haul">Long</button>
+                      <button type="button" onclick="setComboboxHaul('Medium-Haul')" class="cb-haul-btn px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium" data-val="Medium-Haul">Med</button>
+                      <button type="button" onclick="setComboboxHaul('Short-Haul')" class="cb-haul-btn px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium" data-val="Short-Haul">Short</button>
+                    </div>
+                    <label class="flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer hover:text-slate-200">
+                      <input type="checkbox" id="sc_combobox_range_only" onchange="renderAircraftComboboxList()" class="rounded bg-slate-800 border-slate-700 text-cyan-600 focus:ring-0">
+                      <span>In-Range</span>
+                    </label>
+                  </div>
+                </div>
+                <div id="sc_combobox_list" class="overflow-y-auto flex-1 min-h-0 max-h-[160px] divide-y divide-slate-800/50"></div>
+                <div class="px-3 py-1.5 bg-slate-950 border-t border-slate-800 text-[10px] text-slate-400 flex items-center justify-between shrink-0">
+                  <span id="sc_combobox_match_count">Showing aircraft</span>
+                  <button type="button" onclick="closeAircraftCombobox(); openAircraftModal();" class="text-cyan-400 hover:text-cyan-300 hover:underline font-semibold flex items-center gap-1">
+                    <span>Full Catalog &rarr;</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <select id="sc_aircraft_select" class="hidden" onchange="onAircraftSelectChange()"></select>
+            <div id="sc_aircraft_specs_summary" class="text-[11px] text-slate-400 truncate">Speed: — | Range: — | Seats: — | Payload: — | Price: —</div>
+          </div>
+
+          <!-- Circuit Status Summary (4 cols on lg) -->
+          <div class="md:col-span-12 lg:col-span-4 min-w-0 space-y-1.5">
+            <label class="block text-xs font-semibold text-slate-300">Circuit Status & Fleet Size</label>
+            <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 grid grid-cols-3 gap-2 text-center">
+              <div>
+                <div class="text-[10px] uppercase tracking-wider text-slate-400">Circuit Type</div>
+                <div id="circuit_stat_type" class="text-xs font-bold text-cyan-300 font-mono">Empty</div>
+              </div>
+              <div>
+                <div class="text-[10px] uppercase tracking-wider text-slate-400">Total Duration</div>
+                <div id="circuit_stat_duration" class="text-xs font-bold text-white font-mono-num">0h 00m</div>
+              </div>
+              <div>
+                <div class="text-[10px] uppercase tracking-wider text-slate-400">Total Fleet</div>
+                <div id="circuit_stat_fleet_size" class="text-xs font-bold text-emerald-400 font-mono-num">0 planes</div>
+              </div>
+            </div>
+            <div id="circuit_range_warning" class="text-[11px] text-slate-400 truncate">Add routes from this hub to form a circuit</div>
+          </div>
+        </div>
+
+        <!-- Collapsible Side-by-Side Aircraft Comparator Panel (Pops Up Underneath) -->
+        <div id="sc_aircraft_comparator_panel" class="hidden pt-4 border-t border-slate-800/80 space-y-3">
+          <div class="flex items-center justify-between pb-1">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-cyan-950 border border-cyan-800 text-cyan-400 flex items-center justify-center text-xs shadow-inner">⚖️</span>
+              <div>
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <span>Fleet Aircraft Comparator (Top 3 Alternative Aircraft)</span>
+                  <span class="text-[9px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">Auto-Optimized</span>
+                </h3>
+                <p class="text-[11px] text-slate-400">Automatically evaluates all compatible aircraft on the active circuit, showing the 3 best alternative planes aside from your chosen aircraft.</p>
+              </div>
+            </div>
+            <button type="button" onclick="toggleSeatConfigComparator()" class="text-xs text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 transition">
+              ✕ Hide Comparator
+            </button>
+          </div>
+
+          <!-- Comparator Container (Baseline Bar + 3 Best Alternatives Grid) -->
+          <div id="sc_comparator_cards_grid" class="space-y-3">
+            <!-- Dynamically populated by renderSeatConfigComparator() in app.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: Add Route to Circuit Form (Moved ON TOP of visualization) -->
+      <section class="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-700/80 shadow-xl space-y-4 relative z-20">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800/60">
+          <div>
+            <h3 class="text-sm font-bold text-white tracking-tight flex items-center gap-2">
+              <span id="sc_leg_form_title">➕ Add Route to Circuit</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800" id="sc_form_hub_badge">From OSL</span>
+            </h3>
+            <p class="text-xs text-slate-400">Enter a destination and its daily demand. Flights depart from the circuit hub.</p>
+          </div>
+          <input type="hidden" id="sc_editing_leg_id" value="">
+        </div>
+
+        <!-- Destination & Distance & Duration -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+          <!-- Destination Airport (4 cols) -->
+          <div class="md:col-span-6 lg:col-span-4 min-w-0 space-y-1.5">
+            <label class="block text-xs font-semibold text-slate-300 truncate">Destination Airport</label>
+            <div class="relative">
+              <input type="text" id="sc_leg_dst" list="airports_datalist" placeholder="e.g. AMS, LHR, GRU" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs uppercase font-mono-num focus:ring-2 focus:ring-cyan-500 focus:outline-none" oninput="onLegDestinationChange()">
+            </div>
+            <div id="sc_leg_dst_info" class="text-[11px] text-slate-400 truncate">Select destination airport</div>
+          </div>
+
+          <!-- Distance (4 cols) -->
+          <div class="md:col-span-6 lg:col-span-4 min-w-0 space-y-1.5">
+            <div class="flex items-center justify-between gap-1">
+              <label class="block text-xs font-semibold text-slate-300 truncate">Distance (km)</label>
+              <label class="flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer shrink-0">
+                <input type="checkbox" id="sc_leg_dist_override" onchange="toggleLegDistanceOverride()" class="rounded bg-slate-800 border-slate-700 text-cyan-600 focus:ring-0">
+                <span>Manual</span>
+              </label>
+            </div>
+            <input type="number" id="sc_leg_dist_km" placeholder="0" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs font-mono-num focus:ring-2 focus:ring-cyan-500 focus:outline-none" oninput="onLegDistanceChange()" readonly>
+            <div id="sc_leg_range_status" class="text-[11px] text-slate-400 truncate">Enter route destination</div>
+          </div>
+
+          <!-- Round-Trip Flight Duration (4 cols) -->
+          <div class="md:col-span-12 lg:col-span-4 min-w-0 space-y-1.5">
+            <div class="flex items-center justify-between gap-1">
+              <label class="block text-xs font-semibold text-slate-300 truncate">Round-Trip Duration</label>
+              <span class="text-[10px] text-slate-400 font-mono" id="sc_leg_speed_ref">@ 828 km/h</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="relative">
+                <input type="number" id="sc_leg_dur_hours" min="0" max="72" placeholder="0" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs font-mono-num focus:ring-2 focus:ring-cyan-500 focus:outline-none pr-7" oninput="onLegDurationManualChange()">
+                <span class="absolute right-2.5 top-2 text-[10px] text-slate-400 font-mono">hrs</span>
+              </div>
+              <div class="relative">
+                <input type="number" id="sc_leg_dur_mins" min="0" max="59" step="15" placeholder="0" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs font-mono-num focus:ring-2 focus:ring-cyan-500 focus:outline-none pr-7" oninput="onLegDurationManualChange()">
+                <span class="absolute right-2.5 top-2 text-[10px] text-slate-400 font-mono">mins</span>
+              </div>
+            </div>
+            <div id="sc_leg_time_hint" class="text-[11px] text-slate-400 truncate">Auto-calculated: 2x (Dist/Speed + 1h ground)</div>
+          </div>
+        </div>
+
+        <!-- Demand & Prices -->
+        <div class="pt-1">
+          <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <div class="flex items-center gap-2.5 flex-wrap">
+              <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <span>Audited Daily Demand & Ticket Prices</span>
+              </h4>
+              <!-- Demand Basis Toggle (Audited D vs Remaining R) -->
+              <div id="sc_audit_basis_toggle_group" class="hidden items-center bg-slate-900 border border-slate-700 rounded-lg p-0.5 text-xs shadow-inner">
+                <span class="text-[10px] text-slate-400 font-medium px-1.5 hidden sm:inline">Basis:</span>
+                <button type="button" id="sc_basis_btn_audited" onclick="setLegDemandBasis('audited')" class="px-2 py-0.5 rounded font-semibold text-[11px] transition bg-cyan-600 text-white" title="Apply full audited demand (D)">
+                  📊 Audited (D)
+                </button>
+                <button type="button" id="sc_basis_btn_remaining" onclick="setLegDemandBasis('remaining')" class="px-2 py-0.5 rounded font-semibold text-[11px] transition text-slate-400 hover:text-white" title="Apply leftover remaining demand (R)">
+                  🎯 Remaining (R)
+                </button>
+              </div>
+            </div>
+            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+              <input type="checkbox" id="sc_leg_cargo_enabled" checked onchange="toggleLegCargo()" class="rounded bg-slate-900 border-slate-700 text-cyan-600 focus:ring-0">
+              <span>Include Cargo Demand</span>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <!-- Eco Input -->
+            <div class="glass-card p-3 rounded-xl border border-cyan-500/20 bg-cyan-950/10 space-y-2">
+              <div class="flex items-center justify-between text-xs font-semibold text-cyan-400">
+                <span class="flex items-center gap-1.5">💺 Economy (Y)</span>
+                <span class="text-[10px] px-1 rounded bg-cyan-900/50 text-cyan-300">1 space • 0.10T</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] text-slate-400 block mb-0.5">Audit Price ($)</label>
+                  <input type="number" id="sc_leg_price_eco" placeholder="e.g. 2390" class="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded text-xs text-white font-mono-num">
+                </div>
+                <div>
+                  <label class="text-[10px] text-slate-400 block mb-0.5">Daily Demand</label>
+                  <input type="number" id="sc_leg_demand_eco" placeholder="e.g. 1400" class="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded text-xs text-white font-mono-num">
+                </div>
+              </div>
+            </div>
+
+            <!-- Business Input -->
+            <div class="glass-card p-3 rounded-xl border border-blue-500/20 bg-blue-950/10 space-y-2">
+              <div class="flex items-center justify-between text-xs font-semibold text-blue-400">
+                <span class="flex items-center gap-1.5">💼 Business (J)</span>
+                <span class="text-[10px] px-1 rounded bg-blue-900/50 text-blue-300">1.8 spaces • 0.125T</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] text-slate-400 block mb-0.5">Audit Price ($)</label>
+                  <input type="number" id="sc_leg_price_bus" placeholder="e.g. 3178" class="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded text-xs text-white font-mono-num">
+                </div>
+                <div>
+                  <label class="text-[10px] text-slate-400 block mb-0.5">Daily Demand</label>
+                  <input type="number" id="sc_leg_demand_bus" placeholder="e.g. 360" class="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded text-xs text-white font-mono-num">
+                </div>
+              </div>
+            </div>
+
+            <!-- First Input -->
+            <div class="glass-card p-3 rounded-xl border border-amber-500/20 bg-amber-950/10 space-y-2">
+              <div class="flex items-center justify-between text-xs font-semibold text-amber-400">
+                <span class="flex items-center gap-1.5">👑 First Class (F)</span>
+                <span class="text-[10px] px-1 rounded bg-amber-900/50 text-amber-300">4.2 spaces • 0.15T</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] text-slate-400 block mb-0.5">Audit Price ($)</label>
+                  <input type="number" id="sc_leg_price_first" placeholder="e.g. 4820" class="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded text-xs text-white font-mono-num">
+                </div>
+                <div>
+                  <label class="text-[10px] text-slate-400 block mb-0.5">Daily Demand</label>
+                  <input type="number" id="sc_leg_demand_first" placeholder="e.g. 75" class="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded text-xs text-white font-mono-num">
+                </div>
+              </div>
+            </div>
+
+            <!-- Cargo Input -->
+            <div id="sc_leg_cargo_container" class="glass-card p-3 rounded-xl border border-emerald-500/20 bg-emerald-950/10 space-y-2">
+              <div class="flex items-center justify-between text-xs font-semibold text-emerald-400">
+                <span class="flex items-center gap-1.5">📦 Cargo (Tons)</span>
+                <span class="text-[10px] px-1 rounded bg-emerald-900/50 text-emerald-300">Belly Cargo • 1.0T</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] text-slate-400 block mb-0.5">Audit Price ($/T)</label>
+                  <input type="number" id="sc_leg_price_cargo" placeholder="e.g. 12500" class="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded text-xs text-white font-mono-num">
+                </div>
+                <div>
+                  <label class="text-[10px] text-slate-400 block mb-0.5">Daily Demand (T)</label>
+                  <input type="number" id="sc_leg_demand_cargo" placeholder="e.g. 20" class="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded text-xs text-white font-mono-num">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add / Update Leg Button -->
+        <div class="flex items-center justify-end gap-2.5 pt-1">
+          <button id="sc_cancel_edit_btn" onclick="cancelLegEdit()" type="button" class="hidden px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition">
+            Cancel Edit
+          </button>
+          <button id="sc_clear_form_btn" onclick="clearLegForm()" type="button" class="px-3.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white font-semibold text-xs border border-slate-700 hover:border-slate-600 transition flex items-center gap-1.5 shadow-sm" title="Clear all route form fields">
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            <span>Clear Fields</span>
+          </button>
+          <button id="sc_add_leg_btn" onclick="addOrUpdateLeg()" type="button" class="px-5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm border border-cyan-500/50 transition shadow-md shadow-cyan-500/10 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            <span id="sc_add_leg_btn_label">Add Route to Circuit</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Section 3: Draggable Circuit Routes Sequence List -->
+      <section class="space-y-3 relative z-10">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <h3 class="text-sm font-bold text-white tracking-tight flex items-center gap-2">
+              <span>🗺️ Circuit Routes Sequence</span>
+            </h3>
+            <span id="circuit_legs_count_badge" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-mono-num">0 routes</span>
+            <span class="text-[11px] text-slate-400 hidden sm:inline">(Drag handle <span class="font-mono text-cyan-400">⋮⋮</span> to reorder rotation sequence)</span>
+          </div>
+          <button onclick="clearAllLegs()" type="button" class="px-3 py-1.5 text-xs rounded-lg bg-rose-950/60 hover:bg-rose-900/80 text-rose-400 hover:text-rose-200 border border-rose-800/50 transition font-semibold flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            Clear Circuit
+          </button>
+        </div>
+
+        <div id="sc_circuit_table_container" class="space-y-2">
+          <!-- Rendered dynamically by renderCircuitTable() with draggable rows -->
+        </div>
+      </section>
+
+      <!-- Section 4: In-Game Style Visual Timeline Schedule (Collapsible Dropdown Box) -->
+      <section class="glass-panel rounded-2xl border border-slate-800 shadow-xl overflow-hidden relative z-20" id="circuit_schedule_section">
+        <!-- Schedule Dropdown Header Button -->
+        <button type="button" onclick="toggleScheduleDropdown()" class="w-full px-4 py-3.5 bg-slate-900/90 hover:bg-slate-800/80 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left focus:outline-none group">
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <span class="w-7 h-7 rounded-lg bg-cyan-950/80 border border-cyan-800/60 text-cyan-400 flex items-center justify-center text-xs shadow-inner">
+              📅
+            </span>
+            <div>
+              <div class="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
+                <span>In-Game Circuit Schedule Timeline</span>
+                <span id="sched_header_type_badge" class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-semibold">
+                  Detecting...
+                </span>
+              </div>
+              <div class="text-[11px] text-slate-400 font-mono-num mt-0.5" id="sched_header_aircraft_info">
+                Visual flight rotation across the 24h day or 168h week
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 self-end sm:self-center font-mono-num text-xs shrink-0">
+            <span id="sched_header_utilization" class="text-slate-300 text-[11px] hidden sm:inline">
+              Used: <strong class="text-white" id="sched_time_used">0h 00m</strong> / <span id="sched_time_target">24h</span>
+            </span>
+            <span id="sched_header_remaining" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+              Free: 24h 00m
+            </span>
+            <div class="flex items-center gap-1 text-cyan-400 text-xs font-mono group-hover:text-cyan-300">
+              <span id="sched_dropdown_btn_text">Collapse</span>
+              <svg id="sched_dropdown_chevron" class="w-3.5 h-3.5 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        </button>
+
+        <!-- Schedule Dropdown Body -->
+        <div id="circuit_schedule_body" class="border-t border-slate-800/80">
+          <div class="p-3 sm:p-4 overflow-x-auto bg-slate-950/90">
+            <div class="min-w-[760px] space-y-1 select-none">
+              <!-- Timeline Hours Header (12AM to 11PM) -->
+              <div class="grid grid-cols-25 gap-0 text-[10px] font-mono text-slate-400 pb-1 border-b border-slate-800/80 items-center">
+                <div class="text-center font-semibold text-slate-500">Day</div>
+                <div class="col-span-24 grid grid-cols-24 text-center">
+                  <span>12<span class="text-[8px] text-slate-500">AM</span></span>
+                  <span>01</span><span>02</span><span>03</span><span>04</span><span>05</span>
+                  <span>06</span><span>07</span><span>08</span><span>09</span><span>10</span><span>11</span>
+                  <span>12<span class="text-[8px] text-slate-500">PM</span></span>
+                  <span>01</span><span>02</span><span>03</span><span>04</span><span>05</span>
+                  <span>06</span><span>07</span><span>08</span><span>09</span><span>10</span><span>11</span>
+                </div>
+              </div>
+
+              <!-- Days Rows (Mon to Sun) -->
+              <div id="circuit_timeline_days_container" class="space-y-1.5 pt-1">
+                <!-- Dynamically populated rows Mon-Sun via renderCircuitSchedule() -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Schedule Footer Legend -->
+          <div id="circuit_schedule_legend" class="px-4 py-2 border-t border-slate-800/80 bg-slate-950 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+            <div class="flex items-center gap-3 flex-wrap" id="circuit_legend_routes"></div>
+            <div class="text-[10px] text-slate-500 font-mono">
+              Tip: Drag routes in the list above to rearrange their sequence in this rotation.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 5: Profit-Maximizing Fleet Configuration & Required Aircraft (Collapsible Dropdown) -->
+      <section class="glass-panel rounded-2xl border border-slate-800 shadow-xl overflow-hidden relative z-10" id="circuit_fleet_config_section">
+        <!-- Fleet Config Dropdown Header Button -->
+        <button type="button" onclick="toggleFleetConfigDropdown()" class="w-full px-4 py-3.5 bg-slate-900/90 hover:bg-slate-800/80 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left focus:outline-none group">
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <span class="w-7 h-7 rounded-lg bg-emerald-950/80 border border-emerald-800/60 text-emerald-400 flex items-center justify-center text-xs shadow-inner">
+              ✈️
+            </span>
+            <div>
+              <div class="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
+                <span>Optimal Fleet Configuration &amp; Required Aircraft</span>
+                <span id="circuit_strategy_badge" class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">💰 Profit Maximized • Balanced Demand</span>
+              </div>
+              <div class="text-[11px] text-slate-400 font-mono-num mt-0.5" id="circuit_strategy_desc">
+                Calculates optimal fleet size and seating to maximize circuit profit across all routes, balancing demand and converting excess payload to cargo.
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 self-end sm:self-center font-mono-num text-xs shrink-0">
+            <div id="sc_aircraft_cap_badge" class="text-xs text-slate-400 font-mono-num hidden sm:block">
+              Seats: <span class="text-white font-semibold" id="sc_badge_seats">—</span> | Payload: <span class="text-white font-semibold" id="sc_badge_payload">—</span> | Price: <span class="text-emerald-400 font-semibold" id="sc_badge_price">—</span>
+            </div>
+            <div class="flex items-center gap-1 text-cyan-400 text-xs font-mono group-hover:text-cyan-300">
+              <span id="fleet_config_dropdown_btn_text">Collapse</span>
+              <svg id="fleet_config_dropdown_chevron" class="w-3.5 h-3.5 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        </button>
+
+        <!-- Strategy Toggle Strip — always visible, outside the collapsible body -->
+        <div class="px-4 py-2.5 border-t border-slate-800/60 bg-slate-950/60 flex flex-wrap items-center gap-2.5">
+          <span class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold shrink-0">Strategy:</span>
+          <div class="flex items-center p-1 bg-slate-900 border border-slate-800 rounded-xl shadow-inner text-xs font-medium">
+            <button id="sc_strategy_btn_maxprofit" type="button" onclick="setCircuitStrategy('max_profit')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-emerald-950 text-emerald-300 border border-emerald-700 shadow-sm" title="Balances demand across all routes to maximize total circuit profit">
+              <span>💰 Max Profit</span>
+              <span class="hidden sm:inline text-[10px] opacity-75 font-normal">(Balanced)</span>
+            </button>
+            <button id="sc_strategy_btn_zeroempty" type="button" onclick="setCircuitStrategy('zero_empty')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200 border border-transparent" title="Strict bottleneck capping: limits fleet so zero empty passenger seats fly on any route">
+              <span>🛡️ Zero Empty Seats</span>
+              <span class="hidden sm:inline text-[10px] opacity-75 font-normal">(Bottleneck)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Fleet Config Dropdown Body -->
+        <div id="circuit_fleet_config_body" class="border-t border-slate-800/80 p-4 sm:p-5 space-y-4">
+          <!-- Single Active Configuration Plan View Container (With Stacked Aircraft Cards) -->
+          <div id="sc_active_plan_card" class="space-y-4">
+            <!-- Dynamically populated via renderActivePlanDetails() -->
+            <div class="glass-panel p-8 rounded-2xl border border-slate-800 text-center text-slate-400 text-xs">
+              Add routes to your circuit above to calculate optimal fleet configurations.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 6: Detailed Financial Overview (Collapsible Dropdown Box) -->
+      <section class="glass-panel rounded-2xl border border-slate-800 shadow-xl overflow-hidden relative z-10" id="circuit_financials_section">
+        <!-- Financial Overview Dropdown Header Button -->
+        <button type="button" onclick="toggleFinancialsDropdown()" class="w-full px-4 py-3.5 bg-slate-900/90 hover:bg-slate-800/80 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left focus:outline-none group">
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <span class="w-7 h-7 rounded-lg bg-emerald-950/80 border border-emerald-800/60 text-emerald-400 flex items-center justify-center text-xs shadow-inner">
+              💰
+            </span>
+            <div>
+              <div class="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
+                <span>Detailed Financial & Demand Overview</span>
+                <span id="sc_financials_header_badge" class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+                  Zero Empty PAX Seats ($0 Lost)
+                </span>
+              </div>
+              <div class="text-[11px] text-slate-400 font-mono-num mt-0.5">
+                Comprehensive turnover, yield analysis, and per-route balance
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 self-end sm:self-center font-mono-num text-xs shrink-0">
+            <div id="sc_financials_header_summary" class="flex items-center gap-3 text-slate-300 text-xs">
+              <!-- Dynamically populated turnover pills -->
+            </div>
+            <div class="flex items-center gap-1 text-cyan-400 text-xs font-mono group-hover:text-cyan-300">
+              <span id="financials_dropdown_btn_text">Show Details</span>
+              <svg id="financials_dropdown_chevron" class="w-3.5 h-3.5 transform transition-transform duration-200 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        </button>
+
+        <!-- Financial Overview Dropdown Body -->
+        <div id="circuit_financials_body" class="p-4 sm:p-5 border-t border-slate-800/80 space-y-4">
+          <!-- Dynamically populated with KPI cards and per-route breakdown table -->
+        </div>
+      </section>
+
+    </div><!-- End of #view_seat_config -->
+
+    <!-- Route Finder & Circuit Builder View -->
+    <div id="view_route_finder" class="space-y-6 hidden">
+<!-- Overview Banner -->
+    <section class="glass-panel rounded-2xl p-4 border border-cyan-800/40 bg-gradient-to-r from-cyan-950/30 via-slate-900/60 to-blue-950/30 shadow-xl">
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs font-bold uppercase tracking-wider text-cyan-400">ROUTE FINDER &amp; CIRCUIT BUILDER</span>
+            <span class="text-xs text-slate-300 font-semibold">Interactive Prototype:</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">Built-in Circuit Viewer</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed max-w-4xl">
+            Search 2,650 destinations from your hub, filter by continent, country, and exact 15-minute flight duration. Click <strong class="text-cyan-300">+ Add to Circuit</strong> to build your daily 24h or weekly 168h timetable, and save your circuit directly into your library!
+          </p>
+          <!-- Live Context Badges -->
+          <div class="flex items-center flex-wrap gap-2 pt-1 text-xs">
+            <div class="px-2.5 py-0.5 rounded-lg bg-slate-900 border border-slate-700 flex items-center gap-1.5">
+              <span class="text-slate-400">Hub:</span>
+              <span id="header_hub_badge" class="font-bold text-cyan-400 font-mono">OSL (Cat 10)</span>
+            </div>
+            <div class="px-2.5 py-0.5 rounded-lg bg-slate-900 border border-slate-700 flex items-center gap-1.5">
+              <span class="text-slate-400">Aircraft:</span>
+              <span id="header_ac_badge" class="font-bold text-cyan-400 font-mono">A320-200 (Cat 7)</span>
+            </div>
+            <div class="px-2.5 py-0.5 rounded-lg bg-slate-900 border border-slate-700 flex items-center gap-1.5">
+              <span class="text-slate-400">Circuit:</span>
+              <span id="header_circuit_count" class="font-bold text-cyan-400 font-mono">0 routes</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="rf_openSavedCircuitsModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold transition border border-slate-700 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+            <span>Saved Circuits (<span id="header_saved_circuits_count">0</span>)</span>
+          </button>
+          <button onclick="rf_resetAllFilters()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition border border-slate-700 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            Reset Filters
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Hub Compatibility Warning Banner (Conditional) -->
+    <div id="hub_cat_warning_banner" class="hidden p-4 rounded-xl bg-amber-950/40 border border-amber-500/50 text-amber-200 text-xs flex items-center gap-3 shadow-lg">
+      <svg class="w-5 h-5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+      <div>
+        <strong class="font-bold text-amber-300">Runway Category Warning:</strong>
+        <span id="hub_cat_warning_text">The selected hub runway category is lower than the aircraft category requirement.</span>
+      </div>
+    </div>
+
+    <!-- Search & Filter Controls Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+      <!-- Box 1: Aircraft Selection (Seat Config Combobox + Menu Combo with Details) -->
+      <div class="lg:col-span-4 glass-panel rounded-2xl p-4 border border-slate-800 shadow-xl space-y-3 relative z-30" id="ac_selector_container">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-800/80">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-cyan-900/60 text-cyan-400 border border-cyan-700 flex items-center justify-center text-xs font-bold font-mono">1</span>
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Aircraft Model</h3>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span id="rf_ac_header_cat_badge" class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">Cat 5</span>
+            <button onclick="rf_toggleAcDetails()" id="ac_details_toggle_btn" class="text-[11px] text-cyan-400 hover:text-cyan-300 transition underline decoration-dotted ml-1">Show Details</button>
+          </div>
+        </div>
+
+        <div class="space-y-2.5 text-xs">
+          <!-- Combobox + Browse Row -->
+          <div class="relative" id="rf_combobox_root">
+            <div class="flex items-center gap-1.5">
+              <!-- Combobox Trigger Button -->
+              <button type="button" id="rf_combobox_trigger" onclick="rf_toggleAircraftCombobox()" class="flex-1 min-w-0 px-3 py-2 bg-slate-900 border border-slate-700 hover:border-cyan-500 rounded-lg text-white text-xs flex items-center justify-between group transition-colors focus:ring-2 focus:ring-cyan-500 focus:outline-none text-left">
+                <div class="flex items-center gap-1.5 min-w-0 truncate">
+                  <span id="rf_trigger_ac_name" class="font-bold text-white group-hover:text-cyan-300 transition-colors shrink-0">A320-200</span>
+                  <span id="rf_trigger_ac_details" class="text-[11px] text-slate-400 truncate">(180 seats • 828 km/h • 6,111 km)</span>
+                </div>
+                <svg class="w-4 h-4 text-slate-400 group-hover:text-cyan-400 shrink-0 ml-1.5 transition-transform duration-200" id="rf_combobox_chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+
+              <!-- Browse Full Catalog Button -->
+              <button type="button" onclick="rf_openAircraftModal()" class="px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 hover:bg-cyan-950 text-cyan-400 hover:text-cyan-200 transition-colors text-xs font-semibold flex items-center gap-1.5 shrink-0 whitespace-nowrap shadow-sm" title="Browse full aircraft fleet catalog">
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                </svg>
+                <span>Browse</span>
+              </button>
+            </div>
+
+            <!-- Floating Searchable Combobox Popover Panel -->
+            <div id="rf_combobox_popover" class="hidden absolute top-full mt-1.5 left-0 right-0 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[300px]">
+              <div class="p-2 border-b border-slate-800 space-y-1.5 bg-slate-950/95 shrink-0">
+                <div class="relative">
+                  <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                  <input type="text" id="rf_combobox_search" placeholder="Search aircraft (e.g. 777, A350, neo)..." class="w-full pl-8 pr-7 py-1 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none" oninput="rf_renderAircraftComboboxList()">
+                  <button type="button" onclick="rf_clearAircraftComboboxSearch()" id="rf_combobox_clear_btn" class="hidden absolute right-2.5 top-1.5 text-slate-400 hover:text-white text-xs">&times;</button>
+                </div>
+                <div class="flex items-center justify-between gap-1 flex-wrap text-[10px]">
+                  <div class="flex items-center gap-1">
+                    <button type="button" onclick="rf_setComboboxHaul('all')" class="cb-haul-btn px-2 py-0.5 rounded bg-cyan-600 text-white font-medium" data-val="all">All</button>
+                    <button type="button" onclick="rf_setComboboxHaul('Long-Haul')" class="cb-haul-btn px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium" data-val="Long-Haul">Long</button>
+                    <button type="button" onclick="rf_setComboboxHaul('Medium-Haul')" class="cb-haul-btn px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium" data-val="Medium-Haul">Med</button>
+                    <button type="button" onclick="rf_setComboboxHaul('Short-Haul')" class="cb-haul-btn px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium" data-val="Short-Haul">Short</button>
+                  </div>
+                  <span id="rf_combobox_match_count" class="text-slate-400 text-[10px]">101 aircraft</span>
+                </div>
+              </div>
+
+              <!-- List of aircraft -->
+              <div id="rf_combobox_list" class="overflow-y-auto flex-1 min-h-0 max-h-[190px] divide-y divide-slate-800/50"></div>
+
+              <!-- Popover footer -->
+              <div class="px-3 py-1.5 bg-slate-950 border-t border-slate-800 text-[10px] text-slate-400 flex items-center justify-between shrink-0">
+                <span>Select to change active plane</span>
+                <button type="button" onclick="rf_closeAircraftCombobox(); rf_openAircraftModal();" class="text-cyan-400 hover:text-cyan-300 hover:underline font-semibold flex items-center gap-1">
+                  <span>Full Catalog &rarr;</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Aircraft Spec Summary Pills (Main Details Thingie) -->
+          <div id="rf_ac_spec_summary" class="grid grid-cols-2 gap-2 pt-1">
+            <div class="p-2 rounded-lg bg-slate-900/90 border border-slate-800">
+              <span class="text-[10px] text-slate-400 block uppercase">Max Range</span>
+              <span id="rf_ac_spec_range" class="text-xs font-bold text-white font-mono">6,111 km</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-900/90 border border-slate-800">
+              <span class="text-[10px] text-slate-400 block uppercase">Cruise Speed</span>
+              <span id="rf_ac_spec_speed" class="text-xs font-bold text-white font-mono">828 km/h</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-900/90 border border-slate-800">
+              <span class="text-[10px] text-slate-400 block uppercase">Min Category</span>
+              <span id="rf_ac_spec_cat" class="text-xs font-bold text-amber-400 font-mono">Cat 5</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-900/90 border border-slate-800">
+              <span class="text-[10px] text-slate-400 block uppercase">Total Seats</span>
+              <span id="rf_ac_spec_seats" class="text-xs font-bold text-cyan-400 font-mono">180 seats</span>
+            </div>
+          </div>
+
+          <!-- Expandable Full Aircraft Details (Show Details Thingie) -->
+          <div id="rf_ac_full_details" class="hidden p-2.5 rounded-lg bg-slate-950/70 border border-slate-800/80 space-y-1 text-[11px] text-slate-300">
+            <div class="flex justify-between"><span class="text-slate-400">Manufacturer:</span> <span id="rf_ac_det_make" class="font-medium text-white">Airbus</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Payload:</span> <span id="rf_ac_det_payload" class="font-mono">18.3 T</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Purchase Price:</span> <span id="rf_ac_det_price" class="font-mono">$91,500,000</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Fuel Consumption:</span> <span id="rf_ac_det_fuel" class="font-mono">2.39 L/100km</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Wear Rate:</span> <span id="rf_ac_det_wear" class="font-mono">2.5% / 100h</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Box 2: Departure Hub Selection -->
+      <div class="lg:col-span-4 glass-panel rounded-2xl p-4 border border-slate-800 shadow-xl space-y-3">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-800/80">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-cyan-900/60 text-cyan-400 border border-cyan-700 flex items-center justify-center text-xs font-bold font-mono">2</span>
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Departure Hub</h3>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="rf_setHubEntryMode('quick')" id="hub_mode_quick_btn" class="text-[10px] px-2 py-0.5 rounded font-semibold transition bg-cyan-950 text-cyan-400 border border-cyan-800">IATA Code</button>
+            <button onclick="rf_setHubEntryMode('search')" id="hub_mode_search_btn" class="text-[10px] px-2 py-0.5 rounded font-semibold transition text-slate-400 hover:text-slate-200 border border-transparent">Country</button>
+          </div>
+        </div>
+
+        <div class="space-y-2.5 text-xs">
+          <!-- Quick IATA Entry Mode -->
+          <div id="hub_entry_quick_container">
+            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Airport IATA Code</label>
+            <div class="relative">
+              <input type="text" id="rf_hub_iata_input" maxlength="3" value="OSL" placeholder="e.g. OSL, JFK, LHR" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono uppercase font-bold text-sm tracking-wider focus:ring-2 focus:ring-cyan-500 focus:outline-none" oninput="rf_onHubIataInput()">
+              <span id="rf_hub_valid_icon" class="absolute right-3 top-2.5 text-emerald-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              </span>
+            </div>
+          </div>
+
+          <!-- Country & Airport Select Mode -->
+          <div id="hub_entry_search_container" class="hidden space-y-2">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">Hub Country</label>
+              <select id="rf_hub_country_select" onchange="rf_onHubCountryChange()" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"></select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">Hub Airport</label>
+              <select id="rf_hub_airport_select" onchange="rf_onHubAirportSelectChange()" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"></select>
+            </div>
+          </div>
+
+          <!-- Hub Info Card -->
+          <div id="rf_hub_info_card" class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 space-y-1 text-[11px]">
+            <div class="flex items-center justify-between">
+              <span id="rf_hub_display_name" class="font-bold text-white truncate">Oslo Gardermoen</span>
+              <span id="rf_hub_display_cat" class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono font-bold text-[10px]">Cat 10</span>
+            </div>
+            <div class="flex items-center justify-between text-slate-400">
+              <span id="rf_hub_display_location">Norway &bull; 60.19°N, 11.10°E</span>
+              <span id="rf_hub_display_tax" class="text-slate-300 font-mono">$4,888 tax</span>
+            </div>
+          </div>
+
+          <!-- Quick Hub Chips -->
+          <div>
+            <span class="block text-[10px] text-slate-400 uppercase font-semibold mb-1">Quick Hubs:</span>
+            <div class="flex flex-wrap gap-1.5">
+              <button onclick="rf_setQuickHub('OSL')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 font-mono text-[11px] border border-slate-700">OSL</button>
+              <button onclick="rf_setQuickHub('LHR')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700">LHR</button>
+              <button onclick="rf_setQuickHub('CDG')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700">CDG</button>
+              <button onclick="rf_setQuickHub('JFK')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700">JFK</button>
+              <button onclick="rf_setQuickHub('DXB')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700">DXB</button>
+              <button onclick="rf_setQuickHub('SIN')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700">SIN</button>
+              <button onclick="rf_setQuickHub('HND')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700">HND</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Box 3: Criteria & Geographic Filters (Continent & Country) -->
+      <div class="lg:col-span-4 glass-panel rounded-2xl p-4 border border-slate-800 shadow-xl space-y-3">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-800/80">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-cyan-900/60 text-cyan-400 border border-cyan-700 flex items-center justify-center text-xs font-bold font-mono">3</span>
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Criteria &amp; Filters</h3>
+          </div>
+          <span class="text-[10px] text-slate-400 font-mono">Instant Filter</span>
+        </div>
+
+        <div class="space-y-3 text-xs">
+          <!-- Category Range -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[11px] font-semibold text-slate-300">Runway Category</label>
+              <span id="cat_filter_hint" class="text-[10px] text-cyan-400 font-mono">Min Cat 5</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] text-slate-400">Min:</span>
+                <select id="rf_cat_min" onchange="rf_applyFilters()" class="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-white">
+                  <option value="1">Cat 1</option>
+                  <option value="2">Cat 2</option>
+                  <option value="3">Cat 3</option>
+                  <option value="4">Cat 4</option>
+                  <option value="5" selected>Cat 5</option>
+                  <option value="6">Cat 6</option>
+                  <option value="7">Cat 7</option>
+                  <option value="8">Cat 8</option>
+                  <option value="9">Cat 9</option>
+                  <option value="10">Cat 10</option>
+                </select>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] text-slate-400">Max:</span>
+                <select id="rf_cat_max" onchange="rf_applyFilters()" class="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-white">
+                  <option value="1">Cat 1</option>
+                  <option value="2">Cat 2</option>
+                  <option value="3">Cat 3</option>
+                  <option value="4">Cat 4</option>
+                  <option value="5">Cat 5</option>
+                  <option value="6">Cat 6</option>
+                  <option value="7">Cat 7</option>
+                  <option value="8">Cat 8</option>
+                  <option value="9">Cat 9</option>
+                  <option value="10" selected>Cat 10</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Round-Trip Flight Duration Range (HH:MM) -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[11px] font-semibold text-slate-300">Round-Trip Duration</label>
+              <span class="text-[10px] text-slate-400 font-mono">15m increments</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] text-slate-400 w-7">Min:</span>
+                <select id="rf_dur_min_hh" onchange="rf_applyFilters()" class="w-14 px-1.5 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-white font-mono text-center"></select>
+                <span class="text-slate-400 font-mono">:</span>
+                <select id="rf_dur_min_mm" onchange="rf_applyFilters()" class="w-14 px-1.5 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-white font-mono text-center">
+                  <option value="0" selected>00</option>
+                  <option value="15">15</option>
+                  <option value="30">30</option>
+                  <option value="45">45</option>
+                </select>
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-[10px] text-slate-400 w-7">Max:</span>
+                <select id="rf_dur_max_hh" onchange="rf_applyFilters()" class="w-14 px-1.5 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-white font-mono text-center"></select>
+                <span class="text-slate-400 font-mono">:</span>
+                <select id="rf_dur_max_mm" onchange="rf_applyFilters()" class="w-14 px-1.5 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-white font-mono text-center">
+                  <option value="0">00</option>
+                  <option value="15">15</option>
+                  <option value="30">30</option>
+                  <option value="45" selected>45</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Schedule Presets -->
+          <div>
+            <span class="block text-[10px] text-slate-400 uppercase font-semibold mb-1">Circuit Schedule Presets:</span>
+            <div class="flex flex-wrap gap-1">
+              <button onclick="rf_setDurationPreset('any')" id="dur_preset_any" class="px-2 py-0.5 rounded text-[10px] font-semibold transition bg-cyan-950 text-cyan-300 border border-cyan-700">Any</button>
+              <button onclick="rf_setDurationPreset('24h_divisors')" id="dur_preset_24h" class="px-2 py-0.5 rounded text-[10px] font-semibold transition bg-slate-800 text-slate-300 hover:text-white border border-slate-700">24h Divisors</button>
+              <button onclick="rf_setDurationPreset('short')" id="dur_preset_short" class="px-2 py-0.5 rounded text-[10px] font-semibold transition bg-slate-800 text-slate-300 hover:text-white border border-slate-700">Short (≤8h)</button>
+              <button onclick="rf_setDurationPreset('medium')" id="dur_preset_med" class="px-2 py-0.5 rounded text-[10px] font-semibold transition bg-slate-800 text-slate-300 hover:text-white border border-slate-700">Med (8-16h)</button>
+              <button onclick="rf_setDurationPreset('long')" id="dur_preset_long" class="px-2 py-0.5 rounded text-[10px] font-semibold transition bg-slate-800 text-slate-300 hover:text-white border border-slate-700">Long (16-24h)</button>
+            </div>
+          </div>
+
+          <!-- Geographic Filters: Continent & Country (Added Continent filter as requested) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
+            <div>
+              <label class="block text-[10px] font-semibold text-slate-300 mb-0.5 flex items-center justify-between">
+                <span>Filter by Continent</span>
+                <span id="rf_continent_hint" class="text-[9px] text-cyan-400 font-normal">All</span>
+              </label>
+              <select id="rf_continent_filter" onchange="rf_onContinentChange()" class="w-full px-2 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-white focus:ring-1 focus:ring-cyan-500 focus:outline-none">
+                <option value="ALL">All Continents (6)</option>
+                <option value="Africa">Africa</option>
+                <option value="Asia">Asia</option>
+                <option value="Europe">Europe</option>
+                <option value="North America">North America</option>
+                <option value="South America">South America</option>
+                <option value="Oceania">Oceania</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-semibold text-slate-300 mb-0.5 flex items-center justify-between">
+                <span>Filter by Country</span>
+                <span id="rf_country_count_badge" class="text-[9px] text-slate-400">211</span>
+              </label>
+              <select id="rf_country_filter" onchange="rf_applyFilters()" class="w-full px-2 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-white focus:ring-1 focus:ring-cyan-500 focus:outline-none">
+                <option value="ALL">All Countries</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION: BUILT-IN ACTIVE CIRCUIT VIEWER & VISUAL TIMELINE                -->
+    <!-- ========================================================================= -->
+    <section id="circuit_viewer_section" class="glass-panel rounded-2xl border border-slate-800 shadow-2xl overflow-hidden space-y-4">
+      
+      <!-- Circuit Viewer Header & Summary Bar -->
+      <div class="p-4 bg-slate-900/90 border-b border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-800 text-cyan-400 flex items-center justify-center font-bold text-sm shadow-inner">
+            📅
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h2 class="text-sm font-bold text-white tracking-tight">Active Circuit Timetable &amp; Rotation</h2>
+              <span id="circuit_type_badge" class="px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 text-[10px] font-bold font-mono uppercase">24h Circuit</span>
+              <span id="circuit_leg_count_badge" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-mono">0 routes</span>
+            </div>
+            <p id="circuit_desc_text" class="text-[11px] text-slate-400 mt-0.5">
+              Select destinations below to build this circuit. Single routes automatically populate the day with adjustable frequency.
+            </p>
+          </div>
+        </div>
+
+        <!-- Right Side: Stats & Action Buttons (Save Circuit added as requested!) -->
+        <div class="flex items-center gap-2 flex-wrap self-end md:self-center font-mono-num text-xs">
+          <div class="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center gap-1.5">
+            <span class="text-slate-400">Scheduled:</span>
+            <strong id="circuit_stat_used_time" class="text-white font-bold font-mono">0h 00m</strong>
+            <span class="text-slate-500">/</span>
+            <span id="circuit_stat_target_time" class="text-cyan-400 font-mono">24h 00m</span>
+          </div>
+          <div class="px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center gap-1">
+            <span class="text-slate-400">Free:</span>
+            <span id="circuit_stat_free_time" class="text-amber-300 font-bold font-mono">24h 00m</span>
+          </div>
+
+          <!-- PROPOSED: Fill Remaining Gap Trigger Button in Route Finder -->
+          <button onclick="rf_toggleGapDrawer()" id="btn_rf_fill_gap" type="button" class="hidden px-2.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-md shadow-amber-500/20" title="Discover routes that perfectly fit the remaining free hours">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            <span id="btn_rf_fill_gap_text">⚡ Fill Remaining</span>
+          </button>
+
+          <!-- Save Circuit Button (Similar to Seat Config) -->
+          <button onclick="rf_openSaveCircuitModal()" id="btn_save_circuit" type="button" class="px-3 py-1.5 rounded-lg bg-emerald-950/90 hover:bg-emerald-900 text-emerald-300 hover:text-emerald-200 font-semibold text-xs border border-emerald-700/70 transition flex items-center gap-1.5 shadow-sm shadow-emerald-950/40" title="Save current active circuit into library">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+            <span>Save Circuit</span>
+          </button>
+
+          <!-- Send to Seat Configurator button -->
+          <button type="button" onclick="rf_openInSeatConfigurator()" class="px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition text-xs flex items-center gap-1.5 shadow-sm" title="Open this circuit in Seat Configurator">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            <span>Send to Seat Config</span>
+          </button>
+
+
+          <!-- Clear Circuit Button -->
+          <button onclick="rf_clearCurrentCircuit()" id="btn_clear_circuit" class="px-2.5 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800 text-xs font-semibold transition flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            <span>Clear</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- In-Game Style Visual Timeline -->
+      <div class="px-4 py-2 space-y-2">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-400">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-semibold uppercase tracking-wider text-[10px] text-slate-300 flex items-center gap-1.5">
+              <span>Rotation Timeline</span>
+              <span id="circuit_utilization_badge" class="px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 font-mono">0% Utilized</span>
+            </span>
+            <!-- View Mode Switcher: 7-Day Week vs Bar -->
+            <div id="rf_timeline_view_toggle" class="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-0.5 text-[10px] font-mono">
+              <button type="button" id="rf_btn_view_week" onclick="rf_setTimelineViewMode('week')" class="px-2 py-0.5 rounded transition font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">
+                📅 7-Day Week
+              </button>
+              <button type="button" id="rf_btn_view_bar" onclick="rf_setTimelineViewMode('bar')" class="px-2 py-0.5 rounded transition text-slate-400 hover:text-white">
+                ⏱️ Daily Bar
+              </button>
+            </div>
+          </div>
+          <span id="circuit_timeline_scale_text" class="font-mono text-[10px]">00:00 &rarr; 24:00 (15m granularity)</span>
+        </div>
+
+        <!-- View 1: 7-Day Weekly Timetable (Mon-Sun) -->
+        <div id="circuit_weekly_timeline_container" class="hidden overflow-x-auto bg-slate-950/80 rounded-xl border border-slate-800/90 p-2.5 sm:p-3 space-y-1 select-none">
+          <div class="min-w-[720px] space-y-1">
+            <!-- Timeline Hours Header (00:00 to 23:00) -->
+            <div class="grid grid-cols-25 gap-0 text-[10px] font-mono text-slate-400 pb-1 border-b border-slate-800/80 items-center">
+              <div class="text-center font-semibold text-slate-500">Day</div>
+              <div class="col-span-24 grid grid-cols-24 text-center">
+                <span>00<span class="text-[8px] text-slate-600">:00</span></span>
+                <span>01</span><span>02</span><span>03</span><span>04</span><span>05</span>
+                <span>06</span><span>07</span><span>08</span><span>09</span><span>10</span><span>11</span>
+                <span>12<span class="text-[8px] text-slate-600">:00</span></span>
+                <span>13</span><span>14</span><span>15</span><span>16</span><span>17</span>
+                <span>18</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span>
+              </div>
+            </div>
+            <!-- Days Rows (Mon to Sun) -->
+            <div id="circuit_timeline_week_rows" class="space-y-1.5 pt-1">
+              <!-- Dynamically populated 7 day rows via rf_updateCircuitUI() -->
+            </div>
+          </div>
+        </div>
+
+        <!-- View 2: Single Horizontal Bar Timeline -->
+        <div id="circuit_bar_timeline_container" class="space-y-1">
+          <div class="w-full h-11 bg-slate-900 rounded-xl border border-slate-800 overflow-hidden flex relative select-none p-1 gap-1" id="circuit_visual_timeline_bar"></div>
+          <div id="circuit_bar_ticks" class="grid grid-cols-6 text-[9px] font-mono text-slate-500 px-1 pt-0.5">
+            <div>00:00</div>
+            <div class="text-center">04:00</div>
+            <div class="text-center">08:00</div>
+            <div class="text-center">12:00</div>
+            <div class="text-center">16:00</div>
+            <div class="text-right">24:00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Collapsible Route Finder Gap Filler Drawer -->
+      <div id="rf_gap_drawer" class="hidden mx-4 p-4 rounded-xl bg-amber-950/20 border border-amber-800/40 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-amber-900/60 text-amber-300 flex items-center justify-center text-xs font-bold font-mono">⚡</span>
+            <div>
+              <h4 class="text-xs font-bold text-amber-200 uppercase tracking-wider">Smart Routes to Fill Remaining Free Hours</h4>
+              <p class="text-[11px] text-slate-400">Recalculated for the active aircraft and hub. 1-click to add or filter candidates list.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="rf_syncDurationFilterToRemaining()" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-medium border border-slate-700 transition">
+              🔍 Filter Table to Remaining
+            </button>
+            <button onclick="rf_toggleGapDrawer()" class="text-xs text-slate-400 hover:text-white">&times; Close</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1" id="rf_gap_suggestions_grid">
+          <!-- Dynamically populated by rf_renderGapSuggestions() -->
+        </div>
+      </div>
+
+      <!-- Circuit Route Sequence Cards / Rows -->
+      <div class="px-4 pb-4 space-y-2">
+        <div id="circuit_legs_container" class="space-y-2"></div>
+
+        <!-- Empty State Prompt -->
+        <div id="circuit_empty_prompt" class="p-8 text-center border-2 border-dashed border-slate-800/80 rounded-xl space-y-2">
+          <div class="w-10 h-10 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-slate-500">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          </div>
+          <h4 class="text-xs font-bold text-white">Circuit is Currently Empty</h4>
+          <p class="text-[11px] text-slate-400 max-w-sm mx-auto">
+            Browse compatible destinations below and click <strong class="text-cyan-300 font-semibold">+ Add to Circuit</strong> to start filling your flight schedule.
+          </p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION: DESTINATION SEARCH & DISCOVERY RESULTS                           -->
+    <!-- ========================================================================= -->
+    <section class="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-xl space-y-4">
+      
+      <!-- Subheader: Count, SEARCH THROUGH TABLE (As requested!), Sorting, View Toggle -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+        <!-- Title & Count -->
+        <div class="flex items-center gap-3 shrink-0">
+          <div>
+            <h2 class="text-sm font-bold text-white tracking-tight flex items-center gap-2">
+              <span>Matching Destinations</span>
+              <span id="results_count_badge" class="text-xs px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono font-bold">0 routes</span>
+            </h2>
+            <p id="results_summary_text" class="text-[11px] text-slate-400">Routes departing from OSL within range &amp; runway category</p>
+          </div>
+        </div>
+
+        <!-- DEDICATED TABLE SEARCH BAR (Exact placement from user's red box screenshot 1!) -->
+        <div class="relative flex-1 max-w-sm w-full">
+          <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <input type="text" id="rf_table_search" oninput="rf_onTableSearchInput(this.value)" placeholder="Search table (IATA, city, airport)..." class="w-full pl-9 pr-7 py-1.5 bg-slate-900 border border-slate-700 hover:border-slate-600 rounded-lg text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-cyan-500 focus:outline-none transition">
+          <button onclick="rf_clearTableSearch()" id="rf_clear_table_search_btn" class="hidden absolute right-2.5 top-1.5 text-slate-400 hover:text-white text-xs">&times;</button>
+        </div>
+
+        <!-- Controls: Sorting & View Toggle -->
+        <div class="flex items-center flex-wrap gap-2 text-xs shrink-0">
+          <!-- Sort Selector (Custom Dark Popover Dropdown) -->
+          <div class="relative" id="rf_sort_container">
+            <button type="button" onclick="rf_toggleSortDropdown(event)" id="rf_sort_btn" class="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-lg px-2.5 py-1 text-xs text-white font-medium transition focus:outline-none focus:ring-1 focus:ring-cyan-500 shadow-sm">
+              <span class="text-[10px] text-slate-400 uppercase font-semibold">Sort:</span>
+              <span id="rf_sort_label" class="text-white font-medium">Distance: Low to High</span>
+              <svg id="rf_sort_chevron" class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+            <div id="rf_sort_menu" class="hidden absolute right-0 sm:left-0 sm:right-auto mt-1.5 w-56 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl backdrop-blur-xl p-1 z-50 divide-y divide-slate-800/50">
+              <div class="space-y-0.5" id="rf_sort_options_list"></div>
+            </div>
+            <select id="rf_sort_select" onchange="rf_onSortChange()" class="hidden">
+              <option value="dist_asc" selected>Distance: Low to High</option>
+              <option value="dist_desc">Distance: High to Low</option>
+              <option value="dur_asc">Duration: Shortest First</option>
+              <option value="dur_desc">Duration: Longest First</option>
+              <option value="cat_desc">Category: High to Low</option>
+              <option value="tax_asc">Flight Tax: Low to High</option>
+              <option value="iata_asc">IATA Code: A to Z</option>
+            </select>
+          </div>
+
+          <!-- View Mode Toggle (Table vs Grid) -->
+          <div class="flex items-center rounded-lg bg-slate-900 border border-slate-700 p-0.5">
+            <button onclick="rf_setViewMode('table')" id="view_table_btn" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-cyan-950 text-cyan-300 transition flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+              <span>Table</span>
+            </button>
+            <button onclick="rf_setViewMode('grid')" id="view_grid_btn" class="px-2.5 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 transition flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+              <span>Grid</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Table View -->
+      <div id="results_table_container" class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="text-[11px] uppercase bg-slate-900/80 text-slate-400 border-b border-slate-800">
+            <tr>
+              <th scope="col" class="p-3">Destination</th>
+              <th scope="col" class="p-3">Country / Continent</th>
+              <th scope="col" class="p-3 text-center">Category</th>
+              <th scope="col" class="p-3 text-right">Distance (km)</th>
+              <th scope="col" class="p-3 text-right">Round-Trip Duration</th>
+              <th scope="col" class="p-3 text-center">Circuit Fit</th>
+              <th scope="col" class="p-3 text-right">Flight Tax</th>
+              <th scope="col" class="p-3 text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody id="results_table_body" class="divide-y divide-slate-800/60 font-mono-num"></tbody>
+        </table>
+      </div>
+
+      <!-- Results Grid View -->
+      <div id="results_grid_container" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+
+      <!-- Empty State / No Match Container -->
+      <div id="no_matches_container" class="hidden py-12 text-center space-y-3">
+        <div class="w-12 h-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-slate-500">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-white">No Matching Routes Found</h3>
+          <p id="no_matches_diagnostic_text" class="text-xs text-slate-400 max-w-md mx-auto mt-1">
+            No airports match the active filters. Try relaxing the duration interval, choosing an aircraft with greater range, or clearing the continent/country filter.
+          </p>
+        </div>
+        <button onclick="rf_resetAllFilters()" class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
+          Reset All Filters
+        </button>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div id="pagination_container" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-800/80 text-xs text-slate-400">
+        <div class="flex items-center gap-2">
+          <span>Showing</span>
+          <span id="page_range_text" class="font-bold text-white font-mono">1 - 50</span>
+          <span>of</span>
+          <span id="page_total_text" class="font-bold text-white font-mono">184</span>
+          <span>routes</span>
+          <span class="text-slate-600">&bull;</span>
+          <select id="rf_page_size" onchange="rf_onPageSizeChange()" class="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-white">
+            <option value="25">25 per page</option>
+            <option value="50" selected>50 per page</option>
+            <option value="100">100 per page</option>
+            <option value="250">250 per page</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <button onclick="rf_changePage(-1)" id="btn_prev_page" class="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white border border-slate-800 transition">Previous</button>
+          <span id="page_current_pill" class="px-2.5 py-1 rounded bg-slate-800 text-cyan-300 font-mono font-bold">1 / 4</span>
+          <button onclick="rf_changePage(1)" id="btn_next_page" class="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white border border-slate-800 transition">Next</button>
+        </div>
+      </div>
+    </section>
+    </div><!-- End of #view_route_finder -->
+
+
+    <!-- Datalist for Airport Autocomplete -->
+    <datalist id="airports_datalist"></datalist>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-slate-950 py-4 mt-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+      <div>
+        AMT Toolkit &bull; Airlines Manager Tycoon Toolkit &bull; Fast, Offline-Ready & Reactive
+      </div>
+      <div class="flex items-center gap-4">
+        <span>Based on & improved from <a href="https://destinations.noway.info/en/index.html" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">noway.info</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- AIRCRAFT FLEET CATALOG & COMPARATOR MODAL (SOLUTION #2)                   -->
+  <!-- ========================================================================= -->
+  <div id="ac_modal_backdrop" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-5" onclick="handleAircraftModalBackdropClick(event)">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150" onclick="event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <span>Aircraft Fleet Catalog & Comparator</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono" id="ac_modal_match_count">99 Models</span>
+          </h3>
+          <p class="text-xs text-slate-400">Search by name/mfr, compare prices & specs, and filter by route distance</p>
+        </div>
+        <button type="button" onclick="closeAircraftModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition" title="Close (Esc)">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Filter Toolbar -->
+      <div class="p-3.5 border-b border-slate-800 bg-slate-900 space-y-2.5">
+        <!-- Row 1: Search + Sort + View Toggle -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
+          <div class="md:col-span-6 relative">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            <input type="text" id="ac_modal_search" placeholder="Search by model name, manufacturer, or keywords..." class="w-full pl-9 pr-8 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-cyan-500 focus:outline-none" oninput="renderAircraftModalContent()">
+            <button type="button" onclick="clearAircraftModalSearch()" id="ac_modal_clear_btn" class="hidden absolute right-2.5 top-2 text-slate-400 hover:text-white text-xs">&times;</button>
+          </div>
+
+          <div class="md:col-span-4 flex items-center gap-1.5">
+            <span class="text-xs text-slate-400 shrink-0">Sort:</span>
+            <select id="ac_modal_sort" onchange="renderAircraftModalContent()" class="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+              <option value="seats_desc">Seats (Largest first)</option>
+              <option value="range_desc">Range (Longest first)</option>
+              <option value="price_asc">Price (Lowest first)</option>
+              <option value="price_desc">Price (Highest first)</option>
+              <option value="speed_desc">Speed (Fastest first)</option>
+              <option value="cat_asc">Category (1 to 9)</option>
+              <option value="cat_desc">Category (9 to 1)</option>
+              <option value="name_asc">Name (A-Z)</option>
+            </select>
+          </div>
+
+          <div class="md:col-span-2 flex items-center justify-end gap-1">
+            <button type="button" onclick="setAircraftModalView('grid')" id="ac_modal_view_grid" class="p-1.5 rounded-lg bg-cyan-600 text-white shadow" title="Grid View">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+              </svg>
+            </button>
+            <button type="button" onclick="setAircraftModalView('table')" id="ac_modal_view_table" class="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white" title="Table View">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Row 2: Filter Pills & Checks -->
+        <div class="flex flex-wrap items-center justify-between gap-2.5 text-xs pt-1.5 border-t border-slate-800/80">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-slate-400 text-[11px]">Haul:</span>
+            <button type="button" onclick="setAircraftModalHaul('all')" class="ac-modal-haul-btn px-2 py-0.5 rounded bg-cyan-600 text-white font-medium text-[11px]" data-val="all">All</button>
+            <button type="button" onclick="setAircraftModalHaul('Long-Haul')" class="ac-modal-haul-btn px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium text-[11px]" data-val="Long-Haul">Long-Haul</button>
+            <button type="button" onclick="setAircraftModalHaul('Medium-Haul')" class="ac-modal-haul-btn px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium text-[11px]" data-val="Medium-Haul">Medium-Haul</button>
+            <button type="button" onclick="setAircraftModalHaul('Short-Haul')" class="ac-modal-haul-btn px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium text-[11px]" data-val="Short-Haul">Short-Haul</button>
+
+            <div class="h-3 w-px bg-slate-800 mx-1"></div>
+
+            <span class="text-slate-400 text-[11px]">Manufacturer:</span>
+            <select id="ac_modal_mfr_filter" onchange="renderAircraftModalContent()" class="px-2 py-0.5 bg-slate-950 border border-slate-700 rounded text-[11px] text-white">
+              <option value="all">All Manufacturers</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <label class="flex items-center gap-1.5 text-slate-300 cursor-pointer text-[11px]">
+              <input type="checkbox" id="ac_modal_range_only" onchange="renderAircraftModalContent()" class="rounded bg-slate-800 border-slate-700 text-cyan-600 focus:ring-0">
+              <span>Only viable for route (<span id="ac_modal_route_dist_text" class="text-cyan-400 font-mono font-bold">0 km</span>)</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Body (Cards or Table) -->
+      <div id="ac_modal_content" class="overflow-y-auto flex-1 p-4 max-h-[62vh]">
+        <!-- Dynamic Cards Grid / Table rendered via JS -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 border-t border-slate-800 bg-slate-950/90 flex items-center justify-between text-xs text-slate-400">
+        <div>
+          Active selection: <strong class="text-white" id="ac_modal_footer_active">—</strong>
+          <span class="ml-2 text-emerald-400 font-mono font-semibold" id="ac_modal_footer_price"></span>
+        </div>
+        <button type="button" onclick="closeAircraftModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold transition">
+          Done
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: SAVE CURRENT CIRCUIT PROMPT MODAL                                  -->
+  <!-- ========================================================================= -->
+  <div id="save_prompt_modal_backdrop" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="handleModalBackdropClick(event, 'save_prompt_modal_backdrop')">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150" onclick="event.stopPropagation()">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+          <span>Save Circuit</span>
+        </h3>
+        <button type="button" onclick="closeSaveCircuitModal()" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Circuit Name</label>
+          <input type="text" id="save_circuit_name_input" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-medium focus:ring-2 focus:ring-cyan-500 focus:outline-none" placeholder="e.g. OSL 24h Regional Tour" onkeydown="if(event.key==='Enter') executeSaveCircuit()">
+        </div>
+
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1.5 text-slate-400">
+          <div class="flex justify-between">
+            <span>Departure Hub:</span>
+            <strong class="text-white font-mono" id="save_summary_hub">OSL</strong>
+          </div>
+          <div class="flex justify-between">
+            <span>Selected Aircraft:</span>
+            <strong class="text-cyan-300" id="save_summary_ac">Airbus A320-200</strong>
+          </div>
+          <div class="flex justify-between">
+            <span>Circuit Duration & Routes:</span>
+            <strong class="text-amber-400 font-mono-num" id="save_summary_dur">23h 30m (5 Routes)</strong>
+          </div>
+        </div>
+
+        <div id="save_overwrite_container" class="hidden">
+          <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+            <input type="checkbox" id="save_overwrite_checkbox" class="rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0">
+            <span>Overwrite loaded circuit (<strong id="save_overwrite_target_name"></strong>)</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+        <button type="button" onclick="closeSaveCircuitModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs transition">Cancel</button>
+        <button type="button" onclick="executeSaveCircuit()" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition shadow flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          <span>Save Circuit</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: SAVED CIRCUITS MANAGER & LIBRARY (Full Management Modal)           -->
+  <!-- ========================================================================= -->
+  <div id="saved_circuits_modal_backdrop" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-5" onclick="handleModalBackdropClick(event, 'saved_circuits_modal_backdrop')">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150" onclick="event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-cyan-950 border border-cyan-800/80 flex items-center justify-center text-cyan-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <span>Circuit Library & Manager</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono" id="modal_circuits_count_badge">0 Circuits Saved</span>
+            </h3>
+            <p class="text-xs text-slate-400">Manage, export, share, or import your custom airline circuits</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeSavedCircuitsModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition" title="Close (Esc)">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Navigation Tabs (My Circuits / Import / Backup) -->
+      <div class="px-5 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+          <button id="circuit_tab_btn_my" onclick="switchCircuitModalTab('my_circuits')" class="py-3 px-3 border-b-2 border-cyan-500 text-cyan-400 text-xs font-semibold flex items-center gap-1.5 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            <span>My Saved Circuits</span>
+          </button>
+          <button id="circuit_tab_btn_import" onclick="switchCircuitModalTab('import')" class="py-3 px-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+            <span>Import / Share Code</span>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="exportAllCircuitsBackup()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-medium transition flex items-center gap-1.5" title="Download all circuits as a single JSON backup">
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+            <span>Backup All (JSON)</span>
+          </button>
+          <button type="button" onclick="closeSavedCircuitsModal(); openSaveCircuitModal();" class="px-2.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition flex items-center gap-1 shadow-sm">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <span>Save Current</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 1: My Saved Circuits -->
+      <div id="circuit_tab_view_my" class="flex-1 flex flex-col min-h-0">
+        
+        <!-- Search & Filter Bar -->
+        <div class="p-3 border-b border-slate-800 bg-slate-900 flex items-center justify-between gap-3">
+          <div class="relative flex-1 max-w-md">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            <input type="text" id="saved_circuits_search" oninput="renderSavedCircuitsList()" placeholder="Filter by circuit name, hub, aircraft or destination airport..." class="w-full pl-9 pr-4 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+          </div>
+          <div class="flex items-center gap-2 text-xs text-slate-400">
+            <span>Sort:</span>
+            <select id="saved_circuits_sort" onchange="renderSavedCircuitsList()" class="px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white focus:outline-none">
+              <option value="date_desc">Recently Saved</option>
+              <option value="name_asc">Name (A-Z)</option>
+              <option value="routes_desc">Most Routes</option>
+              <option value="duration_desc">Longest Duration</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Circuits List (Cards) -->
+        <div id="saved_circuits_cards_container" class="overflow-y-auto p-4 space-y-3 flex-1 max-h-[58vh]">
+          <!-- Populated dynamically by renderSavedCircuitsList() -->
+        </div>
+
+      </div>
+
+      <!-- TAB 2: Import & Share Code -->
+      <div id="circuit_tab_view_import" class="flex-1 hidden overflow-y-auto p-6 space-y-6 max-h-[65vh]">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- Method A: File Upload / Dropzone -->
+          <div class="space-y-3">
+            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-400 flex items-center justify-center text-xs">1</span>
+              <span>Upload Circuit JSON File</span>
+            </h4>
+            <p class="text-xs text-slate-400">Select or drop a <code class="text-cyan-300">.json</code> circuit export file saved from AMT Toolkit.</p>
+            
+            <label class="border-2 border-dashed border-slate-700 hover:border-cyan-500 rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer bg-slate-950/40 hover:bg-cyan-950/10 transition group text-center block">
+              <input type="file" id="circuit_file_input" accept=".json" class="hidden" onchange="handleCircuitFileUpload(event)">
+              <div class="w-10 h-10 rounded-full bg-slate-800 group-hover:bg-cyan-900 text-slate-400 group-hover:text-cyan-300 flex items-center justify-center transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+              </div>
+              <div class="text-xs font-semibold text-slate-200 group-hover:text-cyan-300">Click to browse or drag .json file here</div>
+              <div class="text-[10px] text-slate-500">Supports single circuits or full backup files</div>
+            </label>
+          </div>
+
+          <!-- Method B: Paste Raw JSON / Share Code -->
+          <div class="space-y-3">
+            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-400 flex items-center justify-center text-xs">2</span>
+              <span>Paste Code / Share String</span>
+            </h4>
+            <p class="text-xs text-slate-400">Paste circuit data directly from Discord or clipboard notes.</p>
+            <textarea id="import_circuit_json_textarea" rows="6" placeholder='Paste {"name": "...", "hub": "...", "legs": [...]} here...' class="w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-xs font-mono text-cyan-300 placeholder-slate-600 focus:ring-2 focus:ring-cyan-500 focus:outline-none" oninput="validatePastedCircuitJson()"></textarea>
+            
+            <div id="import_circuit_validation_msg" class="text-xs text-slate-400 flex items-center gap-1.5">
+              <span>Ready for JSON input</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Import Preview Box (When valid JSON detected) -->
+        <div id="import_circuit_preview_card" class="hidden p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="text-xs font-bold text-white uppercase tracking-wider">Circuit Detected & Validated</div>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">Valid Schema</span>
+          </div>
+          <div class="flex items-center justify-between text-xs flex-wrap gap-2">
+            <div>
+              <span class="font-bold text-white" id="import_circuit_preview_name">—</span>
+              <span class="text-slate-400 ml-2" id="import_circuit_preview_details">—</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="confirmImportCircuit(false)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition">
+                Add to Library
+              </button>
+              <button type="button" onclick="confirmImportCircuit(true)" class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
+                Load Immediately
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between text-xs text-slate-400">
+        <div>
+          <span>Storage: <strong class="text-slate-300" id="modal_storage_usage">0 circuits</strong> in browser memory</span>
+        </div>
+        <button type="button" onclick="closeSavedCircuitsModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold transition">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+    <!-- Route Finder Modals -->
+<!-- ========================================================================= -->
+  <!-- MODAL: SAVE ACTIVE CIRCUIT (Seat Config Style)                             -->
+  <!-- ========================================================================= -->
+  <div id="rf_save_circuit_modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" onclick="rf_handleSaveModalBackdropClick(event)">
+    <div class="glass-panel max-w-md w-full rounded-2xl border border-slate-700/80 shadow-2xl p-5 space-y-4" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <span class="w-7 h-7 rounded-lg bg-emerald-950 border border-emerald-800 text-emerald-400 flex items-center justify-center text-xs">💾</span>
+          <h3 class="text-sm font-bold text-white">Save Circuit to Library</h3>
+        </div>
+        <button onclick="rf_closeSaveCircuitModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-300 mb-1">Circuit Name</label>
+          <input type="text" id="rf_save_circuit_name_input" placeholder="e.g. OSL 24h Europe Rotation" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white font-medium text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+        </div>
+
+        <!-- Circuit Summary Card -->
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+          <div class="flex justify-between"><span class="text-slate-400">Departure Hub:</span> <span id="rf_save_summary_hub" class="font-mono font-bold text-cyan-400">OSL</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Aircraft Model:</span> <span id="rf_save_summary_ac" class="font-mono text-emerald-400">A320-200</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Total Duration:</span> <span id="rf_save_summary_dur" class="font-mono text-white">0h 00m</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Total Destinations:</span> <span id="rf_save_summary_routes" class="font-mono text-slate-200">0 routes</span></div>
+        </div>
+
+        <!-- Route Sequence Chips -->
+        <div>
+          <span class="text-[10px] text-slate-400 block mb-1">Included Routes:</span>
+          <div id="save_summary_chips" class="flex flex-wrap gap-1"></div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-800 text-xs">
+        <button onclick="rf_closeSaveCircuitModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition">Cancel</button>
+        <button onclick="rf_executeSaveCircuit()" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition shadow-lg shadow-emerald-600/30 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          <span>Save Circuit</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: SAVED CIRCUITS LIBRARY & MANAGER (Seat Config Style)               -->
+  <!-- ========================================================================= -->
+  <div id="saved_circuits_modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" onclick="rf_handleSavedCircuitsBackdropClick(event)">
+    <div class="glass-panel max-w-3xl w-full rounded-2xl border border-slate-700/80 shadow-2xl p-5 space-y-4 max-h-[90vh] flex flex-col" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+        <div>
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>📂 Saved Circuits Library</span>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono" id="saved_library_count_badge">0 Circuits</span>
+          </h3>
+          <p class="text-xs text-slate-400">Load previously saved circuits directly into your route finder and rotation schedule.</p>
+        </div>
+        <button onclick="rf_closeSavedCircuitsModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+
+      <!-- Search & Sorting inside Library -->
+      <div class="flex items-center gap-2 text-xs shrink-0">
+        <div class="relative flex-1">
+          <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <input type="text" id="rf_library_search_input" oninput="rf_renderSavedCircuitsList()" placeholder="Search circuits by name, hub, aircraft or destination..." class="w-full pl-9 pr-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none">
+        </div>
+        <select id="rf_library_sort_select" onchange="rf_renderSavedCircuitsList()" class="px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none">
+          <option value="date_desc">Newest First</option>
+          <option value="name_asc">Name: A to Z</option>
+          <option value="routes_desc">Most Routes</option>
+          <option value="duration_desc">Longest Duration</option>
+        </select>
+      </div>
+
+      <!-- Saved Circuits List -->
+      <div id="saved_circuits_container" class="flex-grow overflow-y-auto max-h-[55vh] space-y-2.5 p-1">
+        <!-- Dynamically rendered -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex items-center justify-between pt-3 border-t border-slate-800 text-xs shrink-0">
+        <button onclick="rf_exportAllCircuitsJson()" class="text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+          <span>Export All (JSON)</span>
+        </button>
+        <button onclick="rf_closeSavedCircuitsModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold transition">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: FULL AIRCRAFT FLEET CATALOG & COMPARATOR (Seat Config Style)       -->
+  <!-- ========================================================================= -->
+  <div id="rf_ac_modal_backdrop" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 modal-backdrop" onclick="rf_handleAircraftModalBackdropClick(event)">
+    <div class="glass-panel max-w-4xl w-full rounded-2xl border border-slate-700/80 shadow-2xl p-5 space-y-4 max-h-[90vh] flex flex-col" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+        <div>
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>✈️ Aircraft Fleet Catalog &amp; Fleet Browser</span>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono" id="rf_ac_modal_count_badge">101 Aircraft</span>
+          </h3>
+          <p class="text-xs text-slate-400">Search, compare categories, range, and speed to pick the best plane for your routes.</p>
+        </div>
+        <button onclick="rf_closeAircraftModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+
+      <!-- Modal Filter Controls -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 shrink-0 text-xs">
+        <div>
+          <input type="text" id="rf_ac_modal_search" placeholder="Search by name or manufacturer..." class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs placeholder-slate-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none" oninput="rf_renderAircraftModalContent()">
+        </div>
+        <div>
+          <select id="rf_ac_modal_haul" onchange="rf_renderAircraftModalContent()" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs">
+            <option value="all">All Flight Types</option>
+            <option value="Long-Haul">Long-Haul</option>
+            <option value="Medium-Haul">Medium-Haul</option>
+            <option value="Short-Haul">Short-Haul</option>
+          </select>
+        </div>
+        <div>
+          <select id="rf_ac_modal_sort" onchange="rf_renderAircraftModalContent()" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs">
+            <option value="range_desc">Range: Longest to Shortest</option>
+            <option value="range_asc">Range: Shortest to Longest</option>
+            <option value="seats_desc">Seats: Highest to Lowest</option>
+            <option value="speed_desc">Speed: Fastest to Slowest</option>
+            <option value="price_asc">Price: Lowest to Highest</option>
+            <option value="name_asc">Name: A to Z</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Aircraft Grid in Modal -->
+      <div id="ac_modal_grid" class="flex-grow overflow-y-auto max-h-[55vh] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 p-1"></div>
+
+      <!-- Modal Footer -->
+      <div class="flex items-center justify-between pt-3 border-t border-slate-800 text-xs shrink-0">
+        <span class="text-slate-400">Click any aircraft card to select it for the route finder and circuit.</span>
+        <button onclick="rf_closeAircraftModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold transition">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load Real Toolkit Datasets -->
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: SAVED ROUTE AUDITS LIBRARY & 4-CLASS MANAGER                       -->
+  <!-- ========================================================================= -->
+  <div id="saved_audits_modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 modal-backdrop" onclick="handleSavedAuditsBackdropClick(event)">
+    <div class="glass-panel max-w-5xl w-full rounded-2xl border border-slate-700/80 shadow-2xl p-5 space-y-4 max-h-[92vh] flex flex-col" onclick="event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+        <div>
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>📁 Saved Route Audits Library</span>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono" id="modal_audits_count_badge">0 Audits</span>
+          </h3>
+          <p class="text-xs text-slate-400">Stores full 4-class demands (Y, J, F, Cargo), audit fares, and remaining demand (R). One-click handoff to Zero-Out and Seat Config.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="openAuditEditorModal()" class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-md shadow-cyan-500/20">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <span>Add New Audit</span>
+          </button>
+          <button onclick="closeSavedAuditsModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 shrink-0">
+        <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800">
+          <div class="text-[10px] uppercase text-slate-400 font-semibold">Total Audits</div>
+          <div class="text-lg font-bold text-white font-mono-num" id="modal_kpi_audits">0</div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-950/80 border border-cyan-900/40">
+          <div class="text-[10px] uppercase text-cyan-400 font-semibold">Total Pax Demand</div>
+          <div class="text-lg font-bold text-cyan-300 font-mono-num" id="modal_kpi_pax">0</div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-950/80 border border-amber-900/40">
+          <div class="text-[10px] uppercase text-amber-400 font-semibold">Unserved Surplus (R)</div>
+          <div class="text-lg font-bold text-amber-300 font-mono-num" id="modal_kpi_surplus">0</div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-950/80 border border-emerald-900/40">
+          <div class="text-[10px] uppercase text-emerald-400 font-semibold">Freshness (≤7d)</div>
+          <div class="text-lg font-bold text-emerald-400 font-mono-num" id="modal_kpi_fresh">0</div>
+        </div>
+      </div>
+
+      <!-- Toolbar: Search & Filter -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-2.5 shrink-0">
+        <div class="relative flex-1 w-full">
+          <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <input type="text" id="modal_audit_search_input" oninput="renderSavedAuditsTable()" placeholder="Search saved destination by IATA, city or airport..." class="w-full pl-9 pr-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none">
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <select id="modal_audit_filter_age" onchange="renderSavedAuditsTable()" class="px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none">
+            <option value="all">All Audits</option>
+            <option value="fresh">Fresh (≤ 7 days)</option>
+            <option value="recent">Recent (≤ 30 days)</option>
+            <option value="old">Older (> 30 days)</option>
+            <option value="surplus">Has Unserved Surplus (R > 0)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Audits Table Container -->
+      <div class="flex-grow overflow-y-auto max-h-[46vh] border border-slate-800/80 rounded-xl overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-900/95 sticky top-0 text-[10px] uppercase font-semibold text-slate-400 border-b border-slate-800 z-10">
+            <tr>
+              <th class="py-2.5 px-3">Route</th>
+              <th class="py-2.5 px-3">Audited Demand (D)</th>
+              <th class="py-2.5 px-3">Remaining Demand (R)</th>
+              <th class="py-2.5 px-3">Scheduled Offer (C = D - R)</th>
+              <th class="py-2.5 px-3">Audit Ticket Fares</th>
+              <th class="py-2.5 px-2 text-center">Date</th>
+              <th class="py-2.5 px-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="modal_audits_table_body" class="divide-y divide-slate-800/60 font-mono-num">
+            <!-- Dynamically rendered -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex items-center justify-between pt-3 border-t border-slate-800 text-xs shrink-0">
+        <div class="flex items-center gap-3">
+          <button onclick="exportAuditsJsonFile()" class="text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+            <span>Export Audits (JSON)</span>
+          </button>
+          <label class="text-slate-400 hover:text-slate-200 cursor-pointer flex items-center gap-1">
+            <input type="file" accept=".json" class="hidden" onchange="handleAuditsImportFile(event)">
+            <span>Import JSON</span>
+          </label>
+          <span class="text-slate-700">|</span>
+          <button type="button" onclick="restoreDefaultAudits()" class="text-slate-400 hover:text-cyan-300 transition flex items-center gap-1" title="Restore the 8 standard sample audits">
+            ↺ Restore Defaults
+          </button>
+          <button type="button" onclick="clearAllAudits()" class="text-slate-500 hover:text-rose-400 transition flex items-center gap-1" title="Delete all route audits">
+            🗑️ Clear All
+          </button>
+        </div>
+        <button onclick="closeSavedAuditsModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold transition">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Floating Popover: Choose Circuit Demand Basis (Audited D vs Remaining R) -->
+  <div id="circuit_demand_popover" class="hidden fixed z-[9999] bg-slate-950/95 border border-slate-700/90 rounded-2xl shadow-2xl backdrop-blur-md transition-all duration-150 transform scale-100" onclick="event.stopPropagation()">
+    <!-- Populated dynamically by openCircuitDemandMenu -->
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ADD / EDIT ROUTE AUDIT (4 CLASSES + CARGO)                          -->
+  <!-- ========================================================================= -->
+  <div id="audit_editor_modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-backdrop" onclick="closeAuditEditorModal()">
+    <div class="glass-panel max-w-2xl w-full rounded-2xl border border-slate-700 shadow-2xl p-5 space-y-4 max-h-[95vh] overflow-y-auto" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div>
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <span id="audit_editor_modal_title">➕ Add Route Audit (4 Classes + Cargo)</span>
+          </h3>
+          <p class="text-xs text-slate-400">Enter full audited demand, remaining leftover demand, and in-game ticket prices.</p>
+        </div>
+        <button onclick="closeAuditEditorModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+
+      <form id="audit_editor_form" onsubmit="submitAuditEditorForm(event)" class="space-y-4">
+        <input type="hidden" id="editor_original_hub" value="">
+        <input type="hidden" id="editor_original_dst" value="">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Departure Hub (IATA)</label>
+            <input type="text" id="editor_audit_hub" value="OSL" placeholder="e.g. OSL, DWC" maxlength="3" required list="airports_datalist" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono uppercase text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none" oninput="onEditorAuditHubInput()">
+            <div id="editor_audit_hub_info" class="text-[10px] text-cyan-400 mt-1 truncate">Departure hub airport</div>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Destination Airport (IATA)</label>
+            <input type="text" id="editor_audit_dst" placeholder="e.g. CDG, LHR, JFK" maxlength="3" required list="airports_datalist" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono uppercase text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none" oninput="onEditorAuditDstInput()">
+            <div id="editor_audit_dst_info" class="text-[10px] text-cyan-400 mt-1 truncate">Type 3-letter IATA code</div>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Audit Date</label>
+            <input type="date" id="editor_audit_date" required class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- 4 Class Cards Grid -->
+        <div class="space-y-3 pt-1">
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+            <span>Class Demands, Remaining &amp; Ticket Fares</span>
+            <span class="text-[10px] text-slate-500 font-normal">Formula: Scheduled Offer C = Demand D - Remaining R</span>
+          </div>
+
+          <!-- Economy -->
+          <div class="p-3 rounded-xl bg-cyan-950/20 border border-cyan-800/40 space-y-2">
+            <div class="flex items-center justify-between text-xs font-semibold text-cyan-400">
+              <span class="flex items-center gap-1.5">💺 Economy Class (Y)</span>
+              <span class="text-[10px] text-cyan-300 font-mono" id="editor_calc_c_eco">Scheduled Offer: 0 pax</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Audited Demand (D)</label>
+                <input type="number" id="editor_eco_d" min="0" placeholder="1400" required class="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-white font-mono-num" oninput="recalcEditorFormCapacity()">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Remaining Demand (R)</label>
+                <input type="number" id="editor_eco_r" min="0" placeholder="200" required class="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-white font-mono-num" oninput="recalcEditorFormCapacity()">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Audit Fare ($)</label>
+                <input type="number" id="editor_eco_p" min="1" placeholder="280" required class="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-white font-mono-num">
+              </div>
+            </div>
+          </div>
+
+          <!-- Business -->
+          <div class="p-3 rounded-xl bg-blue-950/20 border border-blue-800/40 space-y-2">
+            <div class="flex items-center justify-between text-xs font-semibold text-blue-400">
+              <span class="flex items-center gap-1.5">💼 Business Class (J)</span>
+              <span class="text-[10px] text-blue-300 font-mono" id="editor_calc_c_bus">Scheduled Offer: 0 pax</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Audited Demand (D)</label>
+                <input type="number" id="editor_bus_d" min="0" placeholder="380" required class="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-white font-mono-num" oninput="recalcEditorFormCapacity()">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Remaining Demand (R)</label>
+                <input type="number" id="editor_bus_r" min="0" placeholder="50" required class="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-white font-mono-num" oninput="recalcEditorFormCapacity()">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Audit Fare ($)</label>
+                <input type="number" id="editor_bus_p" min="1" placeholder="540" required class="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-white font-mono-num">
+              </div>
+            </div>
+          </div>
+
+          <!-- First Class -->
+          <div class="p-3 rounded-xl bg-amber-950/20 border border-amber-800/40 space-y-2">
+            <div class="flex items-center justify-between text-xs font-semibold text-amber-400">
+              <span class="flex items-center gap-1.5">👑 First Class (F)</span>
+              <span class="text-[10px] text-amber-300 font-mono" id="editor_calc_c_first">Scheduled Offer: 0 pax</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Audited Demand (D)</label>
+                <input type="number" id="editor_first_d" min="0" placeholder="90" required class="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-white font-mono-num" oninput="recalcEditorFormCapacity()">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Remaining Demand (R)</label>
+                <input type="number" id="editor_first_r" min="0" placeholder="15" required class="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-white font-mono-num" oninput="recalcEditorFormCapacity()">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Audit Fare ($)</label>
+                <input type="number" id="editor_first_p" min="1" placeholder="1120" required class="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-white font-mono-num">
+              </div>
+            </div>
+          </div>
+
+          <!-- Cargo -->
+          <div class="p-3 rounded-xl bg-purple-950/20 border border-purple-800/40 space-y-2">
+            <div class="flex items-center justify-between text-xs font-semibold text-purple-400">
+              <span class="flex items-center gap-1.5">📦 Cargo (Tons)</span>
+              <span class="text-[10px] text-purple-300 font-mono" id="editor_calc_c_cargo">Scheduled Offer: 0 T</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Audited Demand (Tons)</label>
+                <input type="number" id="editor_cargo_d" min="0" step="0.1" placeholder="20" required class="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-white font-mono-num" oninput="recalcEditorFormCapacity()">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Remaining Demand (Tons)</label>
+                <input type="number" id="editor_cargo_r" min="0" step="0.1" placeholder="3" required class="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-white font-mono-num" oninput="recalcEditorFormCapacity()">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Audit Fare ($/T)</label>
+                <input type="number" id="editor_cargo_p" min="1" placeholder="4200" required class="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-white font-mono-num">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+          <button type="button" onclick="closeAuditEditorModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition shadow-md shadow-cyan-500/20">Save Route Audit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast_container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- JavaScript Datasets & Logic -->
+  <script src="data/aircraft.js"></script>
+  <script src="data/airports.js"></script>
+  <script src="app.js"></script>
+  <script src="route_finder.js"></script>
+</body>
+</html>
+
