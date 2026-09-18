@@ -965,13 +965,36 @@ function detectCircuitStats() {
 window.detectCircuitStats = detectCircuitStats;
 
 /**
+ * Sync the network globe's hub code and coordinates with the active hub
+ */
+function updateGlobeHubDisplay() {
+  const hubEl = document.getElementById('globe-hub');
+  const coordsEl = document.getElementById('globe_hub_coords');
+  const currentHub = window.CIRCUIT_HUB || 'OSL';
+  if (hubEl) {
+    hubEl.textContent = currentHub;
+  }
+  if (coordsEl && typeof findAirport === 'function') {
+    const apt = findAirport(currentHub);
+    if (apt && apt.lat != null && apt.lon != null) {
+      const latStr = `${Math.abs(apt.lat).toFixed(2)}° ${apt.lat >= 0 ? 'N' : 'S'}`;
+      const lonStr = `${Math.abs(apt.lon).toFixed(2)}° ${apt.lon >= 0 ? 'E' : 'W'}`;
+      coordsEl.innerHTML = `${latStr} &nbsp; ${lonStr}`;
+    }
+  }
+}
+window.updateGlobeHubDisplay = updateGlobeHubDisplay;
+
+/**
  * Switch top navigation tabs
  */
 function switchTab(tabId) {
+  const navHome = document.getElementById('nav_home');
   const navZeroOut = document.getElementById('nav_zero_out');
   const navSeatConfig = document.getElementById('nav_seat_config');
   const navRouteFinder = document.getElementById('nav_route_finder');
   const navCircuitFinder = document.getElementById('nav_circuit_finder');
+  const viewHome = document.getElementById('view_home');
   const viewZeroOut = document.getElementById('view_zero_out');
   const viewSeatConfig = document.getElementById('view_seat_config');
   const viewRouteFinder = document.getElementById('view_route_finder');
@@ -979,6 +1002,7 @@ function switchTab(tabId) {
 
   if (!navZeroOut || !navSeatConfig || !viewZeroOut || !viewSeatConfig) return;
 
+  const pulseHome = navHome ? navHome.querySelector('.pulse-dot') : null;
   const pulseZero = navZeroOut.querySelector('.pulse-dot');
   const pulseSeat = navSeatConfig.querySelector('.pulse-dot');
   const pulseRoute = navRouteFinder ? navRouteFinder.querySelector('.pulse-dot') : null;
@@ -991,6 +1015,14 @@ function switchTab(tabId) {
   }
 
   // Deactivate all first
+  if (navHome) {
+    navHome.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium tab-btn-inactive border transition shadow-sm';
+    if (pulseHome) pulseHome.classList.add('hidden');
+  }
+  if (viewHome) {
+    viewHome.classList.add('hidden');
+  }
+
   navZeroOut.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium tab-btn-inactive border transition shadow-sm';
   if (pulseZero) pulseZero.classList.add('hidden');
   viewZeroOut.classList.add('hidden');
@@ -1015,13 +1047,25 @@ function switchTab(tabId) {
     viewCircuitFinder.classList.add('hidden');
   }
 
-  if (tabId === 'circuit-finder') {
+  if (tabId === 'home') {
+    if (navHome) {
+      navHome.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tab-btn-active border transition shadow-sm';
+      if (pulseHome) pulseHome.classList.remove('hidden');
+    }
+    if (viewHome) viewHome.classList.remove('hidden');
+    if (window.location && window.location.hash !== '#home') {
+      window.location.hash = '#home';
+    }
+    updateGlobeHubDisplay();
+  } else if (tabId === 'circuit-finder') {
     if (navCircuitFinder) {
       navCircuitFinder.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tab-btn-active border transition shadow-sm';
       if (pulseCircuit) pulseCircuit.classList.remove('hidden');
     }
     if (viewCircuitFinder) viewCircuitFinder.classList.remove('hidden');
-    if (window.location) window.location.hash = '#circuit-finder';
+    if (window.location && window.location.hash !== '#circuit-finder') {
+      window.location.hash = '#circuit-finder';
+    }
     if (typeof window.initCircuitFinder === 'function') {
       window.initCircuitFinder();
     }
@@ -1031,7 +1075,9 @@ function switchTab(tabId) {
       if (pulseRoute) pulseRoute.classList.remove('hidden');
     }
     if (viewRouteFinder) viewRouteFinder.classList.remove('hidden');
-    if (window.location) window.location.hash = '#route-finder';
+    if (window.location && window.location.hash !== '#route-finder') {
+      window.location.hash = '#route-finder';
+    }
     if (typeof window.initRouteFinder === 'function') {
       window.initRouteFinder();
     }
@@ -1039,13 +1085,17 @@ function switchTab(tabId) {
     navSeatConfig.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tab-btn-active border transition shadow-sm';
     if (pulseSeat) pulseSeat.classList.remove('hidden');
     viewSeatConfig.classList.remove('hidden');
-    if (window.location) window.location.hash = '#seat-config';
+    if (window.location && window.location.hash !== '#seat-config') {
+      window.location.hash = '#seat-config';
+    }
     renderCircuitAll();
   } else {
     navZeroOut.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tab-btn-active border transition shadow-sm';
     if (pulseZero) pulseZero.classList.remove('hidden');
     viewZeroOut.classList.remove('hidden');
-    if (window.location) window.location.hash = '#zero-out';
+    if (window.location && window.location.hash !== '#zero-out') {
+      window.location.hash = '#zero-out';
+    }
     if (typeof updateAllCalculations === 'function') {
       updateAllCalculations();
     }
@@ -1148,8 +1198,17 @@ document.addEventListener('DOMContentLoaded', () => {
       ? 'route-finder'
       : (hash === '#seat-config'
         ? 'seat-config'
-        : (hash === '#zero-out' ? 'zero-out' : (savedTab || 'zero-out'))));
+        : (hash === '#zero-out'
+          ? 'zero-out'
+          : (hash === '#home' ? 'home' : (savedTab || 'home')))));
   switchTab(initialTab);
+
+  window.addEventListener('hashchange', () => {
+    const rawHash = (window.location.hash || '').replace('#', '');
+    if (['home', 'zero-out', 'seat-config', 'route-finder', 'circuit-finder'].includes(rawHash)) {
+      switchTab(rawHash);
+    }
+  });
 });
 
 // Hub change handler
@@ -1171,6 +1230,10 @@ function onCircuitHubChange() {
   }
 
   if (badgeEl) badgeEl.textContent = `From ${hubCode}`;
+
+  if (typeof updateGlobeHubDisplay === 'function') {
+    updateGlobeHubDisplay();
+  }
 
   onLegDestinationChange();
   renderCircuitAll();

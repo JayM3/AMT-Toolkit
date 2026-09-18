@@ -28,32 +28,48 @@
     }
   </script>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="homepage.css">
 </head>
 <body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-cyan-500 selection:text-slate-950">
+
+  <!-- Global SVG Sprite Icon Library -->
+  <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="plane" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z M22 2 11 13"/></symbol>
+    <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="price" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 7h8M8 11h1m6 0h1m-8 4h1m6 0h1m-8 3h1m6 0h1"/></symbol>
+    <symbol id="seat" viewBox="0 0 24 24"><path d="M6 3h4l2 10h6a3 3 0 0 1 3 3v1H8L4 5a1.5 1.5 0 0 1 2-2ZM9 17v4m9-4v4M5 10H2"/></symbol>
+    <symbol id="globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M5 6h14M5 18h14"/></symbol>
+    <symbol id="circuit" viewBox="0 0 24 24"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h8a4 4 0 0 1 0 8H9a4 4 0 0 0 0 8h5m0-3 3 3-3 3"/></symbol>
+    <symbol id="check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  </svg>
 
   <!-- Top Navigation Header -->
   <header class="border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-md sticky top-0 z-30">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
       
-      <!-- Brand & Title -->
-      <div class="flex items-center space-x-3">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/10 ring-1 ring-white/15">
+      <!-- Brand & Title (Clickable to Homepage) -->
+      <a href="#home" onclick="switchTab('home'); return false;" class="flex items-center space-x-3 cursor-pointer group select-none" aria-label="AMT Toolkit Home">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/10 ring-1 ring-white/15 group-hover:ring-cyan-400/50 group-hover:scale-105 transition-all">
           <svg class="w-4 h-4 text-white transform -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
           </svg>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="text-base font-bold tracking-tight text-white">AMT Toolkit</h1>
+            <span class="text-base font-bold tracking-tight text-white group-hover:text-cyan-300 transition-colors">AMT Toolkit</span>
             <span class="text-xs text-slate-400 font-normal hidden sm:inline">&bull; Airlines Manager Tycoon Toolkit</span>
           </div>
         </div>
-      </div>
+      </a>
 
       <!-- Navigation for Tools -->
       <nav class="flex items-center gap-1.5 sm:gap-2">
-        <button id="nav_zero_out" onclick="switchTab('zero-out')" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tab-btn-active border transition shadow-sm">
+        <button id="nav_home" onclick="switchTab('home')" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tab-btn-active border transition shadow-sm">
           <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+          <span>Home</span>
+        </button>
+        <button id="nav_zero_out" onclick="switchTab('zero-out')" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium tab-btn-inactive border transition shadow-sm">
+          <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse hidden"></span>
           <span>Zero-Out Price</span>
         </button>
         <button id="nav_seat_config" onclick="switchTab('seat-config')" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium tab-btn-inactive border transition shadow-sm">
@@ -76,8 +92,171 @@
   <!-- Main Content Container -->
   <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
+    <!-- ========================================================================= -->
+    <!-- HOMEPAGE VIEW CONTAINER (INTEGRATED FROM DRAFTS)                          -->
+    <!-- ========================================================================= -->
+    <div id="view_home" class="space-y-8 animate-in fade-in duration-150">
+      
+      <!-- Hero Section with Network Globe Art -->
+      <section class="hero glass-panel" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <span class="section-kicker"><span class="line"></span> PLAN SMARTER. FLY FURTHER.</span>
+          <h1 id="hero-title">Your next great route<br>starts here<span class="cyan">.</span></h1>
+          <p>Find the right destinations, fine-tune your fleet, and turn every hour in the air into opportunity.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="#route-finder" onclick="switchTab('route-finder'); return false;">Explore routes <svg class="icon"><use href="#arrow"/></svg></a>
+            <a class="button secondary" href="#circuit-finder" onclick="switchTab('circuit-finder'); return false;">Build a circuit</a>
+          </div>
+          <div class="hero-note"><svg class="icon"><use href="#check"/></svg> Four connected tools. One better airline.</div>
+        </div>
+        
+        <div class="network-art" aria-hidden="true">
+          <div class="map-caption"><span class="dot"></span> A WORLD OF POSSIBILITIES</div>
+          <svg class="network-globe" viewBox="0 0 520 330" fill="none">
+            <defs>
+              <radialGradient id="glow">
+                <stop stop-color="#0e7490" stop-opacity=".2"/>
+                <stop offset="1" stop-color="#0e7490" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="route" x1="90" y1="210" x2="430" y2="130" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#0891b2" stop-opacity=".3"/>
+                <stop offset=".5" stop-color="#67e8f9"/>
+                <stop offset="1" stop-color="#22d3ee" stop-opacity=".5"/>
+              </linearGradient>
+            </defs>
+            <circle cx="274" cy="170" r="163" fill="url(#glow)"/>
+            <g stroke="#16445b" stroke-width=".8">
+              <circle cx="274" cy="170" r="137"/>
+              <ellipse cx="274" cy="170" rx="91" ry="137"/>
+              <ellipse cx="274" cy="170" rx="38" ry="137"/>
+              <ellipse cx="274" cy="170" rx="137" ry="48"/>
+              <ellipse cx="274" cy="170" rx="137" ry="98"/>
+              <path d="M137 170h274M274 33v274"/>
+            </g>
+            <g fill="#16465b" fill-opacity=".6" stroke="#287087" stroke-opacity=".5" stroke-width="1">
+              <path d="m164 109 24-25 26 3 12 18-7 14 16 11-11 21-16-7-4 19-13-3-9-26-16-5Z M217 170l19 7 18 26-8 23-12 12-4 23-10-16 2-27-12-27Z M272 101l12-21 19 7 9-7 27 4 17 15 29 6 8 21-14 15-24-6-9 14-18-18-20 5-11-14-12 7-13-10Z M277 144l29-5 21 20-8 31-19 23-11-10-5-30-14-12Z M357 219l27-12 15 16-6 18-25-2Z"/>
+            </g>
+            <circle cx="274" cy="170" r="151" stroke="#16445b" stroke-dasharray="2 7" opacity=".6"/>
+            <g stroke="url(#route)" stroke-width="1.5">
+              <path d="M116 168Q186 25 280 100"/>
+              <path d="M280 100Q375 52 434 160"/>
+              <path d="M280 100Q373 137 394 249"/>
+              <path d="M116 168Q185 235 227 265" stroke-dasharray="4 5"/>
+            </g>
+            <g fill="#67e8f9">
+              <circle cx="116" cy="168" r="4"/>
+              <circle cx="280" cy="100" r="5"/>
+              <circle cx="434" cy="160" r="4"/>
+              <circle cx="394" cy="249" r="4"/>
+              <circle cx="227" cy="265" r="3"/>
+            </g>
+            <circle cx="280" cy="100" r="12" stroke="#22d3ee" opacity=".4"/>
+            <circle cx="280" cy="100" r="20" stroke="#22d3ee" opacity=".15"/>
+            <g fill="#cbd5e1" font-size="10" font-family="monospace" letter-spacing="1">
+              <text x="86" y="191">JFK</text>
+              <text x="269" y="77" id="globe-hub">OSL</text>
+              <text x="442" y="164">HND</text>
+              <text x="404" y="270">SYD</text>
+              <text x="213" y="286">GRU</text>
+            </g>
+            <path d="m195 98 12-15-2 12 6 5-4 2-7-4-4 3Z" fill="#cffafe"/>
+          </svg>
+          <div class="map-footer">
+            <span>CONNECT. OPTIMIZE. EXPAND.</span>
+            <span class="map-coordinates" id="globe_hub_coords">59.91° N &nbsp; 10.75° E</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Interactive Planning Toolkit Cards Grid -->
+      <section aria-labelledby="tools-title" class="tool-section">
+        <div class="section-heading">
+          <div>
+            <h2 id="tools-title">Your planning toolkit</h2>
+            <p>From the first route to the last available seat.</p>
+          </div>
+          <span class="subtle">Built for Airlines Manager Tycoon</span>
+        </div>
+        
+        <div class="tools-grid">
+          <!-- 01 / PRICING: Zero-Out Price -->
+          <a href="#zero-out" onclick="switchTab('zero-out'); return false;" class="tool-card glass-panel" style="--tool-color:#22d3ee;--tool-rgb:34,211,238">
+            <div class="tool-top">
+              <span class="tool-icon"><svg class="icon"><use href="#price"/></svg></span>
+              <span class="tool-number">01 / PRICING</span>
+            </div>
+            <h3>Zero-Out Price</h3>
+            <p>Find the ticket price that fills your seats and captures remaining demand.</p>
+            <div class="tool-tags">
+              <span>Fare optimization</span>
+              <span>Revenue forecast</span>
+            </div>
+            <div class="tool-link">
+              <span>Optimize fares</span>
+              <svg class="icon"><use href="#arrow"/></svg>
+            </div>
+          </a>
+
+          <!-- 02 / FLEET: Seat Config -->
+          <a href="#seat-config" onclick="switchTab('seat-config'); return false;" class="tool-card glass-panel" style="--tool-color:#60a5fa;--tool-rgb:96,165,250">
+            <div class="tool-top">
+              <span class="tool-icon"><svg class="icon"><use href="#seat"/></svg></span>
+              <span class="tool-number">02 / FLEET</span>
+            </div>
+            <h3>Seat Config</h3>
+            <p>Balance economy, premium cabins, and cargo to get more from every aircraft.</p>
+            <div class="tool-tags">
+              <span>Cabin layouts</span>
+              <span>Payload balance</span>
+            </div>
+            <div class="tool-link">
+              <span>Configure aircraft</span>
+              <svg class="icon"><use href="#arrow"/></svg>
+            </div>
+          </a>
+
+          <!-- 03 / NETWORK: Route Finder -->
+          <a href="#route-finder" onclick="switchTab('route-finder'); return false;" class="tool-card glass-panel" style="--tool-color:#a78bfa;--tool-rgb:167,139,250">
+            <div class="tool-top">
+              <span class="tool-icon"><svg class="icon"><use href="#globe"/></svg></span>
+              <span class="tool-number">03 / NETWORK</span>
+            </div>
+            <h3>Route Finder</h3>
+            <p>Discover destinations that match your hub, aircraft, and growth strategy.</p>
+            <div class="tool-tags">
+              <span>Airport intelligence</span>
+              <span>Route filters</span>
+            </div>
+            <div class="tool-link">
+              <span>Discover routes</span>
+              <svg class="icon"><use href="#arrow"/></svg>
+            </div>
+          </a>
+
+          <!-- 04 / SCHEDULE: Circuit Finder -->
+          <a href="#circuit-finder" onclick="switchTab('circuit-finder'); return false;" class="tool-card glass-panel" style="--tool-color:#fbbf24;--tool-rgb:251,191,36">
+            <div class="tool-top">
+              <span class="tool-icon"><svg class="icon"><use href="#circuit"/></svg></span>
+              <span class="tool-number">04 / SCHEDULE</span>
+            </div>
+            <h3>Circuit Finder</h3>
+            <p>Build balanced 168-hour rotations that keep your fleet flying all week.</p>
+            <div class="tool-tags">
+              <span>Smart rotations</span>
+              <span>Less idle time</span>
+            </div>
+            <div class="tool-link">
+              <span>Build a circuit</span>
+              <svg class="icon"><use href="#arrow"/></svg>
+            </div>
+          </a>
+        </div>
+      </section>
+
+    </div>
+
     <!-- Zero-Out Price Calculator View -->
-    <div id="view_zero_out" class="space-y-6">
+    <div id="view_zero_out" class="space-y-6 hidden">
 
     <!-- Unified Tool Control & Summary Stats Box -->
     <section class="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-xl space-y-4">

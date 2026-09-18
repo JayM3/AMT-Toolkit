@@ -12,6 +12,7 @@ A high-performance, client-side web application suite tailored for players of **
 ## 📑 Table of Contents
 
 - [Key Features](#-key-features)
+  - [0. Interactive Toolkit Homepage](#0-interactive-toolkit-homepage)
   - [1. Zero-Out Price Calculator](#1-zero-out-price-calculator)
   - [2. Seat Configuration Optimizer](#2-seat-configuration-optimizer)
   - [3. Route Finder & Route Catalog](#3-route-finder--route-catalog)
@@ -26,6 +27,16 @@ A high-performance, client-side web application suite tailored for players of **
 ---
 
 ## 🚀 Key Features
+
+### 0. Interactive Toolkit Homepage
+*The central command hub for airline planning, navigation, and network overview.*
+
+- **Hero Command Center**: High-tech glassmorphism presentation with vector route arcs, network art, and quick-launch actions ("Explore routes" and "Build a circuit").
+- **Dynamic Hub Art & Coordinates**: Automatically displays your active home hub airport (e.g., `OSL`, `JFK`, `LHR`) with its exact geographic coordinates, dynamically synced with your fleet configuration.
+- **Unified Tool Cards**: Visual overview of all four integrated tools with tag pills, color-coded accents, hover elevation, and instant 1-click navigation.
+- **Seamless Navigation**: Clickable brand header logo and title to return to the homepage from any view at any time, plus top navbar tab and browser back/forward history routing (`#home`, `#zero-out`, `#seat-config`, `#route-finder`, `#circuit-finder`).
+
+---
 
 ### 1. Zero-Out Price Calculator
 *Eliminate remaining demand by calculating the exact higher ticket fares passengers are willing to pay.*
@@ -139,6 +150,7 @@ $$\text{Weekly Distance (km)} = \sum_{i=1}^{N} (\text{Distance}_i \times 2)$$
 AMT-Toolkit/
 │
 ├── index.html          # Main single-page web application interface
+├── homepage.css        # Scoped styles & responsive layouts for the toolkit homepage
 ├── app.js              # Pricing calculations, seat configuration & state engine
 ├── route_finder.js     # Airport database search, distance math & route catalog
 ├── circuit_finder.js   # Combinatorial solver, multi-hub optimizer & circuit engine
