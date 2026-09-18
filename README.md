@@ -14,7 +14,8 @@ A high-performance, client-side web application suite tailored for players of **
 - [Key Features](#-key-features)
   - [1. Zero-Out Price Calculator](#1-zero-out-price-calculator)
   - [2. Seat Configuration Optimizer](#2-seat-configuration-optimizer)
-  - [3. Route Finder & Circuit Builder](#3-route-finder--circuit-builder)
+  - [3. Route Finder & Route Catalog](#3-route-finder--route-catalog)
+  - [4. Automated Circuit Finder](#4-automated-circuit-finder)
 - [Formulas & Game Mechanics](#-formulas--game-mechanics)
 - [Project Structure](#-project-structure)
 - [Quick Start](#-quick-start)
@@ -51,14 +52,42 @@ A high-performance, client-side web application suite tailored for players of **
 
 ---
 
-### 3. Route Finder & Circuit Builder
-*Discover profitable routes and build 168-hour weekly schedules.*
+### 3. Route Finder & Route Catalog
+*Explore profitable routes and browse global airport intelligence.*
 
-- **Global Airport Database**: Hundreds of airports spanning 211 countries, complete with IATA codes, categories (Cat 1–10), coordinates, taxes, and passenger demand indices.
+- **Global Airport Database**: 2,650 airports spanning 211 countries, complete with IATA codes, categories (Cat 1–10), coordinates, taxes, and passenger demand indices.
 - **Great-Circle Distance**: Accurate distance calculations using the Haversine formula.
 - **Advanced Filtering**: Filter routes by hub airport, destination country, continent, category compatibility, distance radius, and demand criteria.
-- **168h Circuit Planner**: Chain multiple routes together into 168-hour (7-day) or 24-hour schedules to ensure your aircraft operate with 100% schedule utilization.
 - **Seamless Integration**: Directly push selected routes and aircraft into the Seat Configurator or Zero-Out Calculator.
+
+---
+
+### 4. Automated Circuit Finder
+*Discover optimal 168-hour schedules, multi-day rotations, and balanced class circuits in milliseconds.*
+
+- **Ultra-Fast Combinatorial Solver**: Evaluates thousands of destination combinations in < 15ms to assemble complete circuits matching target cycle lengths (168h weekly, 24h daily, 48h, 72h, etc.) with customizable slack tolerance (exact 0h, ≤2h, ≤4h, ≤8h).
+- **Class Multiplier Interpretation**: Built-in ratio strategies interpret raw airport database multipliers:
+  - **Balanced Tri-Class (60/25/15)**: Default strategy balancing Economy, Business, and First Class.
+  - **100% Economy Focus**: Maximizes volume for high-density economy operations.
+  - **Premium Luxury (25/45/30)**: Prioritizes lucrative premium cabin demand.
+  - **Cargo Hybrid (40/20/10/30)**: Balances passenger demand with heavy freight capability.
+  - **Interactive Custom Sliders**: Fine-tune custom class weights and leg duration bounds.
+- **Empirical Star Quality Rating**: Ranks destination airports and circuit quality using $(Y + J + F) / 3$:
+  - `★★★★★` (5 Stars): Global Mega-Hubs ($AVG \ge 30$, top 99 airports worldwide)
+  - `★★★★` (4 Stars): Major International ($AVG \ge 22$, top 200 airports)
+  - `★★★` (3 Stars): Strong Regional ($AVG \ge 15$, top 400 airports)
+  - `★★` (2 Stars): Moderate Commercial ($AVG \ge 8$, top 1,000 airports)
+  - `★` (1 Star): Light / Remote ($AVG < 8$)
+- **Aircraft Route Type Overrides**: Force any aircraft model (e.g. long-haul A380-800 or 747-400) to search specific route types:
+  - `Mix`: Any compatible flight duration.
+  - `Short-Haul`: Forces legs $\le 8.0\text{h}$ round-trip.
+  - `Medium-Haul`: Forces legs between $8.0\text{h}$ and $16.0\text{h}$.
+  - `Long-Haul`: Forces legs $\ge 16.0\text{h}$.
+- **Airline Network & Owned Hubs Drawer**: Expandable dropdown managing your owned hubs, featuring one-click hub switching, multi-hub empire search, and the ability to exclude owned hubs from destination pools.
+- **Precision Routing (Include / Exclude Chips)**: Specify must-fly destinations and exclude specific airports with live chip management and error validation.
+- **1-Click Bridge to Seat Configurator**: Instantly transfer any discovered circuit into the Seat Configurator to simulate cabin demand, seating layouts, and financial returns.
+- **Interactive Route Swap Modal**: Swap any individual leg with alternative airports of matching flight time to maintain schedule harmony.
+- **Shared Circuit Library**: Integrated with `am_saved_circuits_v1` so circuits saved in Circuit Finder are immediately accessible across Seat Config and Route Finder.
 
 ---
 
@@ -80,7 +109,27 @@ Where:
 - $C$: Actual scheduled flight capacity ($D_{\text{sim}} - R$).
 
 ### Flight Duration
-$$\text{Flight Time} = \text{round}\left(\frac{\text{Distance (km)}}{\text{Cruising Speed (km/h)}}\right) \times 2 + \text{Turnaround Time}$$
+$$\text{Flight Time (Hours)} = \text{round}\left(\frac{\text{Distance (km)}}{\text{Cruising Speed (km/h)}}\right) \times 2$$
+
+### Circuit Optimization Formulas
+
+#### 1. Empirical Airport Star Demand Average
+$$AVG = \frac{\text{Economy} + \text{Business} + \text{First}}{3}$$
+
+Thresholds calibrated against global database distribution:
+- **5 Stars**: $AVG \ge 30$ (Global Mega-Hubs)
+- **4 Stars**: $AVG \ge 22$ (Major International)
+- **3 Stars**: $AVG \ge 15$ (Strong Regional)
+- **2 Stars**: $AVG \ge 8$ (Moderate Commercial)
+- **1 Star**: $AVG < 8$ (Light / Remote)
+
+#### 2. Weighted Class Multiplier Score
+$$\text{Score} = (Y \times W_Y) + (2 \times J \times W_J) + (3 \times F \times W_F)$$
+Where $W_Y, W_J, W_F$ are the strategy weights (e.g., $0.60, 0.25, 0.15$ for Balanced Tri-Class).
+
+#### 3. Schedule Rotation & Weekly Distance
+$$\text{Total Duration} = \sum_{i=1}^{N} \text{Dur}_i \quad (\le T_{\text{target}} - \text{Slack})$$
+$$\text{Weekly Distance (km)} = \sum_{i=1}^{N} (\text{Distance}_i \times 2)$$
 
 ---
 
@@ -91,13 +140,15 @@ AMT-Toolkit/
 │
 ├── index.html          # Main single-page web application interface
 ├── app.js              # Pricing calculations, seat configuration & state engine
-├── route_finder.js     # Airport database search, distance math & circuit builder
+├── route_finder.js     # Airport database search, distance math & route catalog
+├── circuit_finder.js   # Combinatorial solver, multi-hub optimizer & circuit engine
 ├── styles.css          # Custom styling, dark mode theme & animations
 │
 ├── data/
-│   ├── aircraft.js     # Aircraft specifications database
-│   └── airports.js     # Global airports dataset with IATA, coordinates & taxes
+│   ├── aircraft.js     # Aircraft specifications database (102 models)
+│   └── airports.js     # Global airports dataset with IATA, coordinates & taxes (2,650 airports)
 │
+├── Drafts/             # Interactive prototypes & preview sandboxes
 ├── .gitignore          # Git ignore configuration
 ├── LICENSE             # Apache 2.0 License
 └── README.md           # Project documentation

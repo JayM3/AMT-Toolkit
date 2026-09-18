@@ -253,3 +253,16 @@ input[type=number] {
   }
 }
 
+/* Badge Pill Utility Class */
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  border-width: 1px;
+}
+
