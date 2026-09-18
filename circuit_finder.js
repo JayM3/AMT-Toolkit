@@ -125,10 +125,14 @@
     return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
   }
 
+  /**
+   * AM Flight Time formula: 2 * (dist / speed + 1.0h ground), rounded to nearest 15 mins
+   * Exact same calculation as in Seat Configurator (app.js)
+   */
   function cf_calculateFlightTimeHours(distanceKm, speedKmh) {
-    if (!speedKmh || speedKmh <= 0) return 0;
-    const rawHours = (distanceKm / speedKmh) * 2;
-    return Math.round(rawHours * 4) / 4;
+    if (!distanceKm || distanceKm <= 0 || !speedKmh || speedKmh <= 0) return 0;
+    const rt = ((distanceKm / speedKmh) + 1.0) * 2;
+    return Math.ceil(rt * 4) / 4;
   }
 
   function cf_formatHoursMinutes(hours) {
@@ -2024,6 +2028,8 @@
   window.cf_getStarRating = cf_getStarRating;
   window.cf_computeAirportDemandStats = cf_computeAirportDemandStats;
   window.cf_performRouteSwap = cf_performRouteSwap;
+  window.cf_haversineDistance = cf_haversineDistance;
+  window.cf_calculateFlightTimeHours = cf_calculateFlightTimeHours;
 
   document.addEventListener('DOMContentLoaded', () => {
     initCircuitFinder();
