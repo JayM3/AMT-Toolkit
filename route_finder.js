@@ -176,10 +176,9 @@ function initRouteFinder() {
   rf_initCountryFilter();
   rf_updateSavedCircuitsCount();
   
-  // Use existing Seat Config hub if available, otherwise default to OSL
-  const initialHub = (typeof window.CIRCUIT_HUB === 'string' && window.CIRCUIT_HUB) ? window.CIRCUIT_HUB : 'OSL';
-  rf_setHubByIata(initialHub);
-  rf_setAircraftById('a320-200');
+  // Default: A380-800 aircraft and prompt user to enter hub (no default hub)
+  rf_setAircraftById('a380-800');
+  rf_clearHub();
 
   // Click outside combobox or sort dropdown to close
   document.addEventListener('click', (e) => {
@@ -453,33 +452,47 @@ document.addEventListener('DOMContentLoaded', () => {
       if (typeof AIRPORTS_DATABASE === 'undefined') return;
       const countries = Array.from(new Set(AIRPORTS_DATABASE.map(a => a.country).filter(Boolean))).sort();
       const countrySelect = document.getElementById('rf_hub_country_select');
-      countrySelect.innerHTML = countries.map(c => `<option value="${c}">${c}</option>`).join('');
+      countrySelect.innerHTML = `<option value="" disabled selected>Select Country...</option>` +
+        countries.map(c => `<option value="${c}">${c}</option>`).join('');
 
-      if (countries.includes('Norway')) countrySelect.value = 'Norway';
-      rf_populateHubAirportsForCountry(countrySelect.value);
+      const airportSelect = document.getElementById('rf_hub_airport_select');
+      if (airportSelect) {
+        airportSelect.innerHTML = `<option value="" disabled selected>Select Airport...</option>`;
+      }
     }
 
     function rf_populateHubAirportsForCountry(country) {
       const airportSelect = document.getElementById('rf_hub_airport_select');
+      if (!country) {
+        airportSelect.innerHTML = `<option value="" disabled selected>Select Airport...</option>`;
+        return;
+      }
       const airports = AIRPORTS_DATABASE.filter(a => a.country === country).sort((a,b) => a.name.localeCompare(b.name));
-      airportSelect.innerHTML = airports.map(a => `<option value="${a.iata}">${a.iata} - ${a.name} (Cat ${a.cat})</option>`).join('');
+      airportSelect.innerHTML = `<option value="" disabled selected>Select Airport...</option>` +
+        airports.map(a => `<option value="${a.iata}">${a.iata} - ${a.name} (Cat ${a.cat})</option>`).join('');
     }
 
     function rf_onHubCountryChange() {
       const country = document.getElementById('rf_hub_country_select').value;
+      if (!country) return;
       rf_populateHubAirportsForCountry(country);
-      rf_onHubAirportSelectChange();
     }
 
     function rf_onHubAirportSelectChange() {
       const iata = document.getElementById('rf_hub_airport_select').value;
-      rf_setHubByIata(iata);
-      rf_refreshAll();
+      if (iata) {
+        rf_setHubByIata(iata);
+        rf_refreshAll();
+      }
     }
 
     function rf_onHubIataInput() {
       const input = document.getElementById('rf_hub_iata_input');
       const val = input.value.trim().toUpperCase();
+      if (val.length === 0) {
+        rf_clearHub();
+        return;
+      }
       if (val.length === 3) {
         const found = findAirport(val);
         if (found) {
@@ -488,13 +501,70 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           document.getElementById('rf_hub_valid_icon').innerHTML = `<span class="text-rose-400 font-bold">&times;</span>`;
           document.getElementById('rf_hub_display_name').textContent = 'Airport not found';
+          document.getElementById('rf_hub_display_cat').textContent = 'Cat —';
+          document.getElementById('rf_hub_display_location').textContent = 'Check spelling or enter a valid 3-letter IATA code';
+          document.getElementById('rf_hub_display_tax').textContent = '—';
         }
+      } else {
+        document.getElementById('rf_hub_valid_icon').innerHTML = '';
       }
     }
 
     function rf_setQuickHub(iata) {
       rf_setHubByIata(iata);
       rf_refreshAll();
+    }
+
+    function rf_clearHub() {
+      currentHub = null;
+      candidatePool = [];
+      filteredCandidates = [];
+
+      const input = document.getElementById('rf_hub_iata_input');
+      if (input) {
+        input.value = '';
+        input.placeholder = 'Please enter hub';
+      }
+
+      const validIcon = document.getElementById('rf_hub_valid_icon');
+      if (validIcon) {
+        validIcon.innerHTML = '';
+      }
+
+      const hubBadge = document.getElementById('header_hub_badge');
+      if (hubBadge) {
+        hubBadge.textContent = 'Please enter hub';
+        hubBadge.className = 'font-bold text-slate-400 font-mono';
+      }
+
+      const nameEl = document.getElementById('rf_hub_display_name');
+      if (nameEl) nameEl.textContent = 'Please enter hub';
+
+      const catEl = document.getElementById('rf_hub_display_cat');
+      if (catEl) catEl.textContent = 'Cat —';
+
+      const locEl = document.getElementById('rf_hub_display_location');
+      if (locEl) locEl.textContent = 'Enter an IATA code or pick a Quick Hub below';
+
+      const taxEl = document.getElementById('rf_hub_display_tax');
+      if (taxEl) taxEl.textContent = '—';
+
+      const countrySelect = document.getElementById('rf_hub_country_select');
+      if (countrySelect) countrySelect.value = '';
+      const airportSelect = document.getElementById('rf_hub_airport_select');
+      if (airportSelect) airportSelect.innerHTML = `<option value="" disabled selected>Select Airport...</option>`;
+
+      const warningBanner = document.getElementById('hub_cat_warning_banner');
+      if (warningBanner) warningBanner.classList.add('hidden');
+
+      const summaryEl = document.getElementById('results_summary_text');
+      if (summaryEl) summaryEl.textContent = 'Please enter a departure hub to view matching routes';
+
+      document.querySelectorAll('#view_route_finder button[onclick^="rf_setQuickHub"]').forEach(btn => {
+        btn.className = 'px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700';
+      });
+
+      rf_renderResults();
     }
 
     function rf_setHubByIata(iata) {
@@ -506,11 +576,27 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('rf_hub_valid_icon').innerHTML = `<svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
 
       const hubBadge = document.getElementById('header_hub_badge');
-      if (hubBadge) hubBadge.textContent = `${found.iata} (Cat ${found.cat})`;
+      if (hubBadge) {
+        hubBadge.textContent = `${found.iata} (Cat ${found.cat})`;
+        hubBadge.className = 'font-bold text-cyan-400 font-mono';
+      }
       document.getElementById('rf_hub_display_name').textContent = `${found.name} (${found.city})`;
       document.getElementById('rf_hub_display_cat').textContent = `Cat ${found.cat}`;
       document.getElementById('rf_hub_display_location').textContent = `${found.country} • ${found.lat.toFixed(2)}°, ${found.lon.toFixed(2)}°`;
       document.getElementById('rf_hub_display_tax').textContent = `$${Number(found.flightTax || 0).toLocaleString()} tax`;
+
+      const summaryEl = document.getElementById('results_summary_text');
+      if (summaryEl) summaryEl.textContent = `Routes departing from ${found.iata} within range & runway category`;
+
+      // Highlight active quick hub button
+      document.querySelectorAll('#view_route_finder button[onclick^="rf_setQuickHub"]').forEach(btn => {
+        const btnHub = btn.textContent.trim();
+        if (btnHub === found.iata) {
+          btn.className = 'px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 font-mono text-[11px] border border-cyan-700 font-bold';
+        } else {
+          btn.className = 'px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700';
+        }
+      });
 
       const countrySelect = document.getElementById('rf_hub_country_select');
       if (countrySelect.value !== found.country) {
@@ -595,7 +681,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // MAIN SEARCH & FILTER COMPUTE ENGINE
     // =========================================================================
     function rf_refreshAll() {
-      if (!currentHub || !currentAircraft || typeof AIRPORTS_DATABASE === 'undefined') return;
+      if (!currentHub) {
+        candidatePool = [];
+        filteredCandidates = [];
+        rf_renderResults();
+        return;
+      }
+      if (!currentAircraft || typeof AIRPORTS_DATABASE === 'undefined') return;
 
       const hubLat = currentHub.lat;
       const hubLon = currentHub.lon;
@@ -848,15 +940,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function rf_resetAllFilters() {
-      document.getElementById('rf_cat_min').value = currentAircraft ? Math.max(1, currentAircraft.category) : 1;
+      // 1. Reset aircraft to default A380-800
+      rf_setAircraftById('a380-800');
+
+      // 2. Reset departure hub to "Please enter hub"
+      rf_clearHub();
+
+      // 3. Reset category filters for A380-800 (Cat 8 - 10)
+      document.getElementById('rf_cat_min').value = currentAircraft ? Math.max(1, currentAircraft.category) : 8;
       document.getElementById('rf_cat_max').value = '10';
+      const catHint = document.getElementById('cat_filter_hint');
+      if (catHint && currentAircraft) {
+        catHint.textContent = `Min Cat ${currentAircraft.category} (${currentAircraft.name})`;
+      }
+
+      // 4. Reset duration filters
       document.getElementById('rf_dur_min_hh').value = '2';
       document.getElementById('rf_dur_min_mm').value = '0';
       document.getElementById('rf_dur_max_hh').value = '50';
       document.getElementById('rf_dur_max_mm').value = '45';
+
+      // 5. Reset geography filters
       document.getElementById('rf_continent_filter').value = 'ALL';
       document.getElementById('rf_continent_hint').textContent = 'All';
       rf_initCountryFilter('ALL');
+
+      // 6. Reset search & presets
       rf_clearTableSearch();
       currentDurationPreset = 'any';
       currentSort = 'dist_asc';
@@ -864,7 +973,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const sortLabel = document.getElementById('rf_sort_label');
       if (sortLabel) sortLabel.textContent = 'Distance: Low to High';
       rf_setDurationPreset('any');
-      showToast('Filters reset to default', 'info');
+
+      showToast('Filters reset (A380-800 default, please enter hub)', 'info');
     }
 
     // =========================================================================
@@ -1079,6 +1189,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Render Route Cards
+      const activeHubIata = currentHub ? currentHub.iata : 'HUB';
       legsContainer.innerHTML = currentCircuitLegs.map((leg, idx) => {
         const totalLegHours = leg.durationHours * leg.flightsPerDay;
         const isOnlyRouteIn24h = legCount === 1 && is24hCircuit;
@@ -1115,7 +1226,7 @@ document.addEventListener('DOMContentLoaded', () => {
               </div>
               <div>
                 <div class="flex items-center gap-2 flex-wrap">
-                  <span class="font-bold text-white font-mono text-sm">${currentHub.iata} ✈ ${leg.dstIata}</span>
+                  <span class="font-bold text-white font-mono text-sm">${activeHubIata} ✈ ${leg.dstIata}</span>
                   <span class="text-xs text-slate-300 font-medium">${leg.name}</span>
                   <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-mono">Cat ${leg.category}</span>
                   <span class="text-[10px] text-slate-400 font-mono">(${Number(leg.distanceKm).toLocaleString()} km)</span>
@@ -1195,8 +1306,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 flightBlocksHtml += `
                   <div class="timeline-flight-block ${bgGrad} ${borderCol}"
                        style="left: ${leftPct}%; width: ${widthPct}%;"
-                       title="${currentHub.iata} ➔ ${leg.dstIata} (${leg.name || ''}) | ${dayName} ${timeLabel} (${leg.durationText})">
-                    <span class="truncate font-mono">${currentHub.iata} ✈ ${leg.dstIata}</span>
+                       title="${activeHubIata} ➔ ${leg.dstIata} (${leg.name || ''}) | ${dayName} ${timeLabel} (${leg.durationText})">
+                    <span class="truncate font-mono">${activeHubIata} ✈ ${leg.dstIata}</span>
                     <span class="text-[10px] hidden sm:inline">${flag}</span>
                     ${widthPct >= 14 ? `<span class="text-[9px] opacity-80 font-mono hidden md:inline">${leg.durationText}</span>` : ''}
                   </div>
@@ -1242,14 +1353,14 @@ document.addEventListener('DOMContentLoaded', () => {
                   const nextDayName = dayNames[(dayIdx + 1) % 7];
                   const contNote = isContinuation ? ` [Continued from ${prevDayName}]` : '';
                   const willContNote = willContinue ? ` [Continues into ${nextDayName}]` : '';
-                  const title = `${currentHub.iata} ➔ ${leg.dstIata} (${leg.name || leg.city || ''}) | Total RT: ${leg.durationText} | ${dayName} ${startClock} - ${endClock} (${segDurText})${contNote}${willContNote}`;
+                  const title = `${activeHubIata} ➔ ${leg.dstIata} (${leg.name || leg.city || ''}) | Total RT: ${leg.durationText} | ${dayName} ${startClock} - ${endClock} (${segDurText})${contNote}${willContNote}`;
 
                   flightBlocksHtml += `
                     <div class="timeline-flight-block ${bgGrad} ${borderCol}"
                          style="left: ${leftPct}%; width: ${widthPct}%;"
                          title="${title}">
                       ${isContinuation ? '<span class="text-[9px] opacity-75 font-mono">&larr;</span>' : ''}
-                      <span class="truncate font-mono">${currentHub.iata} ✈ ${leg.dstIata}</span>
+                      <span class="truncate font-mono">${activeHubIata} ✈ ${leg.dstIata}</span>
                       <span class="text-[10px] hidden sm:inline">${flag}</span>
                       ${widthPct >= 14 ? `<span class="text-[9px] opacity-80 font-mono hidden md:inline">${leg.durationText}</span>` : ''}
                       ${willContinue ? '<span class="text-[9px] opacity-75 font-mono">&rarr;</span>' : ''}
@@ -1294,8 +1405,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const widthPct = Math.min(100, (leg.durationHours / targetHours) * 100);
 
             timelineBlocks.push(`
-              <div style="width: ${widthPct}%" class="h-full rounded-lg bg-gradient-to-r ${leg.color.bg} border ${leg.color.borderCol} p-1 text-white shadow-sm flex flex-col justify-center overflow-hidden transition-all group" title="${currentHub.iata} ➔ ${leg.dstIata} (${leg.durationText}) | ${timeLabel}">
-                <div class="font-mono font-bold text-[10px] leading-none truncate">${currentHub.iata} ✈ ${leg.dstIata}</div>
+              <div style="width: ${widthPct}%" class="h-full rounded-lg bg-gradient-to-r ${leg.color.bg} border ${leg.color.borderCol} p-1 text-white shadow-sm flex flex-col justify-center overflow-hidden transition-all group" title="${activeHubIata} ➔ ${leg.dstIata} (${leg.durationText}) | ${timeLabel}">
+                <div class="font-mono font-bold text-[10px] leading-none truncate">${activeHubIata} ✈ ${leg.dstIata}</div>
                 <div class="text-[9px] text-cyan-100 font-mono leading-none truncate mt-0.5 opacity-90">${leg.durationText}</div>
               </div>
             `);
@@ -1356,6 +1467,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const tableContainer = document.getElementById('results_table_container');
       const gridContainer = document.getElementById('results_grid_container');
       const paginationContainer = document.getElementById('pagination_container');
+
+      const titleEl = document.getElementById('no_matches_title');
+      const resetBtn = document.getElementById('no_matches_reset_btn');
+
+      if (!currentHub) {
+        noMatchContainer.classList.remove('hidden');
+        tableContainer.classList.add('hidden');
+        gridContainer.classList.add('hidden');
+        paginationContainer.classList.add('hidden');
+
+        if (titleEl) titleEl.textContent = 'Please Enter a Departure Hub';
+        const diagEl = document.getElementById('no_matches_diagnostic_text');
+        if (diagEl) {
+          diagEl.textContent = `Enter an airport IATA code above (e.g. MPM, DXB, LHR, JFK) or pick a Quick Hub to discover compatible routes for the ${currentAircraft ? currentAircraft.name : 'aircraft'}.`;
+        }
+        if (resetBtn) resetBtn.classList.add('hidden');
+        return;
+      }
+
+      if (resetBtn) resetBtn.classList.remove('hidden');
+      if (titleEl) titleEl.textContent = 'No Matching Routes Found';
 
       if (total === 0) {
         noMatchContainer.classList.remove('hidden');
@@ -1483,7 +1615,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function rf_updateNoMatchDiagnostic() {
       const diagEl = document.getElementById('no_matches_diagnostic_text');
-      if (!currentHub || !currentAircraft) return;
+      if (!diagEl) return;
+      if (!currentHub) {
+        diagEl.textContent = `Enter an airport IATA code above (e.g. MPM, DXB, LHR, JFK) or pick a Quick Hub to discover compatible routes for the ${currentAircraft ? currentAircraft.name : 'aircraft'}.`;
+        return;
+      }
+      if (!currentAircraft) return;
 
       if (currentHub.cat < currentAircraft.category) {
         diagEl.textContent = `Zero routes possible: Departure hub ${currentHub.iata} (Cat ${currentHub.cat}) cannot accommodate ${currentAircraft.name} (requires Cat ${currentAircraft.category}).`;
@@ -1530,6 +1667,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function rf_openSaveCircuitModal() {
+      if (!currentHub) {
+        showToast('Please select a departure hub first', 'warning');
+        return;
+      }
       if (currentCircuitLegs.length === 0) {
         showToast('Add at least one route to the circuit before saving', 'warning');
         return;
@@ -1771,6 +1912,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 function rf_openInSeatConfigurator() {
+  if (!currentHub) {
+    if (typeof showToast === 'function') {
+      showToast('Please select a departure hub first', 'warning');
+    }
+    return;
+  }
   if (!currentCircuitLegs || currentCircuitLegs.length === 0) {
     if (typeof showToast === 'function') {
       showToast('Please add at least one route before opening in Seat Configurator', 'warning');
@@ -1824,6 +1971,7 @@ window.rf_onHubAirportSelectChange = rf_onHubAirportSelectChange;
 window.rf_onHubIataInput = rf_onHubIataInput;
 window.rf_setQuickHub = rf_setQuickHub;
 window.rf_setHubByIata = rf_setHubByIata;
+window.rf_clearHub = rf_clearHub;
 window.rf_setHubEntryMode = rf_setHubEntryMode;
 window.rf_validateHubRunwayCompatibility = rf_validateHubRunwayCompatibility;
 window.rf_initCountryFilter = rf_initCountryFilter;

@@ -1139,11 +1139,11 @@
           <div class="flex items-center flex-wrap gap-2 pt-1 text-xs">
             <div class="px-2.5 py-0.5 rounded-lg bg-slate-900 border border-slate-700 flex items-center gap-1.5">
               <span class="text-slate-400">Hub:</span>
-              <span id="header_hub_badge" class="font-bold text-cyan-400 font-mono">OSL (Cat 10)</span>
+              <span id="header_hub_badge" class="font-bold text-slate-400 font-mono">Please enter hub</span>
             </div>
             <div class="px-2.5 py-0.5 rounded-lg bg-slate-900 border border-slate-700 flex items-center gap-1.5">
               <span class="text-slate-400">Aircraft:</span>
-              <span id="header_ac_badge" class="font-bold text-cyan-400 font-mono">A320-200 (Cat 7)</span>
+              <span id="header_ac_badge" class="font-bold text-cyan-400 font-mono">A380-800 (15,556 km)</span>
             </div>
             <div class="px-2.5 py-0.5 rounded-lg bg-slate-900 border border-slate-700 flex items-center gap-1.5">
               <span class="text-slate-400">Circuit:</span>
@@ -1184,7 +1184,7 @@
             <h3 class="text-xs font-bold text-white uppercase tracking-wider">Aircraft Model</h3>
           </div>
           <div class="flex items-center gap-1.5">
-            <span id="rf_ac_header_cat_badge" class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">Cat 5</span>
+            <span id="rf_ac_header_cat_badge" class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">Cat 8</span>
             <button onclick="rf_toggleAcDetails()" id="ac_details_toggle_btn" class="text-[11px] text-cyan-400 hover:text-cyan-300 transition underline decoration-dotted ml-1">Show Details</button>
           </div>
         </div>
@@ -1196,8 +1196,8 @@
               <!-- Combobox Trigger Button -->
               <button type="button" id="rf_combobox_trigger" onclick="rf_toggleAircraftCombobox()" class="flex-1 min-w-0 px-3 py-2 bg-slate-900 border border-slate-700 hover:border-cyan-500 rounded-lg text-white text-xs flex items-center justify-between group transition-colors focus:ring-2 focus:ring-cyan-500 focus:outline-none text-left">
                 <div class="flex items-center gap-1.5 min-w-0 truncate">
-                  <span id="rf_trigger_ac_name" class="font-bold text-white group-hover:text-cyan-300 transition-colors shrink-0">A320-200</span>
-                  <span id="rf_trigger_ac_details" class="text-[11px] text-slate-400 truncate">(180 seats • 828 km/h • 6,111 km)</span>
+                  <span id="rf_trigger_ac_name" class="font-bold text-white group-hover:text-cyan-300 transition-colors shrink-0">A380-800</span>
+                  <span id="rf_trigger_ac_details" class="text-[11px] text-slate-400 truncate">(853 seats • 903 km/h • 15,556 km)</span>
                 </div>
                 <svg class="w-4 h-4 text-slate-400 group-hover:text-cyan-400 shrink-0 ml-1.5 transition-transform duration-200" id="rf_combobox_chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -1251,29 +1251,29 @@
           <div id="rf_ac_spec_summary" class="grid grid-cols-2 gap-2 pt-1">
             <div class="p-2 rounded-lg bg-slate-900/90 border border-slate-800">
               <span class="text-[10px] text-slate-400 block uppercase">Max Range</span>
-              <span id="rf_ac_spec_range" class="text-xs font-bold text-white font-mono">6,111 km</span>
+              <span id="rf_ac_spec_range" class="text-xs font-bold text-white font-mono">15,556 km</span>
             </div>
             <div class="p-2 rounded-lg bg-slate-900/90 border border-slate-800">
               <span class="text-[10px] text-slate-400 block uppercase">Cruise Speed</span>
-              <span id="rf_ac_spec_speed" class="text-xs font-bold text-white font-mono">828 km/h</span>
+              <span id="rf_ac_spec_speed" class="text-xs font-bold text-white font-mono">903 km/h</span>
             </div>
             <div class="p-2 rounded-lg bg-slate-900/90 border border-slate-800">
               <span class="text-[10px] text-slate-400 block uppercase">Min Category</span>
-              <span id="rf_ac_spec_cat" class="text-xs font-bold text-amber-400 font-mono">Cat 5</span>
+              <span id="rf_ac_spec_cat" class="text-xs font-bold text-amber-400 font-mono">Cat 8</span>
             </div>
             <div class="p-2 rounded-lg bg-slate-900/90 border border-slate-800">
               <span class="text-[10px] text-slate-400 block uppercase">Total Seats</span>
-              <span id="rf_ac_spec_seats" class="text-xs font-bold text-cyan-400 font-mono">180 seats</span>
+              <span id="rf_ac_spec_seats" class="text-xs font-bold text-cyan-400 font-mono">853 seats</span>
             </div>
           </div>
 
           <!-- Expandable Full Aircraft Details (Show Details Thingie) -->
           <div id="rf_ac_full_details" class="hidden p-2.5 rounded-lg bg-slate-950/70 border border-slate-800/80 space-y-1 text-[11px] text-slate-300">
             <div class="flex justify-between"><span class="text-slate-400">Manufacturer:</span> <span id="rf_ac_det_make" class="font-medium text-white">Airbus</span></div>
-            <div class="flex justify-between"><span class="text-slate-400">Payload:</span> <span id="rf_ac_det_payload" class="font-mono">18.3 T</span></div>
-            <div class="flex justify-between"><span class="text-slate-400">Purchase Price:</span> <span id="rf_ac_det_price" class="font-mono">$91,500,000</span></div>
-            <div class="flex justify-between"><span class="text-slate-400">Fuel Consumption:</span> <span id="rf_ac_det_fuel" class="font-mono">2.39 L/100km</span></div>
-            <div class="flex justify-between"><span class="text-slate-400">Wear Rate:</span> <span id="rf_ac_det_wear" class="font-mono">2.5% / 100h</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Payload:</span> <span id="rf_ac_det_payload" class="font-mono">89.2 T</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Purchase Price:</span> <span id="rf_ac_det_price" class="font-mono">$403,000,000</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Fuel Consumption:</span> <span id="rf_ac_det_fuel" class="font-mono">2.44 L/100km</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Wear Rate:</span> <span id="rf_ac_det_wear" class="font-mono">1.7% / 100h</span></div>
           </div>
         </div>
       </div>
@@ -1296,10 +1296,8 @@
           <div id="hub_entry_quick_container">
             <label class="block text-[11px] font-semibold text-slate-300 mb-1">Airport IATA Code</label>
             <div class="relative">
-              <input type="text" id="rf_hub_iata_input" maxlength="3" value="OSL" placeholder="e.g. OSL, JFK, LHR" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono uppercase font-bold text-sm tracking-wider focus:ring-2 focus:ring-cyan-500 focus:outline-none" oninput="rf_onHubIataInput()">
-              <span id="rf_hub_valid_icon" class="absolute right-3 top-2.5 text-emerald-400">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-              </span>
+              <input type="text" id="rf_hub_iata_input" maxlength="3" value="" placeholder="Please enter hub (e.g. DXB, LHR)" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono uppercase font-bold text-sm tracking-wider focus:ring-2 focus:ring-cyan-500 focus:outline-none" oninput="rf_onHubIataInput()">
+              <span id="rf_hub_valid_icon" class="absolute right-3 top-2.5 text-emerald-400"></span>
             </div>
           </div>
 
@@ -1307,23 +1305,27 @@
           <div id="hub_entry_search_container" class="hidden space-y-2">
             <div>
               <label class="block text-[11px] font-semibold text-slate-300 mb-1">Hub Country</label>
-              <select id="rf_hub_country_select" onchange="rf_onHubCountryChange()" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"></select>
+              <select id="rf_hub_country_select" onchange="rf_onHubCountryChange()" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+                <option value="" disabled selected>Select Country...</option>
+              </select>
             </div>
             <div>
               <label class="block text-[11px] font-semibold text-slate-300 mb-1">Hub Airport</label>
-              <select id="rf_hub_airport_select" onchange="rf_onHubAirportSelectChange()" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"></select>
+              <select id="rf_hub_airport_select" onchange="rf_onHubAirportSelectChange()" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+                <option value="" disabled selected>Select Airport...</option>
+              </select>
             </div>
           </div>
 
           <!-- Hub Info Card -->
           <div id="rf_hub_info_card" class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 space-y-1 text-[11px]">
             <div class="flex items-center justify-between">
-              <span id="rf_hub_display_name" class="font-bold text-white truncate">Oslo Gardermoen</span>
-              <span id="rf_hub_display_cat" class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono font-bold text-[10px]">Cat 10</span>
+              <span id="rf_hub_display_name" class="font-bold text-white truncate">Please enter hub</span>
+              <span id="rf_hub_display_cat" class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-mono font-bold text-[10px]">Cat —</span>
             </div>
             <div class="flex items-center justify-between text-slate-400">
-              <span id="rf_hub_display_location">Norway &bull; 60.19°N, 11.10°E</span>
-              <span id="rf_hub_display_tax" class="text-slate-300 font-mono">$4,888 tax</span>
+              <span id="rf_hub_display_location">Enter an IATA code or pick a Quick Hub below</span>
+              <span id="rf_hub_display_tax" class="text-slate-300 font-mono">—</span>
             </div>
           </div>
 
@@ -1331,7 +1333,7 @@
           <div>
             <span class="block text-[10px] text-slate-400 uppercase font-semibold mb-1">Quick Hubs:</span>
             <div class="flex flex-wrap gap-1.5">
-              <button onclick="rf_setQuickHub('OSL')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 font-mono text-[11px] border border-slate-700">OSL</button>
+              <button onclick="rf_setQuickHub('OSL')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700">OSL</button>
               <button onclick="rf_setQuickHub('LHR')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700">LHR</button>
               <button onclick="rf_setQuickHub('CDG')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700">CDG</button>
               <button onclick="rf_setQuickHub('JFK')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700">JFK</button>
@@ -1358,7 +1360,7 @@
           <div>
             <div class="flex items-center justify-between mb-1">
               <label class="text-[11px] font-semibold text-slate-300">Runway Category</label>
-              <span id="cat_filter_hint" class="text-[10px] text-cyan-400 font-mono">Min Cat 5</span>
+              <span id="cat_filter_hint" class="text-[10px] text-cyan-400 font-mono">Min Cat 8 (A380-800)</span>
             </div>
             <div class="grid grid-cols-2 gap-2">
               <div class="flex items-center gap-1.5">
@@ -1368,10 +1370,10 @@
                   <option value="2">Cat 2</option>
                   <option value="3">Cat 3</option>
                   <option value="4">Cat 4</option>
-                  <option value="5" selected>Cat 5</option>
+                  <option value="5">Cat 5</option>
                   <option value="6">Cat 6</option>
                   <option value="7">Cat 7</option>
-                  <option value="8">Cat 8</option>
+                  <option value="8" selected>Cat 8</option>
                   <option value="9">Cat 9</option>
                   <option value="10">Cat 10</option>
                 </select>
@@ -1645,7 +1647,7 @@
               <span>Matching Destinations</span>
               <span id="results_count_badge" class="text-xs px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono font-bold">0 routes</span>
             </h2>
-            <p id="results_summary_text" class="text-[11px] text-slate-400">Routes departing from OSL within range &amp; runway category</p>
+            <p id="results_summary_text" class="text-[11px] text-slate-400">Please enter a departure hub to discover matching routes</p>
           </div>
         </div>
 
@@ -1698,7 +1700,7 @@
       </div>
 
       <!-- Results Table View -->
-      <div id="results_table_container" class="overflow-x-auto">
+      <div id="results_table_container" class="hidden overflow-x-auto">
         <table class="w-full text-left text-xs text-slate-300">
           <thead class="text-[11px] uppercase bg-slate-900/80 text-slate-400 border-b border-slate-800">
             <tr>
@@ -1720,23 +1722,23 @@
       <div id="results_grid_container" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
 
       <!-- Empty State / No Match Container -->
-      <div id="no_matches_container" class="hidden py-12 text-center space-y-3">
-        <div class="w-12 h-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-slate-500">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      <div id="no_matches_container" class="py-12 text-center space-y-3">
+        <div class="w-12 h-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-cyan-400/80">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
         </div>
         <div>
-          <h3 class="text-sm font-bold text-white">No Matching Routes Found</h3>
+          <h3 id="no_matches_title" class="text-sm font-bold text-white">Please Enter a Departure Hub</h3>
           <p id="no_matches_diagnostic_text" class="text-xs text-slate-400 max-w-md mx-auto mt-1">
-            No airports match the active filters. Try relaxing the duration interval, choosing an aircraft with greater range, or clearing the continent/country filter.
+            Enter an airport IATA code above (e.g. MPM, DXB, LHR, JFK) or pick a Quick Hub to discover compatible routes for the A380-800.
           </p>
         </div>
-        <button onclick="rf_resetAllFilters()" class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
+        <button id="no_matches_reset_btn" onclick="rf_resetAllFilters()" class="hidden px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
           Reset All Filters
         </button>
       </div>
 
       <!-- Pagination Controls -->
-      <div id="pagination_container" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-800/80 text-xs text-slate-400">
+      <div id="pagination_container" class="hidden flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-800/80 text-xs text-slate-400">
         <div class="flex items-center gap-2">
           <span>Showing</span>
           <span id="page_range_text" class="font-bold text-white font-mono">1 - 50</span>
@@ -2592,13 +2594,13 @@
       <div class="space-y-3 text-xs">
         <div>
           <label class="block text-[11px] font-semibold text-slate-300 mb-1">Circuit Name</label>
-          <input type="text" id="rf_save_circuit_name_input" placeholder="e.g. OSL 24h Europe Rotation" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white font-medium text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+          <input type="text" id="rf_save_circuit_name_input" placeholder="e.g. Daily Circuit Rotation" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white font-medium text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none">
         </div>
 
         <!-- Circuit Summary Card -->
         <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-          <div class="flex justify-between"><span class="text-slate-400">Departure Hub:</span> <span id="rf_save_summary_hub" class="font-mono font-bold text-cyan-400">OSL</span></div>
-          <div class="flex justify-between"><span class="text-slate-400">Aircraft Model:</span> <span id="rf_save_summary_ac" class="font-mono text-emerald-400">A320-200</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Departure Hub:</span> <span id="rf_save_summary_hub" class="font-mono font-bold text-cyan-400">—</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Aircraft Model:</span> <span id="rf_save_summary_ac" class="font-mono text-emerald-400">A380-800</span></div>
           <div class="flex justify-between"><span class="text-slate-400">Total Duration:</span> <span id="rf_save_summary_dur" class="font-mono text-white">0h 00m</span></div>
           <div class="flex justify-between"><span class="text-slate-400">Total Destinations:</span> <span id="rf_save_summary_routes" class="font-mono text-slate-200">0 routes</span></div>
         </div>
