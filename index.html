@@ -1379,7 +1379,7 @@
           <div>
             <div class="flex items-center justify-between mb-1">
               <label class="text-[11px] font-semibold text-slate-300">Round-Trip Duration</label>
-              <span class="text-[10px] text-slate-400 font-mono">15m increments</span>
+              <span id="rf_dur_max_hint" class="text-[10px] text-cyan-400 font-mono">15m increments</span>
             </div>
             <div class="grid grid-cols-2 gap-2">
               <div class="flex items-center gap-1">
@@ -1659,7 +1659,8 @@
               <option value="dur_asc">Duration: Shortest First</option>
               <option value="dur_desc">Duration: Longest First</option>
               <option value="cat_desc">Category: High to Low</option>
-              <option value="tax_asc">Flight Tax: Low to High</option>
+              <option value="stars_desc">Demand Rating: High to Low</option>
+              <option value="stars_asc">Demand Rating: Low to High</option>
               <option value="iata_asc">IATA Code: A to Z</option>
             </select>
           </div>
@@ -1689,7 +1690,7 @@
               <th scope="col" class="p-3 text-right">Distance (km)</th>
               <th scope="col" class="p-3 text-right">Round-Trip Duration</th>
               <th scope="col" class="p-3 text-center">Circuit Fit</th>
-              <th scope="col" class="p-3 text-right">Flight Tax</th>
+              <th scope="col" class="p-3 text-center">Demand Rating</th>
               <th scope="col" class="p-3 text-center">Action</th>
             </tr>
           </thead>

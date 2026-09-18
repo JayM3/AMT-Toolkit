@@ -2021,6 +2021,8 @@
   window.cf_saveCircuitToLibrary = cf_saveCircuitToLibrary;
   window.cf_openRouteSwapModal = cf_openRouteSwapModal;
   window.cf_closeRouteSwapModal = cf_closeRouteSwapModal;
+  window.cf_getStarRating = cf_getStarRating;
+  window.cf_computeAirportDemandStats = cf_computeAirportDemandStats;
   window.cf_performRouteSwap = cf_performRouteSwap;
 
   document.addEventListener('DOMContentLoaded', () => {

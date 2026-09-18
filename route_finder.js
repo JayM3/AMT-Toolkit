@@ -153,6 +153,36 @@
       return `${h}h ${m < 10 ? '0' : ''}${m}m`;
     }
 
+    // Demand Star Rating System (consistent with Circuit Finder)
+    function rf_getStarRating(avg) {
+      if (avg >= 30) return { stars: 5, starsText: '★★★★★', label: 'Global Mega-Hub' };
+      if (avg >= 22) return { stars: 4, starsText: '★★★★', label: 'Major International' };
+      if (avg >= 15) return { stars: 3, starsText: '★★★', label: 'Strong Regional' };
+      if (avg >= 8)  return { stars: 2, starsText: '★★', label: 'Moderate' };
+      return { stars: 1, starsText: '★', label: 'Light' };
+    }
+
+    function rf_computeAirportDemandStats(ap) {
+      if (!ap) return { avg: 0, avgFormatted: '0.0', stars: 1, starsText: '★', rawEco: 0, rawBus: 0, rawFirst: 0, rawCargo: 0, label: 'Unknown' };
+      const rawEco = ap.economy ?? ap.eco ?? ap.demand_eco ?? 0;
+      const rawBus = ap.business ?? ap.bus ?? ap.demand_bus ?? 0;
+      const rawFirst = ap.first ?? ap.demand_first ?? 0;
+      const rawCargo = ap.cargo ?? 0;
+      const avg = (rawEco + rawBus + rawFirst) / 3;
+      const rating = rf_getStarRating(avg);
+      return {
+        avg,
+        avgFormatted: avg.toFixed(1),
+        stars: rating.stars,
+        starsText: rating.starsText,
+        label: rating.label,
+        rawEco,
+        rawBus,
+        rawFirst,
+        rawCargo
+      };
+    }
+
     function findAirport(query) {
       if (!query || typeof AIRPORTS_DATABASE === 'undefined') return null;
       const clean = query.trim().toUpperCase();
@@ -199,16 +229,77 @@ document.addEventListener('DOMContentLoaded', () => {
   initRouteFinder();
 });
 
-    function rf_initDurationDropdowns() {
-      const minHh = document.getElementById('rf_dur_min_hh');
-      const maxHh = document.getElementById('rf_dur_max_hh');
-      minHh.innerHTML = '';
-      maxHh.innerHTML = '';
+    function rf_updateDurationLimitsForAircraft(ac, resetToDefaultMax = true) {
+      if (!ac || !ac.range_km || !ac.speed_kmh) return;
 
-      for (let i = 0; i <= 50; i++) {
+      const maxDurHours = calculateFlightTimeHours(ac.range_km, ac.speed_kmh);
+      const maxHours = Math.floor(maxDurHours);
+      const maxMinutes = Math.round((maxDurHours - maxHours) * 60);
+
+      const minHhSelect = document.getElementById('rf_dur_min_hh');
+      const minMmSelect = document.getElementById('rf_dur_min_mm');
+      const maxHhSelect = document.getElementById('rf_dur_max_hh');
+      const maxMmSelect = document.getElementById('rf_dur_max_mm');
+      const hintEl = document.getElementById('rf_dur_max_hint');
+
+      if (hintEl) {
+        hintEl.textContent = `Max: ${formatHoursMinutes(maxDurHours)}`;
+        hintEl.title = `Theoretical max round-trip flight duration for ${ac.name} (${Number(ac.range_km).toLocaleString()} km @ ${ac.speed_kmh} km/h)`;
+      }
+
+      if (!minHhSelect || !maxHhSelect) return;
+
+      const prevMinHh = minHhSelect.value !== '' ? parseInt(minHhSelect.value, 10) : 2;
+      const prevMinMm = minMmSelect?.value !== '' ? parseInt(minMmSelect.value, 10) : 0;
+      const prevMinTotal = prevMinHh + (prevMinMm / 60);
+
+      const prevMaxHh = maxHhSelect.value !== '' ? parseInt(maxHhSelect.value, 10) : null;
+      const prevMaxMm = maxMmSelect?.value !== '' ? parseInt(maxMmSelect.value, 10) : 0;
+
+      // Populate HH options dynamically from 0 up to maxHours
+      minHhSelect.innerHTML = '';
+      maxHhSelect.innerHTML = '';
+
+      for (let i = 0; i <= maxHours; i++) {
         const val = i.toString().padStart(2, '0');
-        minHh.innerHTML += `<option value="${i}" ${i === 2 ? 'selected' : ''}>${val}</option>`;
-        maxHh.innerHTML += `<option value="${i}" ${i === 50 ? 'selected' : ''}>${val}</option>`;
+        minHhSelect.innerHTML += `<option value="${i}">${val}</option>`;
+        maxHhSelect.innerHTML += `<option value="${i}">${val}</option>`;
+      }
+
+      // Default or preserve max duration
+      if (resetToDefaultMax || prevMaxHh === null || prevMaxHh > maxHours) {
+        maxHhSelect.value = String(maxHours);
+        if (maxMmSelect) maxMmSelect.value = String(maxMinutes);
+      } else {
+        maxHhSelect.value = String(prevMaxHh);
+        if (maxMmSelect) maxMmSelect.value = String(prevMaxMm);
+      }
+
+      // Preserve or clamp min duration
+      if (prevMinTotal <= maxDurHours && prevMinHh <= maxHours) {
+        minHhSelect.value = String(prevMinHh);
+        if (minMmSelect) minMmSelect.value = String(prevMinMm);
+      } else {
+        minHhSelect.value = '0';
+        if (minMmSelect) minMmSelect.value = '0';
+      }
+    }
+
+    function rf_initDurationDropdowns() {
+      if (currentAircraft) {
+        rf_updateDurationLimitsForAircraft(currentAircraft, true);
+      } else {
+        const minHh = document.getElementById('rf_dur_min_hh');
+        const maxHh = document.getElementById('rf_dur_max_hh');
+        if (!minHh || !maxHh) return;
+        minHh.innerHTML = '';
+        maxHh.innerHTML = '';
+
+        for (let i = 0; i <= 50; i++) {
+          const val = i.toString().padStart(2, '0');
+          minHh.innerHTML += `<option value="${i}" ${i === 2 ? 'selected' : ''}>${val}</option>`;
+          maxHh.innerHTML += `<option value="${i}" ${i === 50 ? 'selected' : ''}>${val}</option>`;
+        }
       }
     }
 
@@ -239,6 +330,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const minCatSelect = document.getElementById('rf_cat_min');
       minCatSelect.value = Math.max(1, currentAircraft.category);
       document.getElementById('cat_filter_hint').textContent = `Min Cat ${currentAircraft.category} (${currentAircraft.name})`;
+
+      // Dynamically update round-trip duration limits and default to max for chosen aircraft
+      rf_updateDurationLimitsForAircraft(currentAircraft, true);
 
       rf_validateHubRunwayCompatibility();
 
@@ -583,7 +677,12 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('rf_hub_display_name').textContent = `${found.name} (${found.city})`;
       document.getElementById('rf_hub_display_cat').textContent = `Cat ${found.cat}`;
       document.getElementById('rf_hub_display_location').textContent = `${found.country} • ${found.lat.toFixed(2)}°, ${found.lon.toFixed(2)}°`;
-      document.getElementById('rf_hub_display_tax').textContent = `$${Number(found.flightTax || 0).toLocaleString()} tax`;
+      const hubDemand = rf_computeAirportDemandStats(found);
+      const taxEl = document.getElementById('rf_hub_display_tax');
+      if (taxEl) {
+        taxEl.innerHTML = `<span class="text-amber-400 font-bold tracking-tight">${hubDemand.starsText}</span> <span class="text-slate-400 font-mono text-[10px]">(${hubDemand.avgFormatted})</span>`;
+        taxEl.title = `Demand Index: ${hubDemand.avgFormatted} · ${hubDemand.label} (Eco: ${hubDemand.rawEco} · Bus: ${hubDemand.rawBus} · First: ${hubDemand.rawFirst})`;
+      }
 
       const summaryEl = document.getElementById('results_summary_text');
       if (summaryEl) summaryEl.textContent = `Routes departing from ${found.iata} within range & runway category`;
@@ -599,11 +698,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       const countrySelect = document.getElementById('rf_hub_country_select');
-      if (countrySelect.value !== found.country) {
+      if (countrySelect && countrySelect.value !== found.country) {
         countrySelect.value = found.country;
         rf_populateHubAirportsForCountry(found.country);
       }
-      document.getElementById('rf_hub_airport_select').value = found.iata;
+      const apSelect = document.getElementById('rf_hub_airport_select');
+      if (apSelect) apSelect.value = found.iata;
 
       rf_validateHubRunwayCompatibility();
 
@@ -713,6 +813,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const fits24h = Math.abs(24 % durationHours) < 0.001 || [3, 4, 6, 8, 12, 24].includes(durationHours);
         const fits168h = Math.abs(168 % durationHours) < 0.001;
         const continent = CONTINENT_MAP[dst.country] || 'Other';
+        const demand = rf_computeAirportDemandStats(dst);
 
         candidatePool.push({
           hubIata: currentHub.iata,
@@ -722,6 +823,7 @@ document.addEventListener('DOMContentLoaded', () => {
           country: dst.country,
           continent: continent,
           category: dst.cat,
+          demand,
           flightTax: dst.flightTax,
           distanceKm,
           durationHours,
@@ -739,15 +841,19 @@ document.addEventListener('DOMContentLoaded', () => {
     function rf_applyFilters() {
       if (!candidatePool) return;
 
-      const catMin = parseInt(document.getElementById('rf_cat_min').value) || 1;
-      const catMax = parseInt(document.getElementById('rf_cat_max').value) || 10;
+      const catMin = parseInt(document.getElementById('rf_cat_min')?.value) || 1;
+      const catMax = parseInt(document.getElementById('rf_cat_max')?.value) || 10;
 
-      const durMinHh = parseInt(document.getElementById('rf_dur_min_hh').value) || 0;
-      const durMinMm = parseInt(document.getElementById('rf_dur_min_mm').value) || 0;
+      const durMinHhEl = document.getElementById('rf_dur_min_hh');
+      const durMinMmEl = document.getElementById('rf_dur_min_mm');
+      const durMinHh = durMinHhEl && durMinHhEl.value !== '' ? parseInt(durMinHhEl.value, 10) : 0;
+      const durMinMm = durMinMmEl && durMinMmEl.value !== '' ? parseInt(durMinMmEl.value, 10) : 0;
       const durMin = durMinHh + (durMinMm / 60);
 
-      const durMaxHh = parseInt(document.getElementById('rf_dur_max_hh').value) || 50;
-      const durMaxMm = parseInt(document.getElementById('rf_dur_max_mm').value) || 0;
+      const durMaxHhEl = document.getElementById('rf_dur_max_hh');
+      const durMaxMmEl = document.getElementById('rf_dur_max_mm');
+      const durMaxHh = durMaxHhEl && durMaxHhEl.value !== '' ? parseInt(durMaxHhEl.value, 10) : 50;
+      const durMaxMm = durMaxMmEl && durMaxMmEl.value !== '' ? parseInt(durMaxMmEl.value, 10) : 0;
       const durMax = durMaxHh + (durMaxMm / 60);
 
       const selectedContinent = document.getElementById('rf_continent_filter')?.value || 'ALL';
@@ -756,7 +862,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       filteredCandidates = candidatePool.filter(c => {
         if (c.category < catMin || c.category > catMax) return false;
-        if (c.durationHours < durMin || c.durationHours > durMax) return false;
+        if (c.durationHours < durMin - 0.0001 || c.durationHours > durMax + 0.0001) return false;
 
         if (currentDurationPreset === '24h_divisors' && !c.fits24h) return false;
         if (currentDurationPreset === 'short' && c.durationHours > 8) return false;
@@ -824,7 +930,8 @@ document.addEventListener('DOMContentLoaded', () => {
       { value: 'dur_asc', label: 'Duration: Shortest First' },
       { value: 'dur_desc', label: 'Duration: Longest First' },
       { value: 'cat_desc', label: 'Category: High to Low' },
-      { value: 'tax_asc', label: 'Flight Tax: Low to High' },
+      { value: 'stars_desc', label: 'Demand Rating: High to Low' },
+      { value: 'stars_asc', label: 'Demand Rating: Low to High' },
       { value: 'iata_asc', label: 'IATA Code: A to Z' }
     ];
 
@@ -899,6 +1006,8 @@ document.addEventListener('DOMContentLoaded', () => {
           case 'dur_asc': return a.durationHours - b.durationHours;
           case 'dur_desc': return b.durationHours - a.durationHours;
           case 'cat_desc': return b.category - a.category || a.distanceKm - b.distanceKm;
+          case 'stars_desc': return (b.demand?.avg || 0) - (a.demand?.avg || 0) || b.distanceKm - a.distanceKm;
+          case 'stars_asc': return (a.demand?.avg || 0) - (b.demand?.avg || 0) || a.distanceKm - b.distanceKm;
           case 'tax_asc': return (a.flightTax || 0) - (b.flightTax || 0);
           case 'iata_asc': return a.dstIata.localeCompare(b.dstIata);
           default: return a.distanceKm - b.distanceKm;
@@ -954,11 +1063,11 @@ document.addEventListener('DOMContentLoaded', () => {
         catHint.textContent = `Min Cat ${currentAircraft.category} (${currentAircraft.name})`;
       }
 
-      // 4. Reset duration filters
-      document.getElementById('rf_dur_min_hh').value = '2';
-      document.getElementById('rf_dur_min_mm').value = '0';
-      document.getElementById('rf_dur_max_hh').value = '50';
-      document.getElementById('rf_dur_max_mm').value = '45';
+      // 4. Reset duration filters: min to 02:00, max dynamically kept from aircraft
+      const minHhEl = document.getElementById('rf_dur_min_hh');
+      const minMmEl = document.getElementById('rf_dur_min_mm');
+      if (minHhEl) minHhEl.value = '2';
+      if (minMmEl) minMmEl.value = '0';
 
       // 5. Reset geography filters
       document.getElementById('rf_continent_filter').value = 'ALL';
@@ -1549,7 +1658,13 @@ document.addEventListener('DOMContentLoaded', () => {
             </td>
             <td class="p-3 text-right font-bold text-cyan-300 font-mono">${c.durationText}</td>
             <td class="p-3 text-center">${circuitFitBadge}</td>
-            <td class="p-3 text-right font-mono text-slate-300">$${Number(c.flightTax || 0).toLocaleString()}</td>
+            <td class="p-3 text-center font-sans">
+              <div class="inline-flex items-center justify-center gap-1.5" title="Demand Index: ${c.demand.avgFormatted} · ${c.demand.label} (Eco: ${c.demand.rawEco} · Bus: ${c.demand.rawBus} · First: ${c.demand.rawFirst})">
+                <span class="text-amber-400 font-bold tracking-tight text-xs">${c.demand.starsText}</span>
+                <span class="text-slate-400 font-mono text-[11px]">(${c.demand.avgFormatted})</span>
+                <span class="text-[10px] text-slate-500 hidden xl:inline">&bull; ${c.demand.label}</span>
+              </div>
+            </td>
             <td class="p-3 text-center">
               <button onclick="rf_addRouteToCircuit('${c.dstIata}')" class="px-3 py-1 rounded ${inCircuit ? 'bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-700' : 'bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800'} text-[11px] font-semibold transition flex items-center gap-1 mx-auto shadow-sm">
                 ${inCircuit ? `
@@ -1595,8 +1710,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="text-slate-300 truncate block">${c.country} (${c.continent})</span>
               </div>
               <div>
-                <span class="text-[9px] text-slate-400 block uppercase">Flight Tax</span>
-                <span class="text-slate-300 font-mono">$${Number(c.flightTax || 0).toLocaleString()}</span>
+                <span class="text-[9px] text-slate-400 block uppercase">Demand Rating</span>
+                <div class="flex items-center gap-1 mt-0.5" title="Demand Index: ${c.demand.avgFormatted} · ${c.demand.label} (Eco: ${c.demand.rawEco} · Bus: ${c.demand.rawBus} · First: ${c.demand.rawFirst})">
+                  <span class="text-amber-400 font-bold tracking-tight text-xs">${c.demand.starsText}</span>
+                  <span class="text-slate-400 font-mono text-[10px]">(${c.demand.avgFormatted})</span>
+                </div>
               </div>
             </div>
 
@@ -2186,5 +2304,8 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
     window.rf_toggleGapDrawer = rf_toggleGapDrawer;
     window.rf_renderGapSuggestions = rf_renderGapSuggestions;
     window.rf_syncDurationFilterToRemaining = rf_syncDurationFilterToRemaining;
+    window.rf_getStarRating = rf_getStarRating;
+    window.rf_computeAirportDemandStats = rf_computeAirportDemandStats;
+    window.rf_updateDurationLimitsForAircraft = rf_updateDurationLimitsForAircraft;
 
 })();
