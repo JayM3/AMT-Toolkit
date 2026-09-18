@@ -3,7 +3,7 @@
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/HTML5)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.x-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A high-performance, client-side web application suite tailored for players of **Airlines Manager: Tycoon**. The toolkit helps airline managers optimize ticket pricing to capture 100% of unsatisfied demand, configure multi-class aircraft cabin layouts, find profitable routes, and schedule 168-hour flight circuits without idle downtime.
 
@@ -162,7 +162,7 @@ AMT-Toolkit/
 │
 ├── Drafts/             # Interactive prototypes & preview sandboxes
 ├── .gitignore          # Git ignore configuration
-├── LICENSE             # Apache 2.0 License
+├── LICENSE             # MIT License
 └── README.md           # Project documentation
 ```
 
@@ -238,4 +238,4 @@ No build tools, compilers, or server installations are required! The web applica
 
 ## 📄 License
 
-This project is open source and available under the [Apache License 2.0](LICENSE).
+This project is open source and available under the [MIT](LICENSE).
