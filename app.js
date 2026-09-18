@@ -1020,15 +1020,10 @@ function initSeatConfigurator() {
     initAircraftModal();
   }
 
-  // Restore saved state or initialize default
+  // Restore saved state or initialize default (starts empty if no saved circuit)
   const restored = restoreSeatConfigFromLocalStorage();
-  if (!restored) {
-    onCircuitHubChange();
-    loadExample24hCircuit();
-  } else {
-    onCircuitHubChange();
-    renderCircuitAll();
-  }
+  onCircuitHubChange();
+  renderCircuitAll();
 
   if (typeof updateSavedCircuitsBadge === 'function') updateSavedCircuitsBadge();
   if (typeof updateActiveCircuitIndicator === 'function') updateActiveCircuitIndicator();
@@ -4084,65 +4079,13 @@ window.CURRENT_SAVED_CIRCUIT_NAME = null;
 let expandedSavedCircuitIds = new Set();
 let pendingImportCircuitData = null;
 
-const STARTER_CIRCUITS = [
-  {
-    version: 1,
-    id: 'starter-osl-24h',
-    name: 'OSL 24h Regional Tour',
-    createdAt: '2026-09-17T12:00:00.000Z',
-    hub: 'OSL',
-    acId: 'a320-200',
-    acName: 'Airbus A320-200',
-    strategy: 'max_profit',
-    summary: {
-      circuitType: '24h',
-      totalDurationHours: 23.5,
-      totalDurationText: '23h 30m',
-      routeCount: 5
-    },
-    legs: [
-      { dst: 'AMS', distanceKm: 958, durationHours: 4.25, durationText: '4h 15m', flightsPerDay: 1, cargoEnabled: true, demand: { eco: 1400, bus: 360, first: 75, cargo: 20 }, prices: { eco: 280, bus: 620, first: 1150, cargo: 3500 }, color: CIRCUIT_COLORS[0] },
-      { dst: 'LHR', distanceKm: 1206, durationHours: 4.75, durationText: '4h 45m', flightsPerDay: 1, cargoEnabled: true, demand: { eco: 1650, bus: 420, first: 90, cargo: 25 }, prices: { eco: 320, bus: 710, first: 1320, cargo: 3900 }, color: CIRCUIT_COLORS[1] },
-      { dst: 'TOS', distanceKm: 1114, durationHours: 4.5, durationText: '4h 30m', flightsPerDay: 1, cargoEnabled: true, demand: { eco: 1100, bus: 240, first: 50, cargo: 15 }, prices: { eco: 290, bus: 650, first: 1200, cargo: 3600 }, color: CIRCUIT_COLORS[2] },
-      { dst: 'CDG', distanceKm: 1356, durationHours: 5.25, durationText: '5h 15m', flightsPerDay: 1, cargoEnabled: true, demand: { eco: 1520, bus: 380, first: 85, cargo: 22 }, prices: { eco: 340, bus: 750, first: 1400, cargo: 4100 }, color: CIRCUIT_COLORS[3] },
-      { dst: 'FRA', distanceKm: 1142, durationHours: 4.75, durationText: '4h 45m', flightsPerDay: 1, cargoEnabled: true, demand: { eco: 1380, bus: 350, first: 70, cargo: 18 }, prices: { eco: 310, bus: 680, first: 1260, cargo: 3800 }, color: CIRCUIT_COLORS[4] }
-    ]
-  },
-  {
-    version: 1,
-    id: 'starter-dwc-168h',
-    name: 'DWC 168h Long-Haul Wave',
-    createdAt: '2026-09-16T15:30:00.000Z',
-    hub: 'DWC',
-    acId: '747-200b',
-    acName: 'Boeing 747-200B',
-    strategy: 'max_profit',
-    summary: {
-      circuitType: '168h',
-      totalDurationHours: 167.0,
-      totalDurationText: '167h 00m',
-      routeCount: 6
-    },
-    legs: [
-      { dst: 'GRU', distanceKm: 12150, durationHours: 39.75, durationText: '39h 45m', flightsPerDay: 1, cargoEnabled: true, demand: { eco: 2800, bus: 580, first: 140, cargo: 35 }, prices: { eco: 2450, bus: 4200, first: 7500, cargo: 14000 }, color: CIRCUIT_COLORS[0] },
-      { dst: 'ORD', distanceKm: 11620, durationHours: 28.0, durationText: '28h 00m', flightsPerDay: 1, cargoEnabled: true, demand: { eco: 3200, bus: 680, first: 160, cargo: 40 }, prices: { eco: 2380, bus: 4100, first: 7200, cargo: 13500 }, color: CIRCUIT_COLORS[1] },
-      { dst: 'MEL', distanceKm: 11650, durationHours: 28.0, durationText: '28h 00m', flightsPerDay: 1, cargoEnabled: true, demand: { eco: 2600, bus: 540, first: 120, cargo: 30 }, prices: { eco: 2420, bus: 4150, first: 7350, cargo: 13800 }, color: CIRCUIT_COLORS[2] },
-      { dst: 'YYZ', distanceKm: 11100, durationHours: 27.25, durationText: '27h 15m', flightsPerDay: 1, cargoEnabled: true, demand: { eco: 2950, bus: 610, first: 135, cargo: 32 }, prices: { eco: 2320, bus: 3980, first: 6900, cargo: 13200 }, color: CIRCUIT_COLORS[3] },
-      { dst: 'GIG', distanceKm: 11900, durationHours: 22.0, durationText: '22h 00m', flightsPerDay: 1, cargoEnabled: true, demand: { eco: 2400, bus: 480, first: 110, cargo: 28 }, prices: { eco: 2400, bus: 4100, first: 7300, cargo: 13600 }, color: CIRCUIT_COLORS[4] },
-      { dst: 'SYD', distanceKm: 12040, durationHours: 22.0, durationText: '22h 00m', flightsPerDay: 1, cargoEnabled: true, demand: { eco: 2750, bus: 560, first: 130, cargo: 34 }, prices: { eco: 2460, bus: 4250, first: 7600, cargo: 14200 }, color: CIRCUIT_COLORS[5] }
-    ]
-  }
-];
+const STARTER_CIRCUITS = [];
 
 function getSavedCircuits() {
-  if (typeof localStorage === 'undefined') return STARTER_CIRCUITS;
+  if (typeof localStorage === 'undefined') return [];
   const raw = localStorage.getItem('am_saved_circuits_v1');
   if (!raw) {
-    // Seed starter circuits
-    try {
-      localStorage.setItem('am_saved_circuits_v1', JSON.stringify(STARTER_CIRCUITS));
-    } catch (e) {}
-    return [...STARTER_CIRCUITS];
+    return [];
   }
   try {
     const list = JSON.parse(raw);
@@ -4875,64 +4818,7 @@ document.addEventListener('keydown', (e) => {
 // SAVED ROUTE AUDITS LIBRARY (4 CLASSES: Y, J, F, CARGO + REMAINING DEMAND)
 // =============================================================================
 
-const DEFAULT_ROUTE_AUDITS = [
-  {
-    hub: 'OSL', dst: 'AMS', date: '2026-09-16',
-    eco:   { demand: 1400, remaining: 220, price: 280 },
-    bus:   { demand: 380,  remaining: 50,  price: 540 },
-    first: { demand: 90,   remaining: 15,  price: 1120 },
-    cargo: { demand: 18.5, remaining: 3.0, price: 4200 }
-  },
-  {
-    hub: 'OSL', dst: 'LHR', date: '2026-09-14',
-    eco:   { demand: 1650, remaining: 310, price: 320 },
-    bus:   { demand: 450,  remaining: 70,  price: 610 },
-    first: { demand: 110,  remaining: 20,  price: 1250 },
-    cargo: { demand: 22.0, remaining: 4.5, price: 4600 }
-  },
-  {
-    hub: 'OSL', dst: 'HEL', date: '2026-09-12',
-    eco:   { demand: 1250, remaining: 180, price: 260 },
-    bus:   { demand: 320,  remaining: 40,  price: 490 },
-    first: { demand: 75,   remaining: 10,  price: 980 },
-    cargo: { demand: 15.0, remaining: 2.0, price: 3900 }
-  },
-  {
-    hub: 'OSL', dst: 'CPH', date: '2026-09-15',
-    eco:   { demand: 1100, remaining: 140, price: 210 },
-    bus:   { demand: 290,  remaining: 35,  price: 430 },
-    first: { demand: 60,   remaining: 8,   price: 890 },
-    cargo: { demand: 14.0, remaining: 2.0, price: 3800 }
-  },
-  {
-    hub: 'OSL', dst: 'ARN', date: '2026-08-10',
-    eco:   { demand: 1200, remaining: 160, price: 220 },
-    bus:   { demand: 310,  remaining: 45,  price: 440 },
-    first: { demand: 65,   remaining: 10,  price: 910 },
-    cargo: { demand: 16.0, remaining: 2.5, price: 3850 }
-  },
-  {
-    hub: 'OSL', dst: 'BGO', date: '2026-09-08',
-    eco:   { demand: 950,  remaining: 110, price: 180 },
-    bus:   { demand: 210,  remaining: 25,  price: 360 },
-    first: { demand: 40,   remaining: 5,   price: 750 },
-    cargo: { demand: 10.0, remaining: 1.5, price: 3400 }
-  },
-  {
-    hub: 'OSL', dst: 'TOS', date: '2026-08-04',
-    eco:   { demand: 1300, remaining: 240, price: 310 },
-    bus:   { demand: 280,  remaining: 40,  price: 520 },
-    first: { demand: 55,   remaining: 8,   price: 960 },
-    cargo: { demand: 12.0, remaining: 2.0, price: 4100 }
-  },
-  {
-    hub: 'OSL', dst: 'BER', date: '2026-09-11',
-    eco:   { demand: 1450, remaining: 250, price: 295 },
-    bus:   { demand: 390,  remaining: 55,  price: 550 },
-    first: { demand: 85,   remaining: 12,  price: 1080 },
-    cargo: { demand: 19.0, remaining: 3.0, price: 4300 }
-  }
-];
+const DEFAULT_ROUTE_AUDITS = [];
 
 function getAuditAgeDays(dateStr) {
   if (!dateStr) return 999;
@@ -4946,8 +4832,7 @@ function getSavedAudits() {
   try {
     const raw = localStorage.getItem('am_route_audits_v1');
     if (raw === null) {
-      localStorage.setItem('am_route_audits_v1', JSON.stringify(DEFAULT_ROUTE_AUDITS));
-      return [...DEFAULT_ROUTE_AUDITS];
+      return [];
     }
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -5073,14 +4958,11 @@ function renderSavedAuditsTable() {
             </div>
             <div class="text-white font-semibold">Your Route Audits Library is Empty</div>
             <p class="text-[11px] text-slate-500 max-w-sm mx-auto">
-              You have removed all saved route audits. You can manually record new audits or restore the default sample routes anytime.
+              You currently have no saved route audits. You can record new audits manually or save them from the Zero-Out tool.
             </p>
             <div class="flex items-center justify-center gap-2 pt-2">
               <button type="button" onclick="openAuditEditorModal()" class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs transition shadow-sm">
                 ➕ Add New Audit
-              </button>
-              <button type="button" onclick="restoreDefaultAudits()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-white font-medium text-xs border border-slate-700 transition">
-                ↺ Restore Default Audits
               </button>
             </div>
           </td>
@@ -5747,15 +5629,6 @@ function clearAllAudits() {
   }
 }
 window.clearAllAudits = clearAllAudits;
-
-function restoreDefaultAudits() {
-  saveSavedAudits(DEFAULT_ROUTE_AUDITS);
-  renderSavedAuditsTable();
-  if (typeof showToast === 'function') {
-    showToast('Restored default route audits library (8 routes)!', 'success');
-  }
-}
-window.restoreDefaultAudits = restoreDefaultAudits;
 
 function exportAuditsJsonFile() {
   const audits = getSavedAudits();
