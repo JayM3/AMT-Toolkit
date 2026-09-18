@@ -1123,46 +1123,25 @@
 
     <!-- Route Finder & Circuit Builder View -->
     <div id="view_route_finder" class="space-y-6 hidden">
-<!-- Overview Banner -->
-    <section class="glass-panel rounded-2xl p-4 border border-cyan-800/40 bg-gradient-to-r from-cyan-950/30 via-slate-900/60 to-blue-950/30 shadow-xl">
-      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
-        <div class="space-y-1">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-xs font-bold uppercase tracking-wider text-cyan-400">ROUTE FINDER &amp; CIRCUIT BUILDER</span>
-            <span class="text-xs text-slate-300 font-semibold">Interactive Prototype:</span>
-            <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">Built-in Circuit Viewer</span>
-          </div>
-          <p class="text-xs text-slate-400 leading-relaxed max-w-4xl">
-            Search 2,650 destinations from your hub, filter by continent, country, and exact 15-minute flight duration. Click <strong class="text-cyan-300">+ Add to Circuit</strong> to build your daily 24h or weekly 168h timetable, and save your circuit directly into your library!
-          </p>
-          <!-- Live Context Badges -->
-          <div class="flex items-center flex-wrap gap-2 pt-1 text-xs">
-            <div class="px-2.5 py-0.5 rounded-lg bg-slate-900 border border-slate-700 flex items-center gap-1.5">
-              <span class="text-slate-400">Hub:</span>
-              <span id="header_hub_badge" class="font-bold text-slate-400 font-mono">Please enter hub</span>
-            </div>
-            <div class="px-2.5 py-0.5 rounded-lg bg-slate-900 border border-slate-700 flex items-center gap-1.5">
-              <span class="text-slate-400">Aircraft:</span>
-              <span id="header_ac_badge" class="font-bold text-cyan-400 font-mono">A380-800 (15,556 km)</span>
-            </div>
-            <div class="px-2.5 py-0.5 rounded-lg bg-slate-900 border border-slate-700 flex items-center gap-1.5">
-              <span class="text-slate-400">Circuit:</span>
-              <span id="header_circuit_count" class="font-bold text-cyan-400 font-mono">0 routes</span>
-            </div>
-          </div>
-        </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <button onclick="rf_openSavedCircuitsModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold transition border border-slate-700 flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
-            <span>Saved Circuits (<span id="header_saved_circuits_count">0</span>)</span>
-          </button>
-          <button onclick="rf_resetAllFilters()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition border border-slate-700 flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            Reset Filters
-          </button>
-        </div>
+    <!-- Route Finder View Header & Actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+      <div>
+        <h2 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+          <span>Route Finder &amp; Circuit Builder</span>
+        </h2>
+        <p class="text-xs text-slate-400">Discover compatible destinations from your hub and build optimized rotation circuits</p>
       </div>
-    </section>
+      <div class="flex items-center gap-2 shrink-0">
+        <button onclick="rf_openSavedCircuitsModal()" type="button" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold transition border border-slate-700 flex items-center gap-1.5 shadow-sm" title="Browse saved circuits library">
+          <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+          <span>Saved Circuits (<span id="header_saved_circuits_count">0</span>)</span>
+        </button>
+        <button onclick="rf_resetAllFilters()" type="button" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium transition border border-slate-700 flex items-center gap-1.5 shadow-sm" title="Reset all filters and aircraft to default">
+          <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          <span>Reset Filters</span>
+        </button>
+      </div>
+    </div>
 
     <!-- Hub Compatibility Warning Banner (Conditional) -->
     <div id="hub_cat_warning_banner" class="hidden p-4 rounded-xl bg-amber-950/40 border border-amber-500/50 text-amber-200 text-xs flex items-center gap-3 shadow-lg">
