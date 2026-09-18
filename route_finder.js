@@ -95,6 +95,8 @@
     let isComboboxOpen = false;
     let comboboxHaulFilter = 'all';
     let tableSearchQuery = '';
+    let isRestoringRouteFinderState = false;
+    let rf_timelineViewMode = 'week';
 
     // Distinct Circuit Colors Palette
     const CIRCUIT_PALETTE = [
@@ -197,6 +199,237 @@
     // =========================================================================
     // INITIALIZATION
     // =========================================================================
+    // LOCALSTORAGE PERSISTENCE ENGINE (am_route_finder_state_v1)
+    // =========================================================================
+    function rf_saveStateToLocalStorage() {
+      if (isRestoringRouteFinderState || typeof localStorage === 'undefined') return;
+
+      try {
+        const hubIata = currentHub ? currentHub.iata : '';
+        const aircraftId = currentAircraft ? currentAircraft.id : 'a380-800';
+
+        const catMin = document.getElementById('rf_cat_min')?.value || '8';
+        const catMax = document.getElementById('rf_cat_max')?.value || '10';
+
+        const durMinHh = document.getElementById('rf_dur_min_hh')?.value || '2';
+        const durMinMm = document.getElementById('rf_dur_min_mm')?.value || '0';
+        const durMaxHh = document.getElementById('rf_dur_max_hh')?.value || '';
+        const durMaxMm = document.getElementById('rf_dur_max_mm')?.value || '';
+
+        const continent = document.getElementById('rf_continent_filter')?.value || 'ALL';
+        const country = document.getElementById('rf_country_filter')?.value || 'ALL';
+
+        const hubMode = document.getElementById('hub_entry_search_container')?.classList.contains('hidden') ? 'quick' : 'search';
+        const hubCountry = document.getElementById('rf_hub_country_select')?.value || '';
+        const hubAirport = document.getElementById('rf_hub_airport_select')?.value || '';
+
+        const circuitLegs = currentCircuitLegs.map(l => ({
+          dstIata: l.dstIata,
+          flightsPerDay: l.flightsPerDay || 1
+        }));
+
+        const data = {
+          hubIata,
+          hubMode,
+          hubCountry,
+          hubAirport,
+          aircraftId,
+          catMin,
+          catMax,
+          durMinHh,
+          durMinMm,
+          durMaxHh,
+          durMaxMm,
+          durationPreset: currentDurationPreset || 'any',
+          continent,
+          country,
+          searchQuery: tableSearchQuery || '',
+          currentSort: currentSort || 'dist_asc',
+          viewMode: viewMode || 'table',
+          pageSize: pageSize || 50,
+          timelineViewMode: rf_timelineViewMode || 'week',
+          circuitLegs
+        };
+
+        localStorage.setItem('am_route_finder_state_v1', JSON.stringify(data));
+      } catch (err) {
+        console.warn('Could not save Route Finder state to localStorage:', err);
+      }
+    }
+
+    function rf_restoreStateFromLocalStorage() {
+      if (typeof localStorage === 'undefined') return false;
+      const raw = localStorage.getItem('am_route_finder_state_v1');
+      if (!raw) return false;
+
+      isRestoringRouteFinderState = true;
+      try {
+        const data = JSON.parse(raw);
+        if (!data || typeof data !== 'object') {
+          isRestoringRouteFinderState = false;
+          return false;
+        }
+
+        // 1. Restore Aircraft (without auto-resetting duration to default max)
+        if (data.aircraftId) {
+          rf_setAircraftById(data.aircraftId, false);
+        } else {
+          rf_setAircraftById('a380-800', false);
+        }
+
+        // 2. Restore Category Limits
+        if (data.catMin !== undefined) {
+          const minEl = document.getElementById('rf_cat_min');
+          if (minEl) minEl.value = String(data.catMin);
+        }
+        if (data.catMax !== undefined) {
+          const maxEl = document.getElementById('rf_cat_max');
+          if (maxEl) maxEl.value = String(data.catMax);
+        }
+        if (currentAircraft) {
+          const catHint = document.getElementById('cat_filter_hint');
+          if (catHint) catHint.textContent = `Min Cat ${currentAircraft.category} (${currentAircraft.name})`;
+        }
+
+        // 3. Restore Duration Limits & Preset
+        if (data.durMinHh !== undefined) {
+          const el = document.getElementById('rf_dur_min_hh');
+          if (el) el.value = String(data.durMinHh);
+        }
+        if (data.durMinMm !== undefined) {
+          const el = document.getElementById('rf_dur_min_mm');
+          if (el) el.value = String(data.durMinMm);
+        }
+        if (data.durMaxHh !== undefined) {
+          const el = document.getElementById('rf_dur_max_hh');
+          if (el) el.value = String(data.durMaxHh);
+        }
+        if (data.durMaxMm !== undefined) {
+          const el = document.getElementById('rf_dur_max_mm');
+          if (el) el.value = String(data.durMaxMm);
+        }
+        if (data.durationPreset) {
+          currentDurationPreset = data.durationPreset;
+          const buttons = ['any', '24h_divisors', 'short', 'medium', 'long'];
+          buttons.forEach(b => {
+            const el = document.getElementById(`dur_preset_${b === '24h_divisors' ? '24h' : b === 'medium' ? 'med' : b}`);
+            if (!el) return;
+            if (b === currentDurationPreset) {
+              el.className = 'px-2 py-0.5 rounded text-[10px] font-semibold transition bg-cyan-950 text-cyan-300 border border-cyan-700';
+            } else {
+              el.className = 'px-2 py-0.5 rounded text-[10px] font-semibold transition bg-slate-800 text-slate-300 hover:text-white border border-slate-700';
+            }
+          });
+        }
+
+        // 4. Restore Geographic Filters
+        if (data.continent) {
+          const contEl = document.getElementById('rf_continent_filter');
+          if (contEl) contEl.value = data.continent;
+          const hintEl = document.getElementById('rf_continent_hint');
+          if (hintEl) hintEl.textContent = data.continent === 'ALL' ? 'All' : data.continent;
+          rf_initCountryFilter(data.continent);
+        }
+        if (data.country) {
+          const countryEl = document.getElementById('rf_country_filter');
+          if (countryEl) countryEl.value = data.country;
+        }
+
+        // 5. Restore Table Search
+        if (data.searchQuery !== undefined) {
+          tableSearchQuery = data.searchQuery;
+          const searchEl = document.getElementById('rf_table_search');
+          if (searchEl) searchEl.value = data.searchQuery;
+          const clearBtn = document.getElementById('rf_clear_table_search_btn');
+          if (clearBtn) {
+            if (data.searchQuery) clearBtn.classList.remove('hidden');
+            else clearBtn.classList.add('hidden');
+          }
+        }
+
+        // 6. Restore View Mode & Page Size & Timeline View Mode
+        if (data.viewMode) {
+          rf_setViewMode(data.viewMode);
+        }
+        if (data.pageSize) {
+          pageSize = Number(data.pageSize) || 50;
+          const psEl = document.getElementById('rf_page_size');
+          if (psEl) psEl.value = String(pageSize);
+        }
+        if (data.timelineViewMode) {
+          rf_timelineViewMode = data.timelineViewMode;
+        }
+
+        // 7. Restore Sort
+        if (data.currentSort) {
+          currentSort = data.currentSort;
+          const sortSelect = document.getElementById('rf_sort_select');
+          if (sortSelect) sortSelect.value = currentSort;
+          const found = sortOptionItems.find(i => i.value === currentSort);
+          const sortLabel = document.getElementById('rf_sort_label');
+          if (sortLabel && found) sortLabel.textContent = found.label;
+        }
+        rf_updateTableHeaderSortIndicators();
+
+        // 8. Restore Hub
+        if (data.hubIata) {
+          rf_setHubByIata(data.hubIata);
+          if (data.hubMode === 'search') {
+            rf_setHubEntryMode('search');
+            if (data.hubCountry) {
+              const cEl = document.getElementById('rf_hub_country_select');
+              if (cEl) cEl.value = data.hubCountry;
+              rf_populateHubAirportsForCountry(data.hubCountry);
+            }
+            if (data.hubAirport) {
+              const aEl = document.getElementById('rf_hub_airport_select');
+              if (aEl) aEl.value = data.hubAirport;
+            }
+          } else {
+            rf_setHubEntryMode('quick');
+          }
+        } else {
+          rf_clearHub();
+        }
+
+        // 9. Restore Active Circuit Legs
+        if (Array.isArray(data.circuitLegs) && data.circuitLegs.length > 0) {
+          currentCircuitLegs = [];
+          data.circuitLegs.forEach((savedLeg, idx) => {
+            const airport = findAirport(savedLeg.dstIata);
+            if (!airport) return;
+            const colorIdx = idx % CIRCUIT_PALETTE.length;
+            const dist = currentHub ? calculateHaversineDistance(currentHub.lat, currentHub.lon, airport.lat, airport.lon) : 0;
+            const speed = currentAircraft ? currentAircraft.speed_kmh : 900;
+            const durHours = dist > 0 ? calculateFlightTimeHours(dist, speed) : 0;
+            currentCircuitLegs.push({
+              dstIata: airport.iata,
+              name: airport.name,
+              city: airport.city,
+              country: airport.country,
+              category: airport.cat,
+              distanceKm: dist,
+              durationHours: durHours,
+              durationText: formatHoursMinutes(durHours),
+              flightsPerDay: savedLeg.flightsPerDay || 1,
+              color: CIRCUIT_PALETTE[colorIdx]
+            });
+          });
+          rf_updateCircuitUI();
+        }
+
+        // 10. Refresh results
+        rf_refreshAll();
+
+        isRestoringRouteFinderState = false;
+        return true;
+      } catch (err) {
+        console.error('Failed to restore Route Finder state from localStorage:', err);
+        isRestoringRouteFinderState = false;
+        return false;
+      }
+    }
+
     let rfInitialized = false;
 function initRouteFinder() {
   if (rfInitialized) return;
@@ -205,10 +438,6 @@ function initRouteFinder() {
   rf_initHubSelector();
   rf_initCountryFilter();
   rf_updateSavedCircuitsCount();
-  
-  // Default: A380-800 aircraft and prompt user to enter hub (no default hub)
-  rf_setAircraftById('a380-800');
-  rf_clearHub();
 
   // Click outside combobox or sort dropdown to close
   document.addEventListener('click', (e) => {
@@ -222,7 +451,14 @@ function initRouteFinder() {
     }
   });
 
-  rf_refreshAll();
+  const restored = rf_restoreStateFromLocalStorage();
+  if (!restored) {
+    // Default: A380-800 aircraft and prompt user to enter hub (no default hub)
+    rf_setAircraftById('a380-800');
+    rf_clearHub();
+    rf_updateTableHeaderSortIndicators();
+    rf_refreshAll();
+  }
 }
 window.initRouteFinder = initRouteFinder;
 document.addEventListener('DOMContentLoaded', () => {
@@ -306,7 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     // AIRCRAFT SELECTION ENGINE (Combobox + Full Catalog Modal)
     // =========================================================================
-    function rf_setAircraftById(id) {
+    function rf_setAircraftById(id, resetDuration = true) {
       currentAircraft = AIRCRAFT_DATABASE.find(a => a.id === id) || AIRCRAFT_DATABASE[0];
 
       document.getElementById('rf_trigger_ac_name').textContent = currentAircraft.name;
@@ -332,7 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('cat_filter_hint').textContent = `Min Cat ${currentAircraft.category} (${currentAircraft.name})`;
 
       // Dynamically update round-trip duration limits and default to max for chosen aircraft
-      rf_updateDurationLimitsForAircraft(currentAircraft, true);
+      rf_updateDurationLimitsForAircraft(currentAircraft, resetDuration);
 
       rf_validateHubRunwayCompatibility();
 
@@ -343,6 +579,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         rf_updateCircuitUI();
       }
+
+      rf_saveStateToLocalStorage();
     }
 
     function rf_toggleAircraftCombobox() {
@@ -659,6 +897,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       rf_renderResults();
+      rf_saveStateToLocalStorage();
     }
 
     function rf_setHubByIata(iata) {
@@ -718,6 +957,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         rf_updateCircuitUI();
       }
+
+      rf_saveStateToLocalStorage();
     }
 
     function rf_setHubEntryMode(mode) {
@@ -890,6 +1131,7 @@ document.addEventListener('DOMContentLoaded', () => {
       rf_sortCandidates();
       currentPage = 1;
       rf_renderResults();
+      rf_saveStateToLocalStorage();
     }
 
     // Table Search Input Handler (Prominent search right on table header!)
@@ -930,8 +1172,15 @@ document.addEventListener('DOMContentLoaded', () => {
       { value: 'dur_asc', label: 'Duration: Shortest First' },
       { value: 'dur_desc', label: 'Duration: Longest First' },
       { value: 'cat_desc', label: 'Category: High to Low' },
+      { value: 'cat_asc', label: 'Category: Low to High' },
       { value: 'stars_desc', label: 'Demand Rating: High to Low' },
       { value: 'stars_asc', label: 'Demand Rating: Low to High' },
+      { value: 'name_asc', label: 'Destination: A to Z' },
+      { value: 'name_desc', label: 'Destination: Z to A' },
+      { value: 'country_asc', label: 'Country: A to Z' },
+      { value: 'country_desc', label: 'Country: Z to A' },
+      { value: 'fit_desc', label: 'Circuit Fit: Best First' },
+      { value: 'fit_asc', label: 'Circuit Fit: Least First' },
       { value: 'iata_asc', label: 'IATA Code: A to Z' }
     ];
 
@@ -985,8 +1234,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const labelEl = document.getElementById('rf_sort_label');
       if (labelEl) labelEl.textContent = label;
       rf_closeSortDropdown();
+      rf_updateTableHeaderSortIndicators();
       rf_sortCandidates();
       rf_renderResults();
+      rf_saveStateToLocalStorage();
     }
 
     function rf_onSortChange() {
@@ -994,8 +1245,88 @@ document.addEventListener('DOMContentLoaded', () => {
       const found = sortOptionItems.find(i => i.value === currentSort);
       const labelEl = document.getElementById('rf_sort_label');
       if (labelEl && found) labelEl.textContent = found.label;
+      rf_updateTableHeaderSortIndicators();
       rf_sortCandidates();
       rf_renderResults();
+      rf_saveStateToLocalStorage();
+    }
+
+    function rf_sortByColumn(columnKey) {
+      let nextSort = '';
+      switch (columnKey) {
+        case 'destination':
+          nextSort = (currentSort === 'name_asc') ? 'name_desc' : 'name_asc';
+          break;
+        case 'country':
+          nextSort = (currentSort === 'country_asc') ? 'country_desc' : 'country_asc';
+          break;
+        case 'category':
+          nextSort = (currentSort === 'cat_desc') ? 'cat_asc' : 'cat_desc';
+          break;
+        case 'distance':
+          nextSort = (currentSort === 'dist_asc') ? 'dist_desc' : 'dist_asc';
+          break;
+        case 'duration':
+          nextSort = (currentSort === 'dur_asc') ? 'dur_desc' : 'dur_asc';
+          break;
+        case 'fit':
+          nextSort = (currentSort === 'fit_desc') ? 'fit_asc' : 'fit_desc';
+          break;
+        case 'demand':
+          nextSort = (currentSort === 'stars_desc') ? 'stars_asc' : 'stars_desc';
+          break;
+        default:
+          return;
+      }
+
+      currentSort = nextSort;
+      const select = document.getElementById('rf_sort_select');
+      if (select) select.value = currentSort;
+      const found = sortOptionItems.find(i => i.value === currentSort);
+      const labelEl = document.getElementById('rf_sort_label');
+      if (labelEl && found) labelEl.textContent = found.label;
+
+      rf_updateTableHeaderSortIndicators();
+      rf_sortCandidates();
+      currentPage = 1;
+      rf_renderResults();
+      rf_saveStateToLocalStorage();
+    }
+
+    function rf_updateTableHeaderSortIndicators() {
+      const columnConfigs = [
+        { key: 'destination', ascKey: 'name_asc', descKey: 'name_desc', altKeys: ['iata_asc'] },
+        { key: 'country', ascKey: 'country_asc', descKey: 'country_desc' },
+        { key: 'category', ascKey: 'cat_asc', descKey: 'cat_desc' },
+        { key: 'distance', ascKey: 'dist_asc', descKey: 'dist_desc' },
+        { key: 'duration', ascKey: 'dur_asc', descKey: 'dur_desc' },
+        { key: 'fit', ascKey: 'fit_asc', descKey: 'fit_desc' },
+        { key: 'demand', ascKey: 'stars_asc', descKey: 'stars_desc' }
+      ];
+
+      columnConfigs.forEach(col => {
+        const th = document.getElementById(`rf_th_${col.key}`);
+        const icon = document.getElementById(`rf_th_icon_${col.key}`);
+        if (!th || !icon) return;
+
+        const isAsc = currentSort === col.ascKey || (col.altKeys && col.altKeys.includes(currentSort));
+        const isDesc = currentSort === col.descKey;
+        const isActive = isAsc || isDesc;
+
+        if (isActive) {
+          th.classList.add('text-cyan-300', 'font-bold');
+          th.classList.remove('text-slate-400');
+          th.setAttribute('aria-sort', isAsc ? 'ascending' : 'descending');
+          icon.className = 'text-[11px] text-cyan-400 font-bold ml-1 inline-block';
+          icon.textContent = isAsc ? '▲' : '▼';
+        } else {
+          th.classList.remove('text-cyan-300', 'font-bold');
+          th.classList.add('text-slate-400');
+          th.setAttribute('aria-sort', 'none');
+          icon.className = 'text-[10px] text-slate-600 group-hover:text-slate-300 font-mono ml-1 inline-block transition-colors';
+          icon.textContent = '↕';
+        }
+      });
     }
 
     function rf_sortCandidates() {
@@ -1003,13 +1334,28 @@ document.addEventListener('DOMContentLoaded', () => {
         switch (currentSort) {
           case 'dist_asc': return a.distanceKm - b.distanceKm;
           case 'dist_desc': return b.distanceKm - a.distanceKm;
-          case 'dur_asc': return a.durationHours - b.durationHours;
-          case 'dur_desc': return b.durationHours - a.durationHours;
+          case 'dur_asc': return a.durationHours - b.durationHours || a.distanceKm - b.distanceKm;
+          case 'dur_desc': return b.durationHours - a.durationHours || b.distanceKm - a.distanceKm;
           case 'cat_desc': return b.category - a.category || a.distanceKm - b.distanceKm;
+          case 'cat_asc': return a.category - b.category || a.distanceKm - b.distanceKm;
           case 'stars_desc': return (b.demand?.avg || 0) - (a.demand?.avg || 0) || b.distanceKm - a.distanceKm;
           case 'stars_asc': return (a.demand?.avg || 0) - (b.demand?.avg || 0) || a.distanceKm - b.distanceKm;
-          case 'tax_asc': return (a.flightTax || 0) - (b.flightTax || 0);
+          case 'name_asc': return (a.name || a.dstIata).localeCompare(b.name || b.dstIata) || a.dstIata.localeCompare(b.dstIata);
+          case 'name_desc': return (b.name || b.dstIata).localeCompare(a.name || a.dstIata) || b.dstIata.localeCompare(a.dstIata);
+          case 'country_asc': return (a.country || '').localeCompare(b.country || '') || (a.continent || '').localeCompare(b.continent || '') || a.dstIata.localeCompare(b.dstIata);
+          case 'country_desc': return (b.country || '').localeCompare(a.country || '') || (b.continent || '').localeCompare(a.continent || '') || b.dstIata.localeCompare(a.dstIata);
+          case 'fit_desc': {
+            const scoreA = a.fits24h ? 2 : (a.fits168h ? 1 : 0);
+            const scoreB = b.fits24h ? 2 : (b.fits168h ? 1 : 0);
+            return scoreB - scoreA || a.distanceKm - b.distanceKm;
+          }
+          case 'fit_asc': {
+            const scoreA = a.fits24h ? 2 : (a.fits168h ? 1 : 0);
+            const scoreB = b.fits24h ? 2 : (b.fits168h ? 1 : 0);
+            return scoreA - scoreB || a.distanceKm - b.distanceKm;
+          }
           case 'iata_asc': return a.dstIata.localeCompare(b.dstIata);
+          case 'tax_asc': return (a.flightTax || 0) - (b.flightTax || 0);
           default: return a.distanceKm - b.distanceKm;
         }
       });
@@ -1034,12 +1380,14 @@ document.addEventListener('DOMContentLoaded', () => {
         tableBtn.className = 'px-2.5 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 transition flex items-center gap-1';
       }
       rf_renderResults();
+      rf_saveStateToLocalStorage();
     }
 
     function rf_onPageSizeChange() {
       pageSize = parseInt(document.getElementById('rf_page_size').value) || 50;
       currentPage = 1;
       rf_renderResults();
+      rf_saveStateToLocalStorage();
     }
 
     function rf_changePage(delta) {
@@ -1082,7 +1430,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const sortLabel = document.getElementById('rf_sort_label');
       if (sortLabel) sortLabel.textContent = 'Distance: Low to High';
       rf_setDurationPreset('any');
+      rf_updateTableHeaderSortIndicators();
 
+      rf_saveStateToLocalStorage();
       showToast('Filters reset (A380-800 default, please enter hub)', 'info');
     }
 
@@ -1095,8 +1445,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const existingIdx = currentCircuitLegs.findIndex(l => l.dstIata === iata);
       if (existingIdx >= 0) {
-        currentCircuitLegs[existingIdx].flightsPerDay += 1;
-        showToast(`Incremented ${iata} to ${currentCircuitLegs[existingIdx].flightsPerDay}x daily flights`, 'info');
+        // Increment existing leg runs, but NEVER exceed target circuit hours (24h or 168h)
+        const leg = currentCircuitLegs[existingIdx];
+        const baseSingleSum = currentCircuitLegs.reduce((acc, l) => acc + l.durationHours, 0);
+        const is24hCircuit = baseSingleSum <= 24;
+        const targetHours = is24hCircuit ? 24 : 168;
+
+        const otherScheduledHours = currentCircuitLegs
+          .filter((_, idx) => idx !== existingIdx)
+          .reduce((acc, l) => acc + l.durationHours * l.flightsPerDay, 0);
+
+        const maxAllowed = Math.floor((targetHours - otherScheduledHours + 0.0001) / leg.durationHours);
+
+        if (leg.flightsPerDay >= maxAllowed) {
+          showToast(`Cannot add more runs for ${iata}: Circuit is capped at ${targetHours}h 00m (${leg.flightsPerDay}x max)`, 'warning');
+          return;
+        }
+
+        leg.flightsPerDay += 1;
+        showToast(`Incremented ${iata} to ${leg.flightsPerDay}x daily flights`, 'info');
       } else {
         const colorIdx = currentCircuitLegs.length % CIRCUIT_PALETTE.length;
         const newLeg = {
@@ -1112,19 +1479,47 @@ document.addEventListener('DOMContentLoaded', () => {
           color: CIRCUIT_PALETTE[colorIdx]
         };
 
-        currentCircuitLegs.push(newLeg);
-
-        if (currentCircuitLegs.length === 1 && newLeg.durationHours <= 24) {
-          const maxFit = Math.max(1, Math.floor(24 / newLeg.durationHours));
-          newLeg.flightsPerDay = maxFit;
-          showToast(`Added ${newLeg.dstIata} and populated daily timetable (${maxFit}x daily flights)`, 'success');
+        if (currentCircuitLegs.length === 0) {
+          // First route: auto-fill up to 24h if it fits in 24h
+          if (newLeg.durationHours <= 24) {
+            const maxFit = Math.max(1, Math.floor(24 / newLeg.durationHours));
+            newLeg.flightsPerDay = maxFit;
+            currentCircuitLegs.push(newLeg);
+            showToast(`Added ${newLeg.dstIata} and populated daily timetable (${maxFit}x daily flights)`, 'success');
+          } else {
+            currentCircuitLegs.push(newLeg);
+            showToast(`Added ${newLeg.dstIata} to circuit`, 'success');
+          }
         } else {
+          // Additional route being added
+          const currentBaseSingleSum = currentCircuitLegs.reduce((acc, l) => acc + l.durationHours, 0);
+          const wouldBe24h = (currentBaseSingleSum + newLeg.durationHours) <= 24;
+          const targetHours = wouldBe24h ? 24 : 168;
+
+          // If previously auto-filled (e.g. 1 route with multi-runs) and adding this new route would exceed targetHours,
+          // reset existing legs down to 1x so both routes fit within the 24h schedule
+          let currentTotalSched = currentCircuitLegs.reduce((acc, l) => acc + l.durationHours * l.flightsPerDay, 0);
+          if (currentTotalSched + newLeg.durationHours > targetHours) {
+            if (currentBaseSingleSum + newLeg.durationHours <= targetHours) {
+              currentCircuitLegs.forEach(l => { l.flightsPerDay = 1; });
+              currentTotalSched = currentCircuitLegs.reduce((acc, l) => acc + l.durationHours * l.flightsPerDay, 0);
+            }
+          }
+
+          if (currentTotalSched + newLeg.durationHours > targetHours) {
+            const freeHours = Math.max(0, targetHours - currentTotalSched);
+            showToast(`Cannot add ${newLeg.dstIata} (${newLeg.durationText}): Only ${formatHoursMinutes(freeHours)} free in circuit.`, 'warning');
+            return;
+          }
+
+          currentCircuitLegs.push(newLeg);
           showToast(`Added ${newLeg.dstIata} to circuit`, 'success');
         }
       }
 
       rf_updateCircuitUI();
       rf_renderResults();
+      rf_saveStateToLocalStorage();
     }
 
     function rf_removeRouteFromCircuit(iata) {
@@ -1135,20 +1530,53 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast(`Removed ${iata} from circuit`, 'info');
       rf_updateCircuitUI();
       rf_renderResults();
+      rf_saveStateToLocalStorage();
     }
 
     function rf_setLegFrequency(iata, count) {
       const leg = currentCircuitLegs.find(l => l.dstIata === iata);
       if (!leg) return;
-      leg.flightsPerDay = Math.max(1, count);
+
+      const baseSingleSum = currentCircuitLegs.reduce((acc, l) => acc + l.durationHours, 0);
+      const is24hCircuit = baseSingleSum <= 24;
+      const targetHours = is24hCircuit ? 24 : 168;
+
+      const otherScheduledHours = currentCircuitLegs
+        .filter(l => l.dstIata !== iata)
+        .reduce((acc, l) => acc + l.durationHours * l.flightsPerDay, 0);
+
+      const maxAllowed = Math.max(1, Math.floor((targetHours - otherScheduledHours + 0.0001) / leg.durationHours));
+      leg.flightsPerDay = Math.max(1, Math.min(count, maxAllowed));
       rf_updateCircuitUI();
+      rf_saveStateToLocalStorage();
     }
 
     function rf_changeLegFrequency(iata, delta) {
       const leg = currentCircuitLegs.find(l => l.dstIata === iata);
       if (!leg) return;
-      leg.flightsPerDay = Math.max(1, leg.flightsPerDay + delta);
+
+      const baseSingleSum = currentCircuitLegs.reduce((acc, l) => acc + l.durationHours, 0);
+      const is24hCircuit = baseSingleSum <= 24;
+      const targetHours = is24hCircuit ? 24 : 168;
+
+      const otherScheduledHours = currentCircuitLegs
+        .filter(l => l.dstIata !== iata)
+        .reduce((acc, l) => acc + l.durationHours * l.flightsPerDay, 0);
+
+      const maxAllowed = Math.floor((targetHours - otherScheduledHours + 0.0001) / leg.durationHours);
+
+      if (delta > 0) {
+        if (leg.flightsPerDay >= maxAllowed) {
+          showToast(`Cannot exceed ${targetHours}h schedule (${maxAllowed}x is maximum for ${iata})`, 'warning');
+          return;
+        }
+        leg.flightsPerDay = Math.min(maxAllowed, leg.flightsPerDay + delta);
+      } else {
+        leg.flightsPerDay = Math.max(1, leg.flightsPerDay + delta);
+      }
+
       rf_updateCircuitUI();
+      rf_saveStateToLocalStorage();
     }
 
     function rf_clearCurrentCircuit() {
@@ -1156,15 +1584,15 @@ document.addEventListener('DOMContentLoaded', () => {
       currentCircuitLegs = [];
       rf_updateCircuitUI();
       rf_renderResults();
+      rf_saveStateToLocalStorage();
       showToast('Cleared circuit timetable', 'info');
     }
 
-    // Timeline View Mode: 'week' (7-Day Schedule), 'bar' (Daily/Summary Bar), or null (auto)
-    let rf_timelineViewMode = null;
-
+    // Timeline View Mode: 'week' (7-Day Schedule) or 'bar' (Daily/Summary Bar)
     function rf_setTimelineViewMode(mode) {
       rf_timelineViewMode = mode;
       rf_updateCircuitUI();
+      rf_saveStateToLocalStorage();
     }
 
     function rf_updateCircuitUI() {
@@ -1214,7 +1642,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('circuit_stat_free_time').textContent = '24h 00m';
         document.getElementById('circuit_utilization_badge').textContent = '0% Utilized';
         document.getElementById('circuit_utilization_badge').className = 'px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 font-mono';
-        rf_timelineViewMode = null;
         return;
       }
 
@@ -1297,15 +1724,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
+      // Safety clamp: ensure no leg exceeds targetHours
+      currentCircuitLegs.forEach((leg, idx) => {
+        const otherHours = currentCircuitLegs
+          .filter((_, lIdx) => lIdx !== idx)
+          .reduce((acc, l) => acc + l.durationHours * l.flightsPerDay, 0);
+        const maxFitForLeg = Math.max(1, Math.floor((targetHours - otherHours + 0.0001) / leg.durationHours));
+        if (leg.flightsPerDay > maxFitForLeg) {
+          leg.flightsPerDay = maxFitForLeg;
+        }
+      });
+
+      // Recalculate totalScheduledHours after safety clamp
+      totalScheduledHours = 0;
+      currentCircuitLegs.forEach(l => {
+        totalScheduledHours += l.durationHours * l.flightsPerDay;
+      });
+      const finalFreeHours = Math.max(0, targetHours - totalScheduledHours);
+
+      document.getElementById('circuit_stat_used_time').textContent = formatHoursMinutes(totalScheduledHours);
+      document.getElementById('circuit_stat_free_time').textContent = formatHoursMinutes(finalFreeHours);
+
       // Render Route Cards
       const activeHubIata = currentHub ? currentHub.iata : 'HUB';
       legsContainer.innerHTML = currentCircuitLegs.map((leg, idx) => {
         const totalLegHours = leg.durationHours * leg.flightsPerDay;
         const isOnlyRouteIn24h = legCount === 1 && is24hCircuit;
-        const maxFit = Math.max(1, Math.floor(24 / leg.durationHours));
+        const otherScheduledHours = currentCircuitLegs
+          .filter((_, lIdx) => lIdx !== idx)
+          .reduce((acc, l) => acc + l.durationHours * l.flightsPerDay, 0);
+        const maxFit = Math.max(1, Math.floor((targetHours - otherScheduledHours + 0.0001) / leg.durationHours));
+        const canIncrement = leg.flightsPerDay < maxFit;
+        const canDecrement = leg.flightsPerDay > 1;
 
         let quickFrequencyButtonsHtml = '';
-        if (isOnlyRouteIn24h) {
+        if (isOnlyRouteIn24h && maxFit > 1) {
           const quickOptions = [];
           for (let f = 1; f <= Math.min(6, maxFit); f++) {
             quickOptions.push(f);
@@ -1351,9 +1804,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <div class="flex items-center gap-3 self-end md:self-center shrink-0">
               <div class="flex items-center bg-slate-950 border border-slate-700 rounded-lg p-0.5">
-                <button type="button" onclick="rf_changeLegFrequency('${leg.dstIata}', -1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 font-bold transition">&minus;</button>
+                <button type="button" onclick="rf_changeLegFrequency('${leg.dstIata}', -1)" ${!canDecrement ? 'disabled' : ''} class="w-6 h-6 rounded flex items-center justify-center ${!canDecrement ? 'text-slate-600 cursor-not-allowed' : 'text-slate-400 hover:text-white hover:bg-slate-800'} font-bold transition" title="${!canDecrement ? 'Minimum 1 run' : 'Decrease daily runs'}">&minus;</button>
                 <span class="px-2 font-mono font-bold text-cyan-300 text-xs">${leg.flightsPerDay}x</span>
-                <button type="button" onclick="rf_changeLegFrequency('${leg.dstIata}', 1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 font-bold transition">&plus;</button>
+                <button type="button" onclick="rf_changeLegFrequency('${leg.dstIata}', 1)" ${!canIncrement ? 'disabled' : ''} class="w-6 h-6 rounded flex items-center justify-center ${!canIncrement ? 'text-slate-600 cursor-not-allowed' : 'text-slate-400 hover:text-white hover:bg-slate-800'} font-bold transition" title="${!canIncrement ? `Maximum ${maxFit}x runs reached (${targetHours}h schedule limit)` : 'Add daily run'}">&plus;</button>
               </div>
 
               <button type="button" onclick="rf_removeRouteFromCircuit('${leg.dstIata}')" class="p-1.5 rounded-lg text-rose-400 hover:text-rose-200 hover:bg-rose-950/50 border border-transparent hover:border-rose-900 transition" title="Remove route">
@@ -2307,5 +2760,9 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
     window.rf_getStarRating = rf_getStarRating;
     window.rf_computeAirportDemandStats = rf_computeAirportDemandStats;
     window.rf_updateDurationLimitsForAircraft = rf_updateDurationLimitsForAircraft;
+    window.rf_sortByColumn = rf_sortByColumn;
+    window.rf_updateTableHeaderSortIndicators = rf_updateTableHeaderSortIndicators;
+    window.rf_saveStateToLocalStorage = rf_saveStateToLocalStorage;
+    window.rf_restoreStateFromLocalStorage = rf_restoreStateFromLocalStorage;
 
 })();
