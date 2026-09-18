@@ -238,4 +238,4 @@ No build tools, compilers, or server installations are required! The web applica
 
 ## 📄 License
 
-This project is open source and available under the [MIT](LICENSE).
+This project is open source and available under the [MIT](LICENSE) tab.
