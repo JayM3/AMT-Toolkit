@@ -2558,7 +2558,7 @@ window.recalculateCircuitConfigurations = recalculateCircuitConfigurations;
 window.renderCircuitAll = renderCircuitAll;
 
 /**
- * Render the Stacked Aircraft Cards (Point 4)
+ * Render the Stacked Aircraft Cards (Point 4 - Redesigned Accordion View)
  */
 function renderActivePlanDetails() {
   const planContainer = document.getElementById('sc_active_plan_card');
@@ -2595,30 +2595,102 @@ function renderActivePlanDetails() {
     }
   }
 
-  // Sort groups: highest estimated daily revenue per aircraft first,
-  // then highest count as tiebreaker.
-  const sortedGroups = [...plan.stackedGroups].sort((a, b) => {
-    const revA = a.cabin.eco * avgEco + a.cabin.bus * avgBus + a.cabin.first * avgFirst + a.cabin.cargo * avgCargo;
-    const revB = b.cabin.eco * avgEco + b.cabin.bus * avgBus + b.cabin.first * avgFirst + b.cabin.cargo * avgCargo;
-    if (revB !== revA) return revB - revA;   // highest revenue first
-    return b.count - a.count;                // most aircraft first on tie
+  // Calculate detailed per-stack and single-aircraft economics
+  plan.stackedGroups.forEach(group => {
+    const p = group.cabin;
+    const totalGroupPlanes = group.count * plan.planesPerUnit;
+
+    let unitEcoRev = 0;
+    let unitBusRev = 0;
+    let unitFirstRev = 0;
+    let unitCargoRev = 0;
+
+    if (plan.routeResults && plan.routeResults.length > 0) {
+      plan.routeResults.forEach(r => {
+        const f = r.flights || 1;
+        const ratioY = (r.offer && r.offer.eco > 0) ? (r.sold.eco / r.offer.eco) : 1;
+        const ratioJ = (r.offer && r.offer.bus > 0) ? (r.sold.bus / r.offer.bus) : 1;
+        const ratioF = (r.offer && r.offer.first > 0) ? (r.sold.first / r.offer.first) : 1;
+        const ratioC = (r.offer && r.offer.cargo > 0) ? (r.sold.cargo / r.offer.cargo) : 1;
+
+        const offerY = 2 * p.eco * f;
+        const offerJ = 2 * p.bus * f;
+        const offerF = 2 * p.first * f;
+        const offerC = 2 * p.cargo * f;
+
+        unitEcoRev   += offerY * (r.prices.eco || 0) * ratioY;
+        unitBusRev   += offerJ * (r.prices.bus || 0) * ratioJ;
+        unitFirstRev += offerF * (r.prices.first || 0) * ratioF;
+        unitCargoRev += offerC * (r.prices.cargo || 0) * ratioC;
+      });
+    }
+
+    // In 168h circuits, 1 unit is a 7-aircraft wave, so 1 aircraft = unit / 7
+    const aircraftDailyRev = plan.is168h ? ((unitEcoRev + unitBusRev + unitFirstRev + unitCargoRev) / 7) : (unitEcoRev + unitBusRev + unitFirstRev + unitCargoRev);
+    const aircraftEcoRev   = plan.is168h ? (unitEcoRev / 7) : unitEcoRev;
+    const aircraftBusRev   = plan.is168h ? (unitBusRev / 7) : unitBusRev;
+    const aircraftFirstRev = plan.is168h ? (unitFirstRev / 7) : unitFirstRev;
+    const aircraftCargoRev = plan.is168h ? (unitCargoRev / 7) : unitCargoRev;
+
+    const stackDailyRev = aircraftDailyRev * totalGroupPlanes;
+    const stackWeeklyRev = stackDailyRev * 7;
+
+    const totRtFlights = (plan.routeResults || []).reduce((acc, r) => acc + (r.flights || 1), 0);
+    const aircraftRtRev = totRtFlights > 0 ? (aircraftDailyRev / (totRtFlights / (plan.is168h ? 7 : 1))) : (aircraftDailyRev / 2);
+
+    const acPrice = plan.aircraft?.price || 0;
+    const paybackDays = (acPrice > 0 && aircraftDailyRev > 0) ? Math.round(acPrice / aircraftDailyRev) : 0;
+
+    group.financials = {
+      unitDailyRev: Math.round(aircraftDailyRev),
+      unitRtRev: Math.round(aircraftRtRev),
+      unitEcoRev: Math.round(aircraftEcoRev),
+      unitBusRev: Math.round(aircraftBusRev),
+      unitFirstRev: Math.round(aircraftFirstRev),
+      unitCargoRev: Math.round(aircraftCargoRev),
+      stackDailyRev: Math.round(stackDailyRev),
+      stackWeeklyRev: Math.round(stackWeeklyRev),
+      paybackDays
+    };
   });
 
+  // Sort groups: highest estimated daily revenue first, then count
+  const sortedGroups = [...plan.stackedGroups].sort((a, b) => {
+    const revA = (a.financials?.stackDailyRev) || (a.cabin.eco * avgEco + a.cabin.bus * avgBus + a.cabin.first * avgFirst + a.cabin.cargo * avgCargo);
+    const revB = (b.financials?.stackDailyRev) || (b.cabin.eco * avgEco + b.cabin.bus * avgBus + b.cabin.first * avgFirst + b.cabin.cargo * avgCargo);
+    if (revB !== revA) return revB - revA;
+    return b.count - a.count;
+  });
+
+  window.CIRCUIT_ACCORDION_EXPANDED = window.CIRCUIT_ACCORDION_EXPANDED || {};
+
   let stacksHtml = '';
-  let fulfilledCount = 0;
+  let totalFleetFulfilled = 0;
+  const totalFleetPlanes = plan.totalPlanes;
+
   sortedGroups.forEach((group, gIdx) => {
     const p = group.cabin;
-    const count = group.count;
-    const totalGroupPlanes = count * plan.planesPerUnit;
-
-    const label = plan.is168h
-      ? (count === 1 ? `1× Wave of 7 Aircraft (#1–7)` : `${count}× Waves (${totalGroupPlanes} Aircraft total, Waves #1–${count})`)
-      : (count === 1 ? `1× Aircraft (#${group.startUnitIndex})` : `${count}× Aircraft (#${group.startUnitIndex}–#${group.endUnitIndex})`);
+    const totalGroupPlanes = group.count * plan.planesPerUnit;
 
     const configKey = `${group.startUnitIndex}-${group.endUnitIndex}_${p.eco}-${p.bus}-${p.first}-${p.cargo}`;
     const altKey = `${group.startUnitIndex}-${group.endUnitIndex}`;
-    const isFulfilled = !!(window.CIRCUIT_FULFILLED_CONFIGS && (window.CIRCUIT_FULFILLED_CONFIGS[configKey] || window.CIRCUIT_FULFILLED_CONFIGS[altKey]));
-    if (isFulfilled) fulfilledCount++;
+
+    // Read fulfilled count with backward compatibility
+    let fulfilledCount = 0;
+    if (window.CIRCUIT_FULFILLED_CONFIGS && typeof window.CIRCUIT_FULFILLED_CONFIGS === 'object') {
+      const val = window.CIRCUIT_FULFILLED_CONFIGS[configKey] ?? window.CIRCUIT_FULFILLED_CONFIGS[altKey];
+      if (val === true) {
+        fulfilledCount = totalGroupPlanes;
+      } else if (typeof val === 'number') {
+        fulfilledCount = Math.max(0, Math.min(totalGroupPlanes, val));
+      }
+    }
+    totalFleetFulfilled += fulfilledCount;
+
+    const isComplete = (fulfilledCount === totalGroupPlanes && totalGroupPlanes > 0);
+    const hasSome = (fulfilledCount > 0 && !isComplete);
+    const pct = Math.round((fulfilledCount / totalGroupPlanes) * 100);
+    const isExpanded = !!window.CIRCUIT_ACCORDION_EXPANDED[configKey];
 
     const ecoW = ((p.eco * 1.0) / p.maxSeats) * 100;
     const busW = ((p.bus * 1.8) / p.maxSeats) * 100;
@@ -2629,85 +2701,192 @@ function renderActivePlanDetails() {
     const paxWeightPct = ((paxWeight / p.maxPayload) * 100).toFixed(1);
     const cargoWeightPct = ((cargoWeight / p.maxPayload) * 100).toFixed(1);
 
+    const hasEco = p.eco > 0;
+    const hasBus = p.bus > 0;
+    const hasFirst = p.first > 0;
+    const hasCargo = p.cargo > 0;
+
     stacksHtml += `
-      <div class="glass-card ${isFulfilled ? 'glass-card-fulfilled' : ''} p-4 rounded-xl border ${isFulfilled ? 'border-emerald-500/60 bg-slate-900/95 ring-1 ring-emerald-500/25 shadow-lg shadow-emerald-950/20' : 'border-slate-700/80 bg-slate-900/80'} space-y-3 transition-all duration-200">
-        <!-- Stack Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b ${isFulfilled ? 'border-emerald-800/40' : 'border-slate-800'}">
-          <div class="flex items-center gap-2.5 flex-wrap">
-            <!-- Fulfillment Checkbox -->
-            <label class="group/chk flex items-center gap-2 cursor-pointer select-none px-2.5 py-1 rounded-lg border text-xs font-semibold transition-all ${
-              isFulfilled
-                ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/80 shadow-sm shadow-emerald-950/60 ring-1 ring-emerald-500/30'
-                : 'bg-slate-950/80 text-slate-400 border-slate-700 hover:text-white hover:border-slate-500 hover:bg-slate-900'
-            }" title="${isFulfilled ? 'Configuration fulfilled (click to unmark)' : 'Mark this aircraft configuration as fulfilled'}">
-              <input type="checkbox" ${isFulfilled ? 'checked' : ''} onchange="toggleConfigFulfilled('${configKey}')" class="w-4 h-4 rounded border-slate-600 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-900 accent-emerald-500 cursor-pointer">
-              <span>${isFulfilled ? '✓ Fulfilled' : 'Fulfilled'}</span>
-            </label>
+      <div class="glass-card ${isComplete ? 'glass-card-fulfilled' : ''} rounded-xl border ${isComplete ? 'border-emerald-500/60 bg-slate-900/90' : 'border-slate-800 bg-slate-900/70'} overflow-hidden transition-all duration-200 shadow-sm">
+        
+        <!-- Accordion Clickable Header Area -->
+        <div onclick="toggleConfigAccordion('${configKey}')" class="p-3 sm:p-3.5 bg-slate-900/80 hover:bg-slate-800/60 cursor-pointer select-none transition space-y-2.5">
+          
+          <!-- Header Row 1: Stepper + Standalone Stack Badge (Left) & Metrics + Financial Button + Chevron (Right) -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            
+            <!-- Left: Stepper + Standalone Stack Amount -->
+            <div class="flex items-center gap-2.5">
+              
+              <!-- Stepper Control -->
+              <div class="flex items-center gap-1.5 select-none shrink-0" onclick="event.stopPropagation()">
+                <div class="flex items-center p-0.5 rounded-lg border ${
+                  isComplete
+                    ? 'bg-emerald-950/90 text-emerald-200 border-emerald-500/80 shadow-sm ring-1 ring-emerald-500/30'
+                    : hasSome
+                      ? 'bg-slate-900 text-cyan-300 border-cyan-700/70 shadow-sm'
+                      : 'bg-slate-950/90 text-slate-400 border-slate-700/80'
+                } font-mono-num text-xs">
+                  <button type="button" onclick="event.stopPropagation(); stepConfigFulfilled('${configKey}', -1, ${totalGroupPlanes})" class="w-6 h-6 rounded flex items-center justify-center hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-bold leading-none transition" title="Decrease configured aircraft">-</button>
+                  
+                  <div class="px-2.5 py-0.5 text-center cursor-pointer hover:underline text-[11px] font-bold" onclick="event.stopPropagation(); setExactConfigFulfilled('${configKey}', ${isComplete ? 0 : totalGroupPlanes}, ${totalGroupPlanes})" title="Click to ${isComplete ? 'reset to 0' : 'fill all'}">
+                    <span>${fulfilledCount}/${totalGroupPlanes}</span>
+                    <span class="text-[9px] font-normal opacity-85 ml-0.5">${isComplete ? '✓' : `${pct}%`}</span>
+                  </div>
 
-            <span class="px-2.5 py-1 rounded-lg ${isFulfilled ? 'bg-emerald-950/60 text-emerald-200 border border-emerald-800/80' : 'bg-cyan-950 text-cyan-300 border border-cyan-800'} font-mono font-bold text-xs flex items-center gap-1.5">
-              ${isFulfilled ? '<span class="text-emerald-400 font-black">✓</span>' : ''}
-              <span>${label}</span>
-            </span>
-            <span class="text-xs font-bold text-white">${plan.aircraft?.name || 'Aircraft'}</span>
-            <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">${plan.aircraft?.type || ''}</span>
-          </div>
-          <div class="text-left sm:text-right font-mono-num text-xs">
-            <div>
-              <span class="text-slate-400">Cabin Capacity: </span>
-              <strong class="text-white">${p.eco + p.bus + p.first} PAX</strong>
-              <span class="text-slate-500">(${Number(p.spaceUsed.toFixed(1))}/${p.maxSeats} spaces)</span>
+                  <button type="button" onclick="event.stopPropagation(); stepConfigFulfilled('${configKey}', 1, ${totalGroupPlanes})" class="w-6 h-6 rounded flex items-center justify-center hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-bold leading-none transition" title="Increase configured aircraft">+</button>
+                </div>
+              </div>
+
+              <!-- Standalone Stack Badge (No #1, #2 IDs) -->
+              <span class="px-2.5 py-1 rounded-lg font-mono font-bold text-xs ${
+                isComplete
+                  ? 'bg-emerald-950 text-emerald-200 border border-emerald-700/80'
+                  : 'bg-cyan-950 text-cyan-300 border border-cyan-800'
+              } flex items-center gap-1.5 shadow-sm">
+                ${isComplete ? '<span class="text-emerald-400 font-black">✓</span>' : ''}
+                <span>${totalGroupPlanes}× Aircraft</span>
+              </span>
+
             </div>
-            <div class="${isFulfilled ? 'text-emerald-400' : 'text-cyan-400'} font-semibold text-[11px] mt-0.5">
-              Offers ${(p.eco + p.bus + p.first) * 2} PAX / Round-Trip
+
+            <!-- Right: Capacity Summary + Daily Turnover + Financials Button + Chevron -->
+            <div class="flex items-center gap-3 self-end sm:self-center shrink-0 font-mono-num text-xs">
+              
+              <!-- Capacity & Round-Trip text -->
+              <div class="text-right hidden sm:block text-[11px] text-slate-300">
+                <span><strong>${p.eco + p.bus + p.first} PAX</strong></span>
+                <span class="text-slate-500">(${ (p.eco + p.bus + p.first)*2 }/RT)</span>
+                <span class="text-slate-600 mx-1">•</span>
+                <span class="text-slate-400">${p.weightUsed}T (${p.weightPct}%)</span>
+              </div>
+
+              <!-- Daily Turnover -->
+              <div class="text-right font-bold text-emerald-400">
+                ${formatCurrency(group.financials?.stackDailyRev || 0)}<span class="text-[10px] text-emerald-500/80 font-normal">/day</span>
+              </div>
+
+              <!-- Financial Summary Popover Trigger Button -->
+              <button type="button" onclick="openConfigFinancialPopover(event, '${configKey}')" class="px-2.5 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 hover:text-white border border-emerald-700/60 hover:border-emerald-500 text-xs font-semibold transition flex items-center gap-1.5 shadow-sm" title="Open financial breakdown popover">
+                <span>💰</span>
+                <span class="text-[11px]">Financials</span>
+              </button>
+
+              <!-- Chevron -->
+              <div class="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-white">
+                <svg class="w-4 h-4 transform transition-transform duration-200 ${isExpanded ? 'rotate-180 text-cyan-400' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+
             </div>
           </div>
+
+          <!-- Header Row 2: Uniform Emoji Configuration Boxes (Always 4 uniform boxes, perfectly aligned across cards) -->
+          <div class="flex items-center justify-between gap-2 pt-0.5 border-t border-slate-800/40">
+            <div class="flex items-center gap-1.5 select-none font-mono-num text-xs">
+              <!-- Economy Box -->
+              <div class="w-[66px] sm:w-[74px] py-1 px-1.5 rounded-lg border flex items-center justify-center gap-1 transition ${
+                hasEco 
+                  ? 'bg-cyan-950/80 border-cyan-500/50 text-cyan-300 shadow-sm' 
+                  : 'bg-slate-950/50 border-slate-800/80 text-slate-500'
+              }" title="Economy: ${p.eco} seats (${p.eco * 2} / Round-Trip)">
+                <span class="text-[13px] leading-none">💺</span>
+                <span class="font-bold text-[11px] sm:text-xs">${p.eco}</span>
+              </div>
+
+              <!-- Business Box -->
+              <div class="w-[66px] sm:w-[74px] py-1 px-1.5 rounded-lg border flex items-center justify-center gap-1 transition ${
+                hasBus 
+                  ? 'bg-blue-950/80 border-blue-500/50 text-blue-300 shadow-sm' 
+                  : 'bg-slate-950/50 border-slate-800/80 text-slate-500'
+              }" title="Business: ${p.bus} seats (${p.bus * 2} / Round-Trip)">
+                <span class="text-[13px] leading-none">💼</span>
+                <span class="font-bold text-[11px] sm:text-xs">${p.bus}</span>
+              </div>
+
+              <!-- First Class Box -->
+              <div class="w-[66px] sm:w-[74px] py-1 px-1.5 rounded-lg border flex items-center justify-center gap-1 transition ${
+                hasFirst 
+                  ? 'bg-amber-950/80 border-amber-500/50 text-amber-300 shadow-sm' 
+                  : 'bg-slate-950/50 border-slate-800/80 text-slate-500'
+              }" title="First Class: ${p.first} seats (${p.first * 2} / Round-Trip)">
+                <span class="text-[13px] leading-none">👑</span>
+                <span class="font-bold text-[11px] sm:text-xs">${p.first}</span>
+              </div>
+
+              <!-- Belly Cargo Box -->
+              <div class="w-[66px] sm:w-[74px] py-1 px-1.5 rounded-lg border flex items-center justify-center gap-1 transition ${
+                hasCargo 
+                  ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300 shadow-sm' 
+                  : 'bg-slate-950/50 border-slate-800/80 text-slate-500'
+              }" title="Belly Cargo: ${p.cargo}T (${p.cargo * 2}T / Round-Trip)">
+                <span class="text-[13px] leading-none">📦</span>
+                <span class="font-bold text-[11px] sm:text-xs">${p.cargo}T</span>
+              </div>
+            </div>
+
+            <div class="text-[10px] text-slate-500 font-mono-num hidden sm:block">
+              Offers ${(p.eco + p.bus + p.first) * 2} PAX &amp; ${p.cargo * 2}T Cargo per Round-Trip
+            </div>
+          </div>
+
         </div>
 
-        <!-- Seating Pills -->
-        <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-mono-num pt-0.5">
-          <div class="flex flex-wrap items-center gap-1.5">
-            <span class="px-2.5 py-1 rounded-lg bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-bold" title="Offers ${p.eco * 2} seats per RT">
-              💺 <strong>${p.eco}</strong> Economy <span class="text-[10px] text-cyan-400 font-normal">(${p.eco * 2}/RT)</span>
-            </span>
-            <span class="px-2.5 py-1 rounded-lg bg-blue-950/80 border border-blue-500/40 text-blue-300 font-bold" title="Offers ${p.bus * 2} seats per RT">
-              💼 <strong>${p.bus}</strong> Business <span class="text-[10px] text-blue-400 font-normal">(${p.bus * 2}/RT)</span>
-            </span>
-            <span class="px-2.5 py-1 rounded-lg bg-amber-950/80 border border-amber-500/40 text-amber-300 font-bold" title="Offers ${p.first * 2} seats per RT">
-              👑 <strong>${p.first}</strong> First Class <span class="text-[10px] text-amber-400 font-normal">(${p.first * 2}/RT)</span>
-            </span>
-            <span class="px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 font-bold" title="Offers ${p.cargo * 2}T cargo per RT">
-              📦 <strong>${p.cargo}T</strong> Belly Cargo <span class="text-[10px] text-emerald-400 font-normal">(${p.cargo * 2}T/RT)</span>
-            </span>
-          </div>
-          <div class="text-[11px] text-slate-300 flex items-center gap-2 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
-            <span class="text-slate-400">Payload:</span>
-            <strong class="${p.weightPct >= 95 ? 'text-emerald-400' : 'text-white'}">${p.weightUsed}T</strong> / ${p.maxPayload}T
-            <span class="${p.weightPct >= 95 ? 'text-emerald-400 font-semibold' : 'text-slate-400'}">(${p.weightPct}%)</span>
-          </div>
-        </div>
+        <!-- Expanded Body (Progressive Disclosure) -->
+        ${isExpanded ? `
+          <div class="p-3.5 sm:p-4 border-t border-slate-800/80 bg-slate-950/70 space-y-3">
+            
+            <!-- Capacity & Payload Details Row -->
+            <div class="flex flex-wrap items-center justify-between gap-3 text-xs font-mono-num text-slate-300">
+              <div>
+                <span class="text-slate-400">Cabin Space Allocation: </span>
+                <strong class="text-white">${p.eco + p.bus + p.first} PAX</strong>
+                <span class="text-slate-500">(${Number(p.spaceUsed.toFixed(1))}/${p.maxSeats} spaces used)</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <div>
+                  <span class="text-slate-400">Total Weight: </span>
+                  <strong class="${p.weightPct >= 95 ? 'text-emerald-400' : 'text-white'}">${p.weightUsed}T</strong> / ${p.maxPayload}T
+                  <span class="text-slate-500">(${p.weightPct}%)</span>
+                </div>
+              </div>
+            </div>
 
-        <!-- Visual Multi-Segment Cabin Allocation Bar -->
-        <div class="space-y-1">
-          <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden flex border border-slate-800 p-0.5 gap-0.5">
-            ${ecoW > 0 ? `<div style="width: ${ecoW}%" class="h-full seat-bar-eco rounded-sm" title="Economy: ${p.eco} seats (${ecoW.toFixed(0)}%)"></div>` : ''}
-            ${busW > 0 ? `<div style="width: ${busW}%" class="h-full seat-bar-bus rounded-sm" title="Business: ${p.bus} seats (${busW.toFixed(0)}%)"></div>` : ''}
-            ${firstW > 0 ? `<div style="width: ${firstW}%" class="h-full seat-bar-first rounded-sm" title="First: ${p.first} seats (${firstW.toFixed(0)}%)"></div>` : ''}
-          </div>
-        </div>
+            <!-- Visual Cabin Space Bar -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-[10px] text-slate-400 font-mono-num">
+                <span>Cabin Distribution</span>
+                <span>Economy (${ecoW.toFixed(0)}%) • Business (${busW.toFixed(0)}%) • First (${firstW.toFixed(0)}%)</span>
+              </div>
+              <div class="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden flex border border-slate-800 p-0.5 gap-0.5">
+                ${ecoW > 0 ? `<div style="width: ${ecoW}%" class="h-full seat-bar-eco rounded-sm" title="Economy: ${p.eco} seats (${ecoW.toFixed(1)}%)"></div>` : ''}
+                ${busW > 0 ? `<div style="width: ${busW}%" class="h-full seat-bar-bus rounded-sm" title="Business: ${p.bus} seats (${busW.toFixed(1)}%)"></div>` : ''}
+                ${firstW > 0 ? `<div style="width: ${firstW}%" class="h-full seat-bar-first rounded-sm" title="First Class: ${p.first} seats (${firstW.toFixed(1)}%)"></div>` : ''}
+              </div>
+            </div>
 
-        <!-- Visual Payload Weight Bar -->
-        <div class="space-y-1">
-          <div class="w-full h-2 bg-slate-950 rounded-full overflow-hidden flex border border-slate-800 p-0.5 gap-0.5">
-            ${paxWeightPct > 0 ? `<div style="width: ${paxWeightPct}%" class="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-sm" title="Passengers: ${paxWeight}T"></div>` : ''}
-            ${cargoWeightPct > 0 ? `<div style="width: ${cargoWeightPct}%" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-sm" title="Belly Cargo: ${p.cargo}T"></div>` : ''}
+            <!-- Visual Payload Weight Bar -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-[10px] text-slate-400 font-mono-num">
+                <span>Payload Weight Breakdown</span>
+                <span>Passengers: ${paxWeight}T • Belly Cargo: ${cargoWeight}T</span>
+              </div>
+              <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden flex border border-slate-800 p-0.5 gap-0.5">
+                ${paxWeightPct > 0 ? `<div style="width: ${paxWeightPct}%" class="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-sm" title="Passengers: ${paxWeight}T"></div>` : ''}
+                ${cargoWeightPct > 0 ? `<div style="width: ${cargoWeightPct}%" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-sm" title="Belly Cargo: ${cargoWeight}T"></div>` : ''}
+              </div>
+            </div>
+
           </div>
-        </div>
+        ` : ''}
+
       </div>
     `;
   });
 
   const totalConfigs = sortedGroups.length;
-  const allFulfilled = (totalConfigs > 0 && fulfilledCount === totalConfigs);
+  const allFleetFulfilled = (totalFleetFulfilled === totalFleetPlanes && totalFleetPlanes > 0);
 
   planContainer.innerHTML = `
     <div class="glass-panel p-5 rounded-2xl border border-cyan-500/40 ring-1 ring-cyan-500/20 shadow-xl space-y-4">
@@ -2721,7 +2900,7 @@ function renderActivePlanDetails() {
               <span>${plan.strategy === 'max_profit' ? 'Max Profit Solution' : 'Zero Empty Seats Solution'}</span>
             </span>
             <span class="text-xs px-2.5 py-1 rounded-lg bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono-num font-bold">
-              ✈️ ${plan.totalPlanes} Total Aircraft Required ${plan.is168h ? `(${plan.totalUnits} Waves of 7)` : ''}
+              ✈️ ${plan.totalPlanes} Total Aircraft Required ${plan.is168h ? `(${plan.totalUnits} Wave${plan.totalUnits > 1 ? 's' : ''} of 7)` : ''}
             </span>
             <span class="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 font-mono-num">
               💰 Capital: ${formatCurrency(plan.totalFleetCost)}
@@ -2729,14 +2908,14 @@ function renderActivePlanDetails() {
             <span class="text-xs px-2.5 py-1 rounded-lg bg-blue-950/80 text-blue-300 border border-blue-800/80 font-mono-num font-semibold">
               📈 ${plan.circuitLoadFactor}% Load Factor
             </span>
-            <span class="text-xs px-2.5 py-1 rounded-lg ${allFulfilled ? 'bg-emerald-950 text-emerald-300 border border-emerald-600 font-bold shadow-sm' : (fulfilledCount > 0 ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/80 font-semibold' : 'bg-slate-800 text-slate-400 border border-slate-700')} font-mono-num flex items-center gap-1.5" title="${fulfilledCount} of ${totalConfigs} aircraft configurations marked fulfilled">
-              <span>${allFulfilled ? '✓' : '📋'}</span>
-              <span>${fulfilledCount} / ${totalConfigs} Configs Fulfilled</span>
-              ${totalConfigs > 1 ? `
+            <span class="text-xs px-2.5 py-1 rounded-lg ${allFleetFulfilled ? 'bg-emerald-950 text-emerald-300 border border-emerald-600 font-bold shadow-sm' : (totalFleetFulfilled > 0 ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/80 font-semibold' : 'bg-slate-800 text-slate-400 border border-slate-700')} font-mono-num flex items-center gap-1.5" title="${totalFleetFulfilled} of ${totalFleetPlanes} aircraft configured">
+              <span>${allFleetFulfilled ? '✓' : '📋'}</span>
+              <span>${totalFleetFulfilled} / ${totalFleetPlanes} Aircraft Configured (${totalFleetPlanes > 0 ? Math.round((totalFleetFulfilled/totalFleetPlanes)*100) : 0}%)</span>
+              ${totalFleetPlanes > 0 ? `
                 <span class="text-slate-600">|</span>
-                ${allFulfilled 
-                  ? `<button type="button" onclick="setAllConfigsFulfilled(false)" class="text-[10px] text-slate-400 hover:text-amber-300 underline font-normal">Uncheck all</button>`
-                  : `<button type="button" onclick="setAllConfigsFulfilled(true)" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline font-normal">Check all</button>`}
+                ${allFleetFulfilled 
+                  ? `<button type="button" onclick="setAllConfigsFulfilled(false)" class="text-[10px] text-slate-400 hover:text-amber-300 underline font-normal">Reset all</button>`
+                  : `<button type="button" onclick="setAllConfigsFulfilled(true)" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline font-normal">Mark all</button>`}
               ` : ''}
             </span>
           </div>
@@ -2772,8 +2951,20 @@ function renderActivePlanDetails() {
         </div>
       </div>
 
-      <!-- Stacked Aircraft Cards List (Point 4) -->
-      <div class="space-y-3">
+      <!-- Toolbar: Expand / Collapse All -->
+      <div class="flex items-center justify-between pt-0.5 text-xs text-slate-400">
+        <div class="text-[11px]">
+          Showing <strong class="text-white">${totalConfigs} Configuration Stack${totalConfigs > 1 ? 's' : ''}</strong> (${totalFleetPlanes} Aircraft total). Click any row to expand seat &amp; payload charts.
+        </div>
+        <div class="flex items-center gap-2 font-medium">
+          <button type="button" onclick="toggleAllConfigAccordions(true)" class="text-cyan-400 hover:text-cyan-300 hover:underline">Expand All</button>
+          <span class="text-slate-600">•</span>
+          <button type="button" onclick="toggleAllConfigAccordions(false)" class="text-slate-400 hover:text-white hover:underline">Collapse All</button>
+        </div>
+      </div>
+
+      <!-- Stacked Aircraft Accordion List -->
+      <div class="space-y-2.5">
         ${stacksHtml}
       </div>
 
@@ -2782,34 +2973,105 @@ function renderActivePlanDetails() {
 }
 
 /**
- * Toggle fulfilled state for a specific aircraft configuration group
+ * Stepper fulfillment changes for a specific aircraft configuration group
+ */
+function stepConfigFulfilled(configKey, delta, maxPlanes) {
+  if (!window.CIRCUIT_FULFILLED_CONFIGS || typeof window.CIRCUIT_FULFILLED_CONFIGS !== 'object') {
+    window.CIRCUIT_FULFILLED_CONFIGS = {};
+  }
+  let current = 0;
+  const val = window.CIRCUIT_FULFILLED_CONFIGS[configKey];
+  if (val === true) {
+    current = maxPlanes;
+  } else if (typeof val === 'number') {
+    current = Math.max(0, Math.min(maxPlanes, val));
+  }
+
+  const next = Math.max(0, Math.min(maxPlanes, current + delta));
+  if (next <= 0) {
+    delete window.CIRCUIT_FULFILLED_CONFIGS[configKey];
+  } else {
+    window.CIRCUIT_FULFILLED_CONFIGS[configKey] = next;
+  }
+
+  // Clean legacy altKey if present
+  const dashIdx = configKey.indexOf('_');
+  if (dashIdx !== -1) {
+    const altKey = configKey.substring(0, dashIdx);
+    delete window.CIRCUIT_FULFILLED_CONFIGS[altKey];
+  }
+
+  saveConfigFulfillmentState();
+  renderActivePlanDetails();
+}
+window.stepConfigFulfilled = stepConfigFulfilled;
+
+/**
+ * Set exact fulfillment count for a specific configuration group
+ */
+function setExactConfigFulfilled(configKey, count, maxPlanes) {
+  if (!window.CIRCUIT_FULFILLED_CONFIGS || typeof window.CIRCUIT_FULFILLED_CONFIGS !== 'object') {
+    window.CIRCUIT_FULFILLED_CONFIGS = {};
+  }
+  const next = Math.max(0, Math.min(maxPlanes, count));
+  if (next <= 0) {
+    delete window.CIRCUIT_FULFILLED_CONFIGS[configKey];
+  } else {
+    window.CIRCUIT_FULFILLED_CONFIGS[configKey] = next;
+  }
+
+  // Clean legacy altKey if present
+  const dashIdx = configKey.indexOf('_');
+  if (dashIdx !== -1) {
+    const altKey = configKey.substring(0, dashIdx);
+    delete window.CIRCUIT_FULFILLED_CONFIGS[altKey];
+  }
+
+  saveConfigFulfillmentState();
+  renderActivePlanDetails();
+}
+window.setExactConfigFulfilled = setExactConfigFulfilled;
+
+/**
+ * Toggle fulfilled state (backward compatibility)
  */
 function toggleConfigFulfilled(configKey) {
   if (!window.CIRCUIT_FULFILLED_CONFIGS || typeof window.CIRCUIT_FULFILLED_CONFIGS !== 'object') {
     window.CIRCUIT_FULFILLED_CONFIGS = {};
   }
+  const plan = window.ACTIVE_FLEET_PLAN;
+  let maxPlanes = 1;
+  if (plan && plan.stackedGroups) {
+    const g = plan.stackedGroups.find(grp => {
+      const p = grp.cabin;
+      return `${grp.startUnitIndex}-${grp.endUnitIndex}_${p.eco}-${p.bus}-${p.first}-${p.cargo}` === configKey;
+    });
+    if (g) maxPlanes = g.count * plan.planesPerUnit;
+  }
 
-  if (window.CIRCUIT_FULFILLED_CONFIGS[configKey]) {
+  let current = 0;
+  const val = window.CIRCUIT_FULFILLED_CONFIGS[configKey];
+  if (val === true) current = maxPlanes;
+  else if (typeof val === 'number') current = val;
+
+  if (current === maxPlanes) {
     delete window.CIRCUIT_FULFILLED_CONFIGS[configKey];
   } else {
-    window.CIRCUIT_FULFILLED_CONFIGS[configKey] = true;
+    window.CIRCUIT_FULFILLED_CONFIGS[configKey] = maxPlanes;
   }
 
-  // Also clean up any legacy altKey if it was set
-  const dashIdx = configKey.indexOf('_');
-  if (dashIdx !== -1) {
-    const altKey = configKey.substring(0, dashIdx);
-    if (!window.CIRCUIT_FULFILLED_CONFIGS[configKey]) {
-      delete window.CIRCUIT_FULFILLED_CONFIGS[altKey];
-    }
-  }
+  saveConfigFulfillmentState();
+  renderActivePlanDetails();
+}
+window.toggleConfigFulfilled = toggleConfigFulfilled;
 
-  // Persist to current active circuit state in localStorage
+/**
+ * Persist fulfillment state to localStorage and saved circuits library
+ */
+function saveConfigFulfillmentState() {
   if (typeof saveSeatConfigToLocalStorage === 'function') {
     saveSeatConfigToLocalStorage();
   }
-
-  // If this circuit is currently saved in the library, keep it updated
   if (window.CURRENT_SAVED_CIRCUIT_ID && typeof getSavedCircuits === 'function') {
     const list = getSavedCircuits();
     const idx = list.findIndex(c => c.id === window.CURRENT_SAVED_CIRCUIT_ID);
@@ -2818,10 +3080,7 @@ function toggleConfigFulfilled(configKey) {
       saveSavedCircuits(list);
     }
   }
-
-  renderActivePlanDetails();
 }
-window.toggleConfigFulfilled = toggleConfigFulfilled;
 
 /**
  * Quick batch toggle for all aircraft configurations in active plan
@@ -2838,30 +3097,185 @@ function setAllConfigsFulfilled(state) {
     const p = group.cabin;
     const configKey = `${group.startUnitIndex}-${group.endUnitIndex}_${p.eco}-${p.bus}-${p.first}-${p.cargo}`;
     const altKey = `${group.startUnitIndex}-${group.endUnitIndex}`;
+    const totalGroupPlanes = group.count * plan.planesPerUnit;
+
     if (state) {
-      window.CIRCUIT_FULFILLED_CONFIGS[configKey] = true;
+      window.CIRCUIT_FULFILLED_CONFIGS[configKey] = totalGroupPlanes;
     } else {
       delete window.CIRCUIT_FULFILLED_CONFIGS[configKey];
       delete window.CIRCUIT_FULFILLED_CONFIGS[altKey];
     }
   });
 
-  if (typeof saveSeatConfigToLocalStorage === 'function') {
-    saveSeatConfigToLocalStorage();
-  }
-
-  if (window.CURRENT_SAVED_CIRCUIT_ID && typeof getSavedCircuits === 'function') {
-    const list = getSavedCircuits();
-    const idx = list.findIndex(c => c.id === window.CURRENT_SAVED_CIRCUIT_ID);
-    if (idx !== -1) {
-      list[idx].fulfilledConfigs = { ...window.CIRCUIT_FULFILLED_CONFIGS };
-      saveSavedCircuits(list);
-    }
-  }
-
+  saveConfigFulfillmentState();
   renderActivePlanDetails();
 }
 window.setAllConfigsFulfilled = setAllConfigsFulfilled;
+
+/**
+ * Toggle individual configuration accordion state
+ */
+function toggleConfigAccordion(configKey) {
+  window.CIRCUIT_ACCORDION_EXPANDED = window.CIRCUIT_ACCORDION_EXPANDED || {};
+  window.CIRCUIT_ACCORDION_EXPANDED[configKey] = !window.CIRCUIT_ACCORDION_EXPANDED[configKey];
+  renderActivePlanDetails();
+}
+window.toggleConfigAccordion = toggleConfigAccordion;
+
+/**
+ * Expand or collapse all configuration accordions
+ */
+function toggleAllConfigAccordions(expand) {
+  const plan = window.ACTIVE_FLEET_PLAN;
+  if (!plan || !plan.stackedGroups) return;
+  window.CIRCUIT_ACCORDION_EXPANDED = {};
+  if (expand) {
+    plan.stackedGroups.forEach(group => {
+      const p = group.cabin;
+      const configKey = `${group.startUnitIndex}-${group.endUnitIndex}_${p.eco}-${p.bus}-${p.first}-${p.cargo}`;
+      window.CIRCUIT_ACCORDION_EXPANDED[configKey] = true;
+    });
+  }
+  renderActivePlanDetails();
+}
+window.toggleAllConfigAccordions = toggleAllConfigAccordions;
+
+/**
+ * Open Floating Financial Summary Popover for a specific configuration
+ */
+function openConfigFinancialPopover(event, configKey) {
+  if (event) event.stopPropagation();
+  const popover = document.getElementById('circuit_config_financial_popover');
+  if (!popover) return;
+
+  // Toggle close if clicking the same trigger
+  if (!popover.classList.contains('hidden') && popover.getAttribute('data-config-key') === configKey) {
+    closeConfigFinancialPopover();
+    return;
+  }
+
+  const plan = window.ACTIVE_FLEET_PLAN;
+  if (!plan || !plan.stackedGroups) return;
+
+  const group = plan.stackedGroups.find(grp => {
+    const p = grp.cabin;
+    const k = `${grp.startUnitIndex}-${grp.endUnitIndex}_${p.eco}-${p.bus}-${p.first}-${p.cargo}`;
+    return k === configKey;
+  });
+  if (!group || !group.financials) return;
+
+  const p = group.cabin;
+  const f = group.financials;
+  const totalGroupPlanes = group.count * plan.planesPerUnit;
+
+  const tot = f.unitDailyRev || 1;
+  const pctY = Math.round((f.unitEcoRev / tot) * 100);
+  const pctJ = Math.round((f.unitBusRev / tot) * 100);
+  const pctF = Math.round((f.unitFirstRev / tot) * 100);
+  const pctC = Math.round((f.unitCargoRev / tot) * 100);
+
+  popover.setAttribute('data-config-key', configKey);
+  popover.innerHTML = `
+    <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+      <div class="flex items-center gap-2">
+        <span class="w-6 h-6 rounded-lg bg-emerald-950/90 text-emerald-400 flex items-center justify-center text-xs font-bold border border-emerald-800/60">💰</span>
+        <div>
+          <h4 class="text-xs font-bold text-white tracking-tight">Cabin Financial Summary</h4>
+          <div class="text-[10px] text-slate-400 font-mono-num">${totalGroupPlanes}× Aircraft Stack • 💺 ${p.eco} • 💼 ${p.bus} • 👑 ${p.first} • 📦 ${p.cargo}T</div>
+        </div>
+      </div>
+      <button type="button" onclick="closeConfigFinancialPopover()" class="text-slate-400 hover:text-white text-base leading-none p-1 rounded hover:bg-slate-800 transition">&times;</button>
+    </div>
+
+    <!-- Financial Metrics Grid -->
+    <div class="grid grid-cols-2 gap-2 text-xs font-mono-num">
+      <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-800">
+        <div class="text-[9px] uppercase text-slate-400 font-medium">Single Aircraft / Day</div>
+        <div class="text-sm font-bold text-emerald-400 mt-0.5">${formatCurrency(f.unitDailyRev)}</div>
+        <div class="text-[9px] text-slate-500">${formatCurrency(f.unitRtRev)} / Round-Trip</div>
+      </div>
+      <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-800">
+        <div class="text-[9px] uppercase text-slate-400 font-medium">${totalGroupPlanes}× Stack / Day</div>
+        <div class="text-sm font-bold text-cyan-300 mt-0.5">${formatCurrency(f.stackDailyRev)}</div>
+        <div class="text-[9px] text-slate-500">${formatCurrency(f.stackWeeklyRev)} / week</div>
+      </div>
+    </div>
+
+    <!-- Class Revenue Shares with Visual Color Indicators -->
+    <div class="space-y-1.5 pt-1">
+      <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex justify-between">
+        <span>Revenue Contribution</span>
+        <span class="text-slate-500">Per Day (% Share)</span>
+      </div>
+      <div class="space-y-1 text-xs font-mono-num">
+        <div class="flex items-center justify-between text-cyan-300">
+          <span>💺 Economy:</span>
+          <span>${formatCurrency(f.unitEcoRev)} <span class="text-slate-500 text-[10px]">(${pctY}%)</span></span>
+        </div>
+        <div class="flex items-center justify-between text-blue-300">
+          <span>💼 Business:</span>
+          <span>${formatCurrency(f.unitBusRev)} <span class="text-slate-500 text-[10px]">(${pctJ}%)</span></span>
+        </div>
+        <div class="flex items-center justify-between text-amber-300">
+          <span>👑 First Class:</span>
+          <span>${formatCurrency(f.unitFirstRev)} <span class="text-slate-500 text-[10px]">(${pctF}%)</span></span>
+        </div>
+        <div class="flex items-center justify-between text-emerald-300">
+          <span>📦 Belly Cargo:</span>
+          <span>${formatCurrency(f.unitCargoRev)} <span class="text-slate-500 text-[10px]">(${pctC}%)</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROI / Payback Period -->
+    ${f.paybackDays > 0 ? `
+      <div class="p-2 rounded-xl bg-slate-900/70 border border-slate-800 text-[10px] text-slate-400 flex items-center justify-between font-mono-num">
+        <span>Estimated Aircraft Payback (ROI):</span>
+        <strong class="text-amber-400 font-bold">${f.paybackDays} Days</strong>
+      </div>
+    ` : ''}
+  `;
+
+  popover.classList.remove('hidden');
+
+  // Positioning
+  const rect = event.currentTarget.getBoundingClientRect();
+  const popWidth = 320;
+  let left = rect.right - popWidth;
+  if (left < 10) left = 10;
+  let top = rect.bottom + 8;
+  if (top + 310 > window.innerHeight) {
+    top = rect.top - 320;
+  }
+  popover.style.left = `${left}px`;
+  popover.style.top = `${top}px`;
+}
+window.openConfigFinancialPopover = openConfigFinancialPopover;
+
+/**
+ * Close Floating Financial Summary Popover
+ */
+function closeConfigFinancialPopover() {
+  const popover = document.getElementById('circuit_config_financial_popover');
+  if (popover) {
+    popover.classList.add('hidden');
+    popover.removeAttribute('data-config-key');
+  }
+}
+window.closeConfigFinancialPopover = closeConfigFinancialPopover;
+
+// Global listeners for popover dismissal
+if (typeof window !== 'undefined') {
+  window.addEventListener('click', (e) => {
+    const pop = document.getElementById('circuit_config_financial_popover');
+    if (pop && !pop.classList.contains('hidden') && !pop.contains(e.target)) {
+      closeConfigFinancialPopover();
+    }
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeConfigFinancialPopover();
+  });
+}
 
 /**
  * Render Detailed Financial Overview (Point 5 - in Collapsible Dropdown Box)

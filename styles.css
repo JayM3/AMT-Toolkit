@@ -238,8 +238,9 @@ input[type=number] {
   );
 }
 
-/* Floating Demand Basis Popover */
-#circuit_demand_popover {
+/* Floating Demand Basis Popover & Config Financial Popover */
+#circuit_demand_popover,
+#circuit_config_financial_popover {
   animation: popoverFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes popoverFadeIn {
