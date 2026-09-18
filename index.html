@@ -2283,7 +2283,7 @@
               <!-- Dropdown Input -->
               <div class="relative">
                 <input type="text" id="cf_include_airports_input" placeholder="Search airport (e.g. CPH, BKK, Tokyo) or paste IATAs..." autocomplete="off" oninput="cf_onIncludeInput(this.value)" onfocus="cf_onIncludeFocus()" class="w-full pl-3 pr-8 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs placeholder-slate-500 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none">
-                <span class="absolute right-2.5 top-2 text-slate-500 text-[10px] pointer-events-none">▼</span>
+                <button type="button" id="cf_inc_dropdown_arrow" onclick="cf_toggleIncludeDropdown(event)" class="absolute right-0 top-0 bottom-0 px-2.5 flex items-center justify-center text-slate-500 hover:text-slate-300 text-[10px] cursor-pointer transition select-none focus:outline-none" title="Toggle include dropdown">▼</button>
 
                 <div id="cf_inc_dropdown" class="hidden absolute top-full left-0 right-0 mt-1 max-h-[180px] overflow-y-auto bg-slate-950 border border-emerald-800/90 rounded-xl shadow-2xl z-50 p-1 space-y-0.5"></div>
               </div>
@@ -2315,7 +2315,7 @@
               <!-- Dropdown Input -->
               <div class="relative">
                 <input type="text" id="cf_exclude_airports_input" placeholder="Search airport to avoid (e.g. BAX, OVB, Moscow) or paste IATAs..." autocomplete="off" oninput="cf_onExcludeInput(this.value)" onfocus="cf_onExcludeFocus()" class="w-full pl-3 pr-8 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs placeholder-slate-500 focus:ring-1 focus:ring-rose-500 focus:border-rose-500 focus:outline-none">
-                <span class="absolute right-2.5 top-2 text-slate-500 text-[10px] pointer-events-none">▼</span>
+                <button type="button" id="cf_exc_dropdown_arrow" onclick="cf_toggleExcludeDropdown(event)" class="absolute right-0 top-0 bottom-0 px-2.5 flex items-center justify-center text-slate-500 hover:text-slate-300 text-[10px] cursor-pointer transition select-none focus:outline-none" title="Toggle exclude dropdown">▼</button>
 
                 <div id="cf_exc_dropdown" class="hidden absolute top-full left-0 right-0 mt-1 max-h-[180px] overflow-y-auto bg-slate-950 border border-rose-800/90 rounded-xl shadow-2xl z-50 p-1 space-y-0.5"></div>
               </div>

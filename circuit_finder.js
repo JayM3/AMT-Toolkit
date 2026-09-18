@@ -876,6 +876,7 @@
   }
 
   function cf_onIncludeFocus() {
+    cf_closeExcludeDropdown();
     cf_renderIncludeDropdown(document.getElementById('cf_include_airports_input')?.value || '');
   }
 
@@ -903,6 +904,7 @@
   }
 
   function cf_renderIncludeDropdown(query) {
+    cf_closeExcludeDropdown();
     const dd = document.getElementById('cf_inc_dropdown');
     if (!dd) return;
     const q = (query || '').trim().toLowerCase();
@@ -996,6 +998,7 @@
 
     dd.innerHTML = html;
     dd.classList.remove('hidden');
+    cf_updateIncludeArrow(true);
   }
 
   function cf_addIncludeAirport(code) {
@@ -1059,6 +1062,7 @@
   }
 
   function cf_onExcludeFocus() {
+    cf_closeIncludeDropdown();
     cf_renderExcludeDropdown(document.getElementById('cf_exclude_airports_input')?.value || '');
   }
 
@@ -1086,6 +1090,7 @@
   }
 
   function cf_renderExcludeDropdown(query) {
+    cf_closeIncludeDropdown();
     const dd = document.getElementById('cf_exc_dropdown');
     if (!dd) return;
     const q = (query || '').trim().toLowerCase();
@@ -1164,6 +1169,7 @@
 
     dd.innerHTML = html;
     dd.classList.remove('hidden');
+    cf_updateExcludeArrow(true);
   }
 
   function cf_addExcludeAirport(code) {
@@ -1341,9 +1347,69 @@
     cf_showToast('Cleared all exclusions', 'info');
   }
 
+  function cf_updateIncludeArrow(isOpen) {
+    const arrow = document.getElementById('cf_inc_dropdown_arrow');
+    if (arrow) arrow.textContent = isOpen ? '▲' : '▼';
+  }
+
+  function cf_updateExcludeArrow(isOpen) {
+    const arrow = document.getElementById('cf_exc_dropdown_arrow');
+    if (arrow) arrow.textContent = isOpen ? '▲' : '▼';
+  }
+
+  function cf_closeIncludeDropdown() {
+    const dd = document.getElementById('cf_inc_dropdown');
+    if (dd) dd.classList.add('hidden');
+    cf_updateIncludeArrow(false);
+  }
+
+  function cf_closeExcludeDropdown() {
+    const dd = document.getElementById('cf_exc_dropdown');
+    if (dd) dd.classList.add('hidden');
+    cf_updateExcludeArrow(false);
+  }
+
   function cf_closeAllDropdowns() {
-    document.getElementById('cf_inc_dropdown')?.classList.add('hidden');
-    document.getElementById('cf_exc_dropdown')?.classList.add('hidden');
+    cf_closeIncludeDropdown();
+    cf_closeExcludeDropdown();
+  }
+
+  function cf_toggleIncludeDropdown(e) {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    const dd = document.getElementById('cf_inc_dropdown');
+    const isOpen = dd && !dd.classList.contains('hidden');
+    if (isOpen) {
+      cf_closeIncludeDropdown();
+      const input = document.getElementById('cf_include_airports_input');
+      if (input) input.blur();
+    } else {
+      cf_closeExcludeDropdown();
+      const input = document.getElementById('cf_include_airports_input');
+      cf_renderIncludeDropdown(input?.value || '');
+      if (input) input.focus();
+    }
+  }
+
+  function cf_toggleExcludeDropdown(e) {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    const dd = document.getElementById('cf_exc_dropdown');
+    const isOpen = dd && !dd.classList.contains('hidden');
+    if (isOpen) {
+      cf_closeExcludeDropdown();
+      const input = document.getElementById('cf_exclude_airports_input');
+      if (input) input.blur();
+    } else {
+      cf_closeIncludeDropdown();
+      const input = document.getElementById('cf_exclude_airports_input');
+      cf_renderExcludeDropdown(input?.value || '');
+      if (input) input.focus();
+    }
   }
 
   function cf_onToggleMaxDistLimit() {
@@ -2423,6 +2489,7 @@
     cf_excludedContinents = [];
     cf_setExcludeMode('ap');
     cf_renderExcludeAirportsChips();
+    cf_closeAllDropdowns();
 
     // 8. Route Type: LH & Route Count: any
     cf_setRouteType('lh', false);
@@ -2781,7 +2848,16 @@
       if (root && !root.contains(e.target)) {
         cf_closeAircraftCombobox();
       }
-      if (!e.target.closest('#cf_inc_root') && !e.target.closest('#cf_exc_root')) {
+      if (!e.target.closest('#cf_inc_root')) {
+        cf_closeIncludeDropdown();
+      }
+      if (!e.target.closest('#cf_exc_root')) {
+        cf_closeExcludeDropdown();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
         cf_closeAllDropdowns();
       }
     });
@@ -2832,6 +2908,12 @@
   window.cf_removeExcludeContinent = cf_removeExcludeContinent;
   window.cf_clearExcludedAirports = cf_clearExcludedAirports;
   window.cf_closeAllDropdowns = cf_closeAllDropdowns;
+  window.cf_closeIncludeDropdown = cf_closeIncludeDropdown;
+  window.cf_closeExcludeDropdown = cf_closeExcludeDropdown;
+  window.cf_toggleIncludeDropdown = cf_toggleIncludeDropdown;
+  window.cf_toggleExcludeDropdown = cf_toggleExcludeDropdown;
+  window.cf_updateIncludeArrow = cf_updateIncludeArrow;
+  window.cf_updateExcludeArrow = cf_updateExcludeArrow;
   window.cf_onIncludeAirportsInputChange = cf_onIncludeInput;
   window.cf_onExcludeAirportsInputChange = cf_onExcludeInput;
   window.cf_onToggleMaxDistLimit = cf_onToggleMaxDistLimit;
