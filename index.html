@@ -1983,7 +1983,7 @@
       <!-- ===================================================================== -->
       <!-- SECTION 2: CIRCUIT CONFIGURATION (SEAT CONFIG CONTINUITY)             -->
       <!-- ===================================================================== -->
-      <section class="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-xl space-y-5">
+      <section class="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-xl space-y-5 relative z-30">
         
         <!-- Section Header -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
@@ -2262,37 +2262,67 @@
 
           </div>
 
-          <!-- Filter Controls Row 2: Precision Include / Exclude Airports -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-slate-800/60 text-xs">
+          <!-- Filter Controls Row 2: Precision Include / Exclude Controls (Compact Geo-Dropdowns) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2.5 border-t border-slate-800/60 text-xs relative z-30">
             
-            <!-- Must Include Airports Input -->
-            <div class="space-y-1.5">
+            <!-- LEFT COLUMN: MUST INCLUDE (MUST-FLY) -->
+            <div class="space-y-1.5 relative z-30" id="cf_inc_root">
               <div class="flex items-center justify-between">
-                <label class="block text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-                  <span>Must Include Airports (Must-Fly)</span>
-                  <span class="text-[10px] text-slate-400 font-normal">IATAs</span>
+                <label class="block text-[11px] font-semibold text-emerald-400 flex items-center gap-1.5">
+                  <span>Must Include (Must-Fly)</span>
+                  <span id="cf_inc_badge" class="hidden text-[9px] px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">0</span>
                 </label>
-                <span class="text-[10px] text-slate-500">Space or comma separated</span>
+                <!-- Ultra-Compact Scope Switcher Pills -->
+                <div class="inline-flex p-0.5 bg-slate-950 rounded border border-slate-800 text-[10px]">
+                  <button type="button" id="cf_inc_btn_ap" onclick="cf_setIncludeMode('ap')" class="px-2 py-0.5 rounded font-semibold bg-emerald-600 text-white transition">✈ Air</button>
+                  <button type="button" id="cf_inc_btn_ct" onclick="cf_setIncludeMode('ct')" class="px-2 py-0.5 rounded font-medium text-slate-400 hover:text-white transition">🏳 Country</button>
+                  <button type="button" id="cf_inc_btn_cn" onclick="cf_setIncludeMode('cn')" class="px-2 py-0.5 rounded font-medium text-slate-400 hover:text-white transition">🌍 Continent</button>
+                </div>
               </div>
-              <input type="text" id="cf_include_airports_input" placeholder="e.g. CPH, BKK, HND" oninput="cf_onIncludeAirportsInputChange()" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs uppercase font-mono placeholder-slate-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none">
-              
-              <div id="cf_include_airports_chips" class="flex flex-wrap items-center gap-1.5 min-h-[22px]"></div>
-              <div id="cf_include_airports_status" class="text-[11px] text-slate-400"></div>
+
+              <!-- Dropdown Input -->
+              <div class="relative">
+                <input type="text" id="cf_include_airports_input" placeholder="Search airport (e.g. CPH, BKK, Tokyo) or paste IATAs..." autocomplete="off" oninput="cf_onIncludeInput(this.value)" onfocus="cf_onIncludeFocus()" class="w-full pl-3 pr-8 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs placeholder-slate-500 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none">
+                <span class="absolute right-2.5 top-2 text-slate-500 text-[10px] pointer-events-none">▼</span>
+
+                <div id="cf_inc_dropdown" class="hidden absolute top-full left-0 right-0 mt-1 max-h-[180px] overflow-y-auto bg-slate-950 border border-emerald-800/90 rounded-xl shadow-2xl z-50 p-1 space-y-0.5"></div>
+              </div>
+
+              <!-- Dynamic Chips -->
+              <div id="cf_include_airports_chips" class="flex flex-wrap items-center gap-1 min-h-[22px]"></div>
+              <div id="cf_include_airports_status" class="text-[10px] text-slate-400"></div>
             </div>
 
-            <!-- Exclude Airports Input -->
-            <div class="space-y-1.5">
+            <!-- RIGHT COLUMN: EXCLUDE (AVOID DESTINATIONS) -->
+            <div class="space-y-1.5 relative z-30" id="cf_exc_root">
               <div class="flex items-center justify-between">
-                <label class="block text-[11px] font-semibold text-rose-400 flex items-center gap-1">
-                  <span>Exclude Airports (Avoid Destinations)</span>
-                  <span class="text-[10px] text-slate-400 font-normal">IATAs</span>
-                </label>
-                <button type="button" onclick="cf_clearExcludedAirports()" class="text-[10px] text-slate-400 hover:text-white transition">Clear All</button>
+                <div class="flex items-center gap-1.5">
+                  <label class="block text-[11px] font-semibold text-rose-400 flex items-center gap-1.5">
+                    <span>Exclude (Avoid Destinations)</span>
+                    <span id="cf_exc_badge" class="hidden text-[9px] px-1 py-0.2 rounded bg-rose-950 text-rose-300 border border-rose-800 font-mono">0</span>
+                  </label>
+                  <button type="button" onclick="cf_clearExcludedAirports()" class="text-[10px] text-slate-400 hover:text-rose-300 transition">Clear All</button>
+                </div>
+
+                <!-- Ultra-Compact Scope Switcher Pills -->
+                <div class="inline-flex p-0.5 bg-slate-950 rounded border border-slate-800 text-[10px]">
+                  <button type="button" id="cf_exc_btn_ap" onclick="cf_setExcludeMode('ap')" class="px-2 py-0.5 rounded font-semibold bg-rose-600 text-white transition">✈ Air</button>
+                  <button type="button" id="cf_exc_btn_ct" onclick="cf_setExcludeMode('ct')" class="px-2 py-0.5 rounded font-medium text-slate-400 hover:text-white transition">🏳 Country</button>
+                  <button type="button" id="cf_exc_btn_cn" onclick="cf_setExcludeMode('cn')" class="px-2 py-0.5 rounded font-medium text-slate-400 hover:text-white transition">🌍 Continent</button>
+                </div>
               </div>
-              <input type="text" id="cf_exclude_airports_input" placeholder="e.g. BAX GDX IKT KJA OMS OVB" oninput="cf_onExcludeAirportsInputChange()" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs uppercase font-mono placeholder-slate-500 focus:ring-1 focus:ring-rose-500 focus:outline-none">
-              
-              <div id="cf_exclude_airports_chips" class="flex flex-wrap items-center gap-1.5 min-h-[22px]"></div>
-              <div id="cf_exclude_airports_status" class="text-[11px] text-slate-400"></div>
+
+              <!-- Dropdown Input -->
+              <div class="relative">
+                <input type="text" id="cf_exclude_airports_input" placeholder="Search airport to avoid (e.g. BAX, OVB, Moscow) or paste IATAs..." autocomplete="off" oninput="cf_onExcludeInput(this.value)" onfocus="cf_onExcludeFocus()" class="w-full pl-3 pr-8 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs placeholder-slate-500 focus:ring-1 focus:ring-rose-500 focus:border-rose-500 focus:outline-none">
+                <span class="absolute right-2.5 top-2 text-slate-500 text-[10px] pointer-events-none">▼</span>
+
+                <div id="cf_exc_dropdown" class="hidden absolute top-full left-0 right-0 mt-1 max-h-[180px] overflow-y-auto bg-slate-950 border border-rose-800/90 rounded-xl shadow-2xl z-50 p-1 space-y-0.5"></div>
+              </div>
+
+              <!-- Dynamic Chips -->
+              <div id="cf_exclude_airports_chips" class="flex flex-wrap items-center gap-1 min-h-[22px]"></div>
+              <div id="cf_exclude_airports_status" class="text-[10px] text-slate-400"></div>
             </div>
 
           </div>
@@ -2350,7 +2380,7 @@
       <!-- ===================================================================== -->
       <!-- SECTION 3: RESULTS SUMMARY & CIRCUIT CARDS                            -->
       <!-- ===================================================================== -->
-      <section class="space-y-4">
+      <section class="space-y-4 relative z-10">
         
         <!-- Results Header & Quick Filter Pills -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">

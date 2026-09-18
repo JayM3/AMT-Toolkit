@@ -7,51 +7,74 @@
 
 (function(window, document) {
 
-  // Continent lookup map
+  // Continent lookup map (All 211 countries mapped)
   const CF_CONTINENT_MAP = {
-    'Algeria': 'Africa', 'Angola': 'Africa', 'Benin': 'Africa', 'Botswana': 'Africa', 'Burkina Faso': 'Africa',
-    'Burundi': 'Africa', 'Cameroon': 'Africa', 'Cape Verde': 'Africa', 'Central African Republic': 'Africa',
-    'Chad': 'Africa', 'Comoros': 'Africa', 'Congo': 'Africa', 'Democratic Republic of the Congo': 'Africa',
-    'Djibouti': 'Africa', 'Egypt': 'Africa', 'Equatorial Guinea': 'Africa', 'Eritrea': 'Africa', 'Ethiopia': 'Africa',
-    'Gabon': 'Africa', 'Gambia': 'Africa', 'Ghana': 'Africa', 'Guinea': 'Africa', 'Guinea-Bissau': 'Africa',
-    'Ivory Coast': 'Africa', 'Kenya': 'Africa', 'Lesotho': 'Africa', 'Liberia': 'Africa', 'Libya': 'Africa',
-    'Madagascar': 'Africa', 'Malawi': 'Africa', 'Mali': 'Africa', 'Mauritania': 'Africa', 'Mauritius': 'Africa',
-    'Morocco': 'Africa', 'Mozambique': 'Africa', 'Namibia': 'Africa', 'Niger': 'Africa', 'Nigeria': 'Africa',
-    'Rwanda': 'Africa', 'Sao Tome and Principe': 'Africa', 'Senegal': 'Africa', 'Seychelles': 'Africa',
-    'Sierra Leone': 'Africa', 'Somalia': 'Africa', 'South Africa': 'Africa', 'South Sudan': 'Africa', 'Sudan': 'Africa',
-    'Swaziland': 'Africa', 'Tanzania': 'Africa', 'Togo': 'Africa', 'Tunisia': 'Africa', 'Uganda': 'Africa',
-    'Zambia': 'Africa', 'Zimbabwe': 'Africa',
-    'Afghanistan': 'Asia', 'Armenia': 'Asia', 'Azerbaijan': 'Asia', 'Bahrain': 'Asia', 'Bangladesh': 'Asia',
-    'Bhutan': 'Asia', 'Brunei': 'Asia', 'Cambodia': 'Asia', 'China': 'Asia', 'Cyprus': 'Asia', 'Georgia': 'Asia',
-    'India': 'Asia', 'Indonesia': 'Asia', 'Iran': 'Asia', 'Iraq': 'Asia', 'Israel': 'Asia', 'Japan': 'Asia',
-    'Jordan': 'Asia', 'Kazakhstan': 'Asia', 'Kuwait': 'Asia', 'Kyrgyzstan': 'Asia', 'Laos': 'Asia', 'Lebanon': 'Asia',
-    'Malaysia': 'Asia', 'Maldives': 'Asia', 'Mongolia': 'Asia', 'Myanmar': 'Asia', 'Nepal': 'Asia', 'North Korea': 'Asia',
-    'Oman': 'Asia', 'Pakistan': 'Asia', 'Palestine': 'Asia', 'Philippines': 'Asia', 'Qatar': 'Asia', 'Russia': 'Europe',
-    'Saudi Arabia': 'Asia', 'Singapore': 'Asia', 'South Korea': 'Asia', 'Sri Lanka': 'Asia', 'Syria': 'Asia',
-    'Taiwan': 'Asia', 'Tajikistan': 'Asia', 'Thailand': 'Asia', 'Timor-Leste': 'Asia', 'Turkey': 'Europe',
-    'Turkmenistan': 'Asia', 'United Arab Emirates': 'Asia', 'Uzbekistan': 'Asia', 'Vietnam': 'Asia', 'Yemen': 'Asia',
-    'Albania': 'Europe', 'Andorra': 'Europe', 'Austria': 'Europe', 'Belarus': 'Europe', 'Belgium': 'Europe',
-    'Bosnia and Herzegovina': 'Europe', 'Bulgaria': 'Europe', 'Croatia': 'Europe', 'Czech Republic': 'Europe',
-    'Denmark': 'Europe', 'Estonia': 'Europe', 'Finland': 'Europe', 'France': 'Europe', 'Germany': 'Europe',
-    'Greece': 'Europe', 'Hungary': 'Europe', 'Iceland': 'Europe', 'Ireland': 'Europe', 'Italy': 'Europe',
-    'Kosovo': 'Europe', 'Latvia': 'Europe', 'Liechtenstein': 'Europe', 'Lithuania': 'Europe', 'Luxembourg': 'Europe',
-    'Macedonia': 'Europe', 'Malta': 'Europe', 'Moldova': 'Europe', 'Monaco': 'Europe', 'Montenegro': 'Europe',
-    'Netherlands': 'Europe', 'Norway': 'Europe', 'Poland': 'Europe', 'Portugal': 'Europe', 'Romania': 'Europe',
-    'San Marino': 'Europe', 'Serbia': 'Europe', 'Slovakia': 'Europe', 'Slovenia': 'Europe', 'Spain': 'Europe',
-    'Sweden': 'Europe', 'Switzerland': 'Europe', 'Ukraine': 'Europe', 'United Kingdom': 'Europe', 'Vatican City': 'Europe',
-    'Antigua and Barbuda': 'North America', 'Bahamas': 'North America', 'Barbados': 'North America', 'Belize': 'North America',
-    'Canada': 'North America', 'Costa Rica': 'North America', 'Cuba': 'North America', 'Dominica': 'North America',
-    'Dominican Republic': 'North America', 'El Salvador': 'North America', 'Grenada': 'North America', 'Guatemala': 'North America',
-    'Haiti': 'North America', 'Honduras': 'North America', 'Jamaica': 'North America', 'Mexico': 'North America',
-    'Nicaragua': 'North America', 'Panama': 'North America', 'Saint Kitts and Nevis': 'North America', 'Saint Lucia': 'North America',
-    'Saint Vincent and the Grenadines': 'North America', 'Trinidad and Tobago': 'North America', 'United States': 'North America',
-    'Argentina': 'South America', 'Bolivia': 'South America', 'Brazil': 'South America', 'Chile': 'South America',
-    'Colombia': 'South America', 'Ecuador': 'South America', 'Guyana': 'South America', 'Paraguay': 'South America',
-    'Peru': 'South America', 'Suriname': 'South America', 'Uruguay': 'South America', 'Venezuela': 'South America',
-    'Australia': 'Oceania', 'Fiji': 'Oceania', 'Kiribati': 'Oceania', 'Marshall Islands': 'Oceania', 'Micronesia': 'Oceania',
-    'Nauru': 'Oceania', 'New Zealand': 'Oceania', 'Palau': 'Oceania', 'Papua New Guinea': 'Oceania', 'Samoa': 'Oceania',
-    'Solomon Islands': 'Oceania', 'Tonga': 'Oceania', 'Tuvalu': 'Oceania', 'Vanuatu': 'Oceania'
+    'Albania': 'Europe', 'Austria': 'Europe', 'Belarus': 'Europe', 'Belgium': 'Europe',
+    'Bosnia and Herzegovina': 'Europe', 'Bulgaria': 'Europe', 'Croatia': 'Europe', 'Cyprus': 'Europe',
+    'Czech Republic': 'Europe', 'Denmark': 'Europe', 'Estonia': 'Europe', 'Finland': 'Europe',
+    'France': 'Europe', 'Germany': 'Europe', 'Gibraltar': 'Europe', 'Greece': 'Europe',
+    'Hungary': 'Europe', 'Iceland': 'Europe', 'Ireland': 'Europe', 'Italy': 'Europe',
+    'Kosovo': 'Europe', 'Latvia': 'Europe', 'Lithuania': 'Europe', 'Luxembourg': 'Europe',
+    'Malta': 'Europe', 'Moldova': 'Europe', 'Montenegro': 'Europe', 'Netherlands': 'Europe',
+    'North Macedonia': 'Europe', 'Norway': 'Europe', 'Poland': 'Europe', 'Portugal': 'Europe',
+    'Romania': 'Europe', 'Russia': 'Europe', 'Serbia': 'Europe', 'Slovakia': 'Europe',
+    'Slovenia': 'Europe', 'Spain': 'Europe', 'Sweden': 'Europe', 'Switzerland': 'Europe',
+    'Ukraine': 'Europe', 'United Kingdom': 'Europe',
+    'Afghanistan': 'Asia', 'Armenia': 'Asia', 'Azerbaijan': 'Asia', 'Bahrain': 'Asia',
+    'Bangladesh': 'Asia', 'Bhutan': 'Asia', 'Brunei': 'Asia', 'Cambodia': 'Asia',
+    'China': 'Asia', 'East Timor': 'Asia', 'Georgia': 'Asia', 'India': 'Asia',
+    'Indonesia': 'Asia', 'Iran': 'Asia', 'Iraq': 'Asia', 'Israel': 'Asia',
+    'Japan': 'Asia', 'Jordan': 'Asia', 'Kazakhstan': 'Asia', 'Kuwait': 'Asia',
+    'Kyrgyzstan': 'Asia', 'Laos': 'Asia', 'Lebanon': 'Asia', 'Malaysia': 'Asia',
+    'Maldives': 'Asia', 'Mongolia': 'Asia', 'Myanmar [Burma]': 'Asia', 'Nepal': 'Asia',
+    'North Korea': 'Asia', 'Oman': 'Asia', 'Pakistan': 'Asia', 'Philippines': 'Asia',
+    'Qatar': 'Asia', 'Saudi Arabia': 'Asia', 'Singapore': 'Asia', 'South Korea': 'Asia',
+    'Sri Lanka': 'Asia', 'Syria': 'Asia', 'Taiwan': 'Asia', 'Tajikistan': 'Asia',
+    'Thailand': 'Asia', 'Turkey': 'Asia', 'Turkmenistan': 'Asia', 'United Arab Emirates': 'Asia',
+    'Uzbekistan': 'Asia', 'Vietnam': 'Asia', 'Yemen': 'Asia',
+    'Algeria': 'Africa', 'Angola': 'Africa', 'Benin': 'Africa', 'Botswana': 'Africa',
+    'Burkina Faso': 'Africa', 'Burundi': 'Africa', 'Cameroon': 'Africa', 'Cape Verde': 'Africa',
+    'Central African Republic': 'Africa', 'Chad': 'Africa', 'Comoros': 'Africa',
+    'Congo - Brazzaville': 'Africa', 'Congo - Kinshasa': 'Africa', 'Djibouti': 'Africa',
+    'Egypt': 'Africa', 'Equatorial Guinea': 'Africa', 'Eswatini': 'Africa', 'Ethiopia': 'Africa',
+    'Gabon': 'Africa', 'Gambia': 'Africa', 'Ghana': 'Africa', 'Guinea': 'Africa',
+    'Guinea-Bissau': 'Africa', 'Ivory Coast': 'Africa', 'Kenya': 'Africa', 'Lesotho': 'Africa',
+    'Liberia': 'Africa', 'Libya': 'Africa', 'Madagascar': 'Africa', 'Malawi': 'Africa',
+    'Mali': 'Africa', 'Mauritania': 'Africa', 'Mauritius': 'Africa', 'Mayotte': 'Africa',
+    'Morocco': 'Africa', 'Mozambique': 'Africa', 'Namibia': 'Africa', 'Niger': 'Africa',
+    'Nigeria': 'Africa', 'Rwanda': 'Africa', 'Réunion': 'Africa', 'Senegal': 'Africa',
+    'Seychelles': 'Africa', 'Sierra Leone': 'Africa', 'Somalia': 'Africa', 'South Africa': 'Africa',
+    'South Sudan': 'Africa', 'Sudan': 'Africa', 'Tanzania': 'Africa', 'Togo': 'Africa',
+    'Tunisia': 'Africa', 'Uganda': 'Africa', 'Zambia': 'Africa', 'Zimbabwe': 'Africa',
+    'Saint Helena, Ascension and Tristan da Cunha': 'Africa',
+    'Canada': 'North America', 'United States': 'North America', 'Mexico': 'North America',
+    'Costa Rica': 'North America', 'Cuba': 'North America', 'Dominican Republic': 'North America',
+    'Jamaica': 'North America', 'Panama': 'North America', 'Puerto Rico': 'North America',
+    'The Bahamas': 'North America', 'Martinique': 'North America', 'Guadeloupe': 'North America',
+    'Greenland': 'North America', 'Bermuda': 'North America', 'Aruba': 'North America',
+    'Turks and Caicos Islands': 'North America', 'Anguilla': 'North America',
+    'Antigua and Barbuda': 'North America', 'Barbados': 'North America', 'Belize': 'North America',
+    'Dominica': 'North America', 'El Salvador': 'North America', 'Grenada': 'North America',
+    'Guatemala': 'North America', 'Haiti': 'North America', 'Honduras': 'North America',
+    'Nicaragua': 'North America', 'Saint Kitts and Nevis': 'North America',
+    'Saint Lucia': 'North America', 'Saint Vincent and the Grenadines': 'North America',
+    'Trinidad and Tobago': 'North America', 'Netherlands Antilles': 'North America',
+    'Saint Pierre and Miquelon': 'North America',
+    'Argentina': 'South America', 'Bolivia': 'South America', 'Brazil': 'South America',
+    'Chile': 'South America', 'Colombia': 'South America', 'Ecuador': 'South America',
+    'Guyana': 'South America', 'Paraguay': 'South America', 'Peru': 'South America',
+    'Suriname': 'South America', 'Uruguay': 'South America', 'Venezuela': 'South America',
+    'French Guiana': 'South America',
+    'Australia': 'Oceania', 'New Zealand': 'Oceania', 'Fiji': 'Oceania', 'Papua New Guinea': 'Oceania',
+    'Kiribati': 'Oceania', 'Marshall Islands': 'Oceania', 'Micronesia': 'Oceania', 'Nauru': 'Oceania',
+    'Palau': 'Oceania', 'Samoa': 'Oceania', 'Solomon Islands': 'Oceania', 'Tonga': 'Oceania',
+    'Tuvalu': 'Oceania', 'Vanuatu': 'Oceania', 'French Polynesia': 'Oceania', 'Guam': 'Oceania',
+    'New Caledonia': 'Oceania', 'American Samoa': 'Oceania', 'Northern Mariana Islands': 'Oceania',
+    'Cocos [Keeling] Islands': 'Oceania', 'Niue': 'Oceania', 'Cook Islands': 'Oceania',
+    'Wallis and Futuna': 'Oceania', 'Norfolk Island': 'Oceania'
   };
+
+  const CF_ALL_CONTINENTS = ['Africa', 'Asia', 'Europe', 'North America', 'South America', 'Oceania'];
 
   // Preset Class Weighting Strategies
   const CF_STRATEGY_PRESETS = {
@@ -97,8 +120,23 @@
 
   // Route type & Network targeting
   let cf_activeRouteType = 'lh'; // 'mix', 'sh', 'mh', 'lh'
+  
+  // Scope modes: 'ap' (Airports) | 'ct' (Countries) | 'cn' (Continents)
+  let cf_includeMode = 'ap';
+  let cf_excludeMode = 'ap';
+
+  // Precision Inclusions
   let cf_includedAirports = [];
+  let cf_includedCountries = [];
+  let cf_includedContinents = [];
+
+  // Precision Exclusions
   let cf_excludedAirports = [];
+  let cf_excludedCountries = [];
+  let cf_excludedContinents = [];
+
+  // Cached country lookup list
+  let cf_uniqueCountriesList = [];
   let cf_isMaxDistLimitEnabled = false;
 
   // Route swap state
@@ -784,21 +822,423 @@
   }
 
   // =========================================================================
-  // AIRPORT INCLUDE / EXCLUDE CONTROLS
+  // PRECISION INCLUDE / EXCLUDE CONTROLS (GEO-SCOPE DROPDOWNS & CHIPS)
   // =========================================================================
-  function cf_onIncludeAirportsInputChange() {
+  function cf_setIncludeMode(mode) {
+    cf_includeMode = mode;
+    ['ap', 'ct', 'cn'].forEach(m => {
+      const btn = document.getElementById(`cf_inc_btn_${m}`);
+      if (btn) {
+        btn.className = m === mode ? 'px-2 py-0.5 rounded font-semibold bg-emerald-600 text-white transition' : 'px-2 py-0.5 rounded font-medium text-slate-400 hover:text-white transition';
+      }
+    });
     const input = document.getElementById('cf_include_airports_input');
-    cf_includedAirports = cf_parseIataString(input?.value || '');
+    if (input) {
+      input.value = '';
+      if (mode === 'ap') input.placeholder = 'Search airport (e.g. CPH, BKK, Tokyo) or paste IATAs...';
+      else if (mode === 'ct') input.placeholder = 'Search country to include... (e.g. Japan, Thailand)';
+      else if (mode === 'cn') input.placeholder = 'Select continent to include... (Africa, Asia, Europe...)';
+      if (!isRestoringCircuitFinderState && !isResettingCircuitFinder) {
+        input.focus();
+        cf_onIncludeFocus();
+      }
+    }
+    cf_saveStateToLocalStorage();
+  }
+
+  function cf_setExcludeMode(mode) {
+    cf_excludeMode = mode;
+    ['ap', 'ct', 'cn'].forEach(m => {
+      const btn = document.getElementById(`cf_exc_btn_${m}`);
+      if (btn) {
+        btn.className = m === mode ? 'px-2 py-0.5 rounded font-semibold bg-rose-600 text-white transition' : 'px-2 py-0.5 rounded font-medium text-slate-400 hover:text-white transition';
+      }
+    });
+    const input = document.getElementById('cf_exclude_airports_input');
+    if (input) {
+      input.value = '';
+      if (mode === 'ap') input.placeholder = 'Search airport to avoid (e.g. BAX, OVB, Moscow) or paste IATAs...';
+      else if (mode === 'ct') input.placeholder = 'Search country to exclude... (e.g. Russia, Belarus)';
+      else if (mode === 'cn') input.placeholder = 'Select continent to exclude... (North America, Africa...)';
+      if (!isRestoringCircuitFinderState && !isResettingCircuitFinder) {
+        input.focus();
+        cf_onExcludeFocus();
+      }
+    }
+    cf_saveStateToLocalStorage();
+  }
+
+  function cf_detectMultiIata(str) {
+    if (!str) return null;
+    const tokens = str.toUpperCase().match(/[A-Z]{3}/g);
+    if (tokens && tokens.length > 1) return tokens;
+    return null;
+  }
+
+  function cf_onIncludeFocus() {
+    cf_renderIncludeDropdown(document.getElementById('cf_include_airports_input')?.value || '');
+  }
+
+  function cf_onIncludeInput(val) {
+    const multi = cf_detectMultiIata(val);
+    if (multi) {
+      let added = 0;
+      multi.forEach(code => {
+        if (cf_getAirport(code) && !cf_includedAirports.includes(code)) {
+          cf_includedAirports.push(code);
+          cf_excludedAirports = cf_excludedAirports.filter(c => c !== code);
+          added++;
+        }
+      });
+      const input = document.getElementById('cf_include_airports_input');
+      if (input) input.value = '';
+      cf_closeAllDropdowns();
+      cf_renderIncludeAirportsChips();
+      cf_saveStateToLocalStorage();
+      cf_debouncedFindCircuits();
+      cf_showToast(`Added ${added} pasted airports to Must-Fly`, 'success');
+      return;
+    }
+    cf_renderIncludeDropdown(val);
+  }
+
+  function cf_renderIncludeDropdown(query) {
+    const dd = document.getElementById('cf_inc_dropdown');
+    if (!dd) return;
+    const q = (query || '').trim().toLowerCase();
+    const hub = cf_getAirport(cf_activeHubIata);
+    const ac = cf_getAircraft(cf_activeAircraftId);
+    let html = '';
+
+    if (cf_includeMode === 'ap') {
+      if (typeof AIRPORTS_DATABASE === 'undefined') return;
+      const matches = AIRPORTS_DATABASE.filter(ap => {
+        if (ap.iata === cf_activeHubIata) return false;
+        if (cf_includedAirports.includes(ap.iata)) return false;
+        if (!q) return true;
+        return ap.iata.toLowerCase().includes(q) ||
+               (ap.city && ap.city.toLowerCase().includes(q)) ||
+               (ap.name && ap.name.toLowerCase().includes(q)) ||
+               (ap.country && ap.country.toLowerCase().includes(q));
+      }).slice(0, 20);
+
+      if (matches.length === 0) {
+        html = `<div class="p-2 text-xs text-slate-400 text-center">No airports matching "${query}"</div>`;
+      } else {
+        html = matches.map(ap => {
+          let dist = 0, dur = 0, reachable = true;
+          if (hub && ac) {
+            dist = cf_haversineDistance(hub.lat, hub.lon, ap.lat, ap.lon);
+            dur = cf_calculateFlightTimeHours(dist, ac.speed_kmh);
+            if (dist > ac.range_km || ap.cat < ac.category) reachable = false;
+          }
+          const stats = cf_computeAirportDemandStats(ap);
+          return `
+            <div onclick="cf_addIncludeAirport('${ap.iata}')" class="p-1.5 rounded-lg hover:bg-emerald-950/80 cursor-pointer flex items-center justify-between text-xs transition border border-transparent hover:border-emerald-800">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="font-mono font-bold text-emerald-400 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700">${ap.iata}</span>
+                <div class="truncate">
+                  <span class="text-white font-semibold truncate">${ap.city || ap.name}</span>
+                  <span class="text-slate-400 text-[10px] ml-1">(${ap.country})</span>
+                  <span class="text-slate-400 text-[10px] ml-1">· Cat ${ap.cat} · ${stats.starsText}</span>
+                </div>
+              </div>
+              <div class="text-right shrink-0">
+                <span class="text-[11px] font-mono ${reachable ? 'text-emerald-300' : 'text-amber-400'}">${cf_formatHoursMinutes(dur)}</span>
+                ${!reachable ? `<span class="text-[9px] text-rose-400 ml-1">⚠</span>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    } else if (cf_includeMode === 'ct') {
+      const matches = cf_uniqueCountriesList.filter(c => {
+        if (cf_includedCountries.includes(c.name)) return false;
+        if (!q) return true;
+        return c.name.toLowerCase().includes(q) || c.continent.toLowerCase().includes(q);
+      }).slice(0, 20);
+
+      if (matches.length === 0) {
+        html = `<div class="p-2 text-xs text-slate-400 text-center">No countries matching "${query}"</div>`;
+      } else {
+        html = matches.map(c => `
+          <div onclick="cf_addIncludeCountry('${c.name.replace(/'/g, "\\'")}')" class="p-1.5 rounded-lg hover:bg-emerald-950/80 cursor-pointer flex items-center justify-between text-xs transition border border-transparent hover:border-emerald-800">
+            <div class="flex items-center gap-2">
+              <span class="text-teal-400">🏳</span>
+              <span class="text-white font-semibold">${c.name}</span>
+              <span class="text-[10px] text-slate-400 font-normal">(${c.continent})</span>
+            </div>
+            <span class="text-[10px] text-emerald-300 font-mono">${c.count} airports</span>
+          </div>
+        `).join('');
+      }
+    } else if (cf_includeMode === 'cn') {
+      const matches = CF_ALL_CONTINENTS.filter(c => {
+        if (cf_includedContinents.includes(c)) return false;
+        if (!q) return true;
+        return c.toLowerCase().includes(q);
+      });
+
+      if (matches.length === 0) {
+        html = `<div class="p-2 text-xs text-slate-400 text-center">All continents included</div>`;
+      } else {
+        html = matches.map(c => `
+          <div onclick="cf_addIncludeContinent('${c}')" class="p-1.5 rounded-lg hover:bg-emerald-950/80 cursor-pointer flex items-center justify-between text-xs transition border border-transparent hover:border-emerald-800">
+            <div class="flex items-center gap-2">
+              <span class="text-cyan-400">🌍</span>
+              <span class="text-white font-semibold">${c}</span>
+            </div>
+            <span class="text-[10px] text-cyan-300 font-mono">Entire Continent</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    dd.innerHTML = html;
+    dd.classList.remove('hidden');
+  }
+
+  function cf_addIncludeAirport(code) {
+    if (!cf_includedAirports.includes(code)) {
+      cf_includedAirports.push(code);
+      cf_excludedAirports = cf_excludedAirports.filter(c => c !== code);
+    }
+    const input = document.getElementById('cf_include_airports_input');
+    if (input) input.value = '';
+    cf_closeAllDropdowns();
     cf_renderIncludeAirportsChips();
+    cf_saveStateToLocalStorage();
+    cf_debouncedFindCircuits();
+  }
+
+  function cf_addIncludeCountry(country) {
+    if (!cf_includedCountries.includes(country)) {
+      cf_includedCountries.push(country);
+      cf_excludedCountries = cf_excludedCountries.filter(c => c !== country);
+    }
+    const input = document.getElementById('cf_include_airports_input');
+    if (input) input.value = '';
+    cf_closeAllDropdowns();
+    cf_renderIncludeAirportsChips();
+    cf_saveStateToLocalStorage();
+    cf_debouncedFindCircuits();
+  }
+
+  function cf_addIncludeContinent(cont) {
+    if (!cf_includedContinents.includes(cont)) {
+      cf_includedContinents.push(cont);
+      cf_excludedContinents = cf_excludedContinents.filter(c => c !== cont);
+    }
+    const input = document.getElementById('cf_include_airports_input');
+    if (input) input.value = '';
+    cf_closeAllDropdowns();
+    cf_renderIncludeAirportsChips();
+    cf_saveStateToLocalStorage();
+    cf_debouncedFindCircuits();
+  }
+
+  function cf_removeIncludeAirport(code) {
+    cf_includedAirports = cf_includedAirports.filter(c => c !== code);
+    cf_renderIncludeAirportsChips();
+    cf_saveStateToLocalStorage();
+    cf_debouncedFindCircuits();
+  }
+
+  function cf_removeIncludeCountry(c) {
+    cf_includedCountries = cf_includedCountries.filter(x => x !== c);
+    cf_renderIncludeAirportsChips();
+    cf_saveStateToLocalStorage();
+    cf_debouncedFindCircuits();
+  }
+
+  function cf_removeIncludeContinent(cn) {
+    cf_includedContinents = cf_includedContinents.filter(x => x !== cn);
+    cf_renderIncludeAirportsChips();
+    cf_saveStateToLocalStorage();
+    cf_debouncedFindCircuits();
+  }
+
+  function cf_onExcludeFocus() {
+    cf_renderExcludeDropdown(document.getElementById('cf_exclude_airports_input')?.value || '');
+  }
+
+  function cf_onExcludeInput(val) {
+    const multi = cf_detectMultiIata(val);
+    if (multi) {
+      let added = 0;
+      multi.forEach(code => {
+        if (cf_getAirport(code) && !cf_excludedAirports.includes(code)) {
+          cf_excludedAirports.push(code);
+          cf_includedAirports = cf_includedAirports.filter(c => c !== code);
+          added++;
+        }
+      });
+      const input = document.getElementById('cf_exclude_airports_input');
+      if (input) input.value = '';
+      cf_closeAllDropdowns();
+      cf_renderExcludeAirportsChips();
+      cf_saveStateToLocalStorage();
+      cf_debouncedFindCircuits();
+      cf_showToast(`Excluded ${added} pasted airports`, 'info');
+      return;
+    }
+    cf_renderExcludeDropdown(val);
+  }
+
+  function cf_renderExcludeDropdown(query) {
+    const dd = document.getElementById('cf_exc_dropdown');
+    if (!dd) return;
+    const q = (query || '').trim().toLowerCase();
+    let html = '';
+
+    if (cf_excludeMode === 'ap') {
+      if (typeof AIRPORTS_DATABASE === 'undefined') return;
+      const matches = AIRPORTS_DATABASE.filter(ap => {
+        if (ap.iata === cf_activeHubIata) return false;
+        if (cf_excludedAirports.includes(ap.iata)) return false;
+        if (!q) return true;
+        return ap.iata.toLowerCase().includes(q) ||
+               (ap.city && ap.city.toLowerCase().includes(q)) ||
+               (ap.name && ap.name.toLowerCase().includes(q)) ||
+               (ap.country && ap.country.toLowerCase().includes(q));
+      }).slice(0, 20);
+
+      if (matches.length === 0) {
+        html = `<div class="p-2 text-xs text-slate-400 text-center">No airports matching "${query}"</div>`;
+      } else {
+        html = matches.map(ap => `
+          <div onclick="cf_addExcludeAirport('${ap.iata}')" class="p-1.5 rounded-lg hover:bg-rose-950/80 cursor-pointer flex items-center justify-between text-xs transition border border-transparent hover:border-rose-800">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="font-mono font-bold text-rose-400 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700">${ap.iata}</span>
+              <div class="truncate">
+                <span class="text-white font-semibold truncate">${ap.city || ap.name}</span>
+                <span class="text-slate-400 text-[10px] ml-1">(${ap.country})</span>
+              </div>
+            </div>
+            <span class="text-[10px] text-rose-300 font-semibold">Avoid</span>
+          </div>
+        `).join('');
+      }
+    } else if (cf_excludeMode === 'ct') {
+      const matches = cf_uniqueCountriesList.filter(c => {
+        if (cf_excludedCountries.includes(c.name)) return false;
+        if (!q) return true;
+        return c.name.toLowerCase().includes(q) || c.continent.toLowerCase().includes(q);
+      }).slice(0, 20);
+
+      if (matches.length === 0) {
+        html = `<div class="p-2 text-xs text-slate-400 text-center">No countries matching "${query}"</div>`;
+      } else {
+        html = matches.map(c => `
+          <div onclick="cf_addExcludeCountry('${c.name.replace(/'/g, "\\'")}')" class="p-1.5 rounded-lg hover:bg-rose-950/80 cursor-pointer flex items-center justify-between text-xs transition border border-transparent hover:border-rose-800">
+            <div class="flex items-center gap-2">
+              <span class="text-rose-400">🚫</span>
+              <span class="text-white font-semibold">${c.name}</span>
+              <span class="text-[10px] text-slate-400 font-normal">(${c.continent})</span>
+            </div>
+            <span class="text-[10px] text-rose-300 font-mono">${c.count} airports</span>
+          </div>
+        `).join('');
+      }
+    } else if (cf_excludeMode === 'cn') {
+      const matches = CF_ALL_CONTINENTS.filter(c => {
+        if (cf_excludedContinents.includes(c)) return false;
+        if (!q) return true;
+        return c.toLowerCase().includes(q);
+      });
+
+      if (matches.length === 0) {
+        html = `<div class="p-2 text-xs text-slate-400 text-center">All continents excluded</div>`;
+      } else {
+        html = matches.map(c => `
+          <div onclick="cf_addExcludeContinent('${c}')" class="p-1.5 rounded-lg hover:bg-rose-950/80 cursor-pointer flex items-center justify-between text-xs transition border border-transparent hover:border-rose-800">
+            <div class="flex items-center gap-2">
+              <span class="text-amber-400">🌍</span>
+              <span class="text-white font-semibold">${c}</span>
+            </div>
+            <span class="text-[10px] text-rose-300 font-mono">Block Entire Continent</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    dd.innerHTML = html;
+    dd.classList.remove('hidden');
+  }
+
+  function cf_addExcludeAirport(code) {
+    if (!cf_excludedAirports.includes(code)) {
+      cf_excludedAirports.push(code);
+      cf_includedAirports = cf_includedAirports.filter(c => c !== code);
+    }
+    const input = document.getElementById('cf_exclude_airports_input');
+    if (input) input.value = '';
+    cf_closeAllDropdowns();
+    cf_renderExcludeAirportsChips();
+    cf_saveStateToLocalStorage();
+    cf_debouncedFindCircuits();
+  }
+
+  function cf_addExcludeCountry(country) {
+    if (!cf_excludedCountries.includes(country)) {
+      cf_excludedCountries.push(country);
+      cf_includedCountries = cf_includedCountries.filter(c => c !== country);
+    }
+    const input = document.getElementById('cf_exclude_airports_input');
+    if (input) input.value = '';
+    cf_closeAllDropdowns();
+    cf_renderExcludeAirportsChips();
+    cf_saveStateToLocalStorage();
+    cf_debouncedFindCircuits();
+  }
+
+  function cf_addExcludeContinent(cont) {
+    if (!cf_excludedContinents.includes(cont)) {
+      cf_excludedContinents.push(cont);
+      cf_includedContinents = cf_includedContinents.filter(c => c !== cont);
+    }
+    const input = document.getElementById('cf_exclude_airports_input');
+    if (input) input.value = '';
+    cf_closeAllDropdowns();
+    cf_renderExcludeAirportsChips();
+    cf_saveStateToLocalStorage();
+    cf_debouncedFindCircuits();
+  }
+
+  function cf_removeExcludeAirport(code) {
+    cf_excludedAirports = cf_excludedAirports.filter(c => c !== code);
+    cf_renderExcludeAirportsChips();
+    cf_saveStateToLocalStorage();
+    cf_debouncedFindCircuits();
+  }
+
+  function cf_removeExcludeCountry(c) {
+    cf_excludedCountries = cf_excludedCountries.filter(x => x !== c);
+    cf_renderExcludeAirportsChips();
+    cf_saveStateToLocalStorage();
+    cf_debouncedFindCircuits();
+  }
+
+  function cf_removeExcludeContinent(cn) {
+    cf_excludedContinents = cf_excludedContinents.filter(x => x !== cn);
+    cf_renderExcludeAirportsChips();
+    cf_saveStateToLocalStorage();
     cf_debouncedFindCircuits();
   }
 
   function cf_renderIncludeAirportsChips() {
     const container = document.getElementById('cf_include_airports_chips');
     const statusLine = document.getElementById('cf_include_airports_status');
+    const badge = document.getElementById('cf_inc_badge');
     if (!container) return;
 
-    if (cf_includedAirports.length === 0) {
+    const totalInc = cf_includedAirports.length + cf_includedCountries.length + cf_includedContinents.length;
+    if (badge) {
+      badge.textContent = totalInc;
+      badge.classList.toggle('hidden', totalInc === 0);
+    }
+
+    if (totalInc === 0) {
       container.innerHTML = '';
       if (statusLine) statusLine.textContent = '';
       return;
@@ -806,111 +1246,104 @@
 
     const hub = cf_getAirport(cf_activeHubIata);
     const ac = cf_getAircraft(cf_activeAircraftId);
-    const issues = [];
-    let reachableCount = 0;
+    let html = '';
 
-    container.innerHTML = cf_includedAirports.map(code => {
+    cf_includedContinents.forEach(cn => {
+      html += `<span class="badge-pill bg-cyan-950 text-cyan-300 border-cyan-800"><span>🌍 ${cn}</span><button type="button" onclick="cf_removeIncludeContinent('${cn}')" class="text-cyan-400 hover:text-white font-bold ml-1">×</button></span>`;
+    });
+    cf_includedCountries.forEach(ct => {
+      html += `<span class="badge-pill bg-teal-950 text-teal-300 border-teal-700"><span>🏳 ${ct}</span><button type="button" onclick="cf_removeIncludeCountry('${ct.replace(/'/g, "\\'")}')" class="text-teal-400 hover:text-white font-bold ml-1">×</button></span>`;
+    });
+    cf_includedAirports.forEach(code => {
       const ap = cf_getAirport(code);
-      if (!ap) return '';
+      if (!ap) {
+        html += `<span class="badge-pill bg-rose-950/90 text-rose-300 border-rose-800 font-mono"><span>${code}</span><button type="button" onclick="cf_removeIncludeAirport('${code}')" class="text-rose-400 hover:text-white font-bold ml-1">×</button></span>`;
+        return;
+      }
+      const dist = hub ? cf_haversineDistance(hub.lat, hub.lon, ap.lat, ap.lon) : 0;
+      const dur = ac ? cf_calculateFlightTimeHours(dist, ac.speed_kmh) : 0;
       const stats = cf_computeAirportDemandStats(ap);
       let isReachable = true;
       let reason = '';
-      let dist = 0;
-      let dur = 0;
+      if (code === hub?.iata) { isReachable = false; reason = 'Departure hub'; }
+      else if (ac && dist > ac.range_km) { isReachable = false; reason = 'Range exceeded'; }
+      else if (ac && ap.cat < ac.category) { isReachable = false; reason = 'Category mismatch'; }
 
-      if (hub && ac) {
-        dist = cf_haversineDistance(hub.lat, hub.lon, ap.lat, ap.lon);
-        dur = cf_calculateFlightTimeHours(dist, ac.speed_kmh);
-        if (dist > ac.range_km) {
-          isReachable = false; reason = `Exceeds plane range (${dist.toLocaleString()} > ${ac.range_km.toLocaleString()} km)`;
-        } else if (ap.cat < ac.category) {
-          isReachable = false; reason = `Cat ${ap.cat} < Plane Cat ${ac.category}`;
-        }
-      } else if (!hub) {
-        isReachable = false; reason = 'No hub set';
-      }
-
-      if (isReachable) reachableCount++;
-      else issues.push(`${code}: ${reason}`);
-
-      return `
+      html += `
         <span class="badge-pill ${isReachable ? 'bg-emerald-950/90 text-emerald-300 border-emerald-700' : 'bg-amber-950/90 text-amber-300 border-amber-700'} font-mono shadow-sm" title="${ap.name || ap.city} · ${dist.toLocaleString()} km · ${cf_formatHoursMinutes(dur)} · ${stats.starsText}">
-          <span>${code}</span>
-          <span class="font-sans font-normal text-[10px] text-slate-300 hidden sm:inline">(${ap.city}, ${cf_formatHoursMinutes(dur)})</span>
+          <span>✈ ${code}</span>
+          <span class="font-sans font-normal text-[10px] text-slate-300 hidden sm:inline">(${ap.city})</span>
           <span class="text-amber-400 font-sans tracking-tighter">${stats.starsText}</span>
           ${!isReachable ? `<span class="text-rose-400 font-bold ml-0.5" title="${reason}">⚠</span>` : ''}
           <button type="button" onclick="cf_removeIncludeAirport('${code}')" class="text-slate-400 hover:text-white font-bold ml-1 transition">×</button>
         </span>
       `;
-    }).join('');
+    });
 
+    container.innerHTML = html;
     if (statusLine) {
-      if (issues.length > 0) {
-        statusLine.innerHTML = `<span class="text-amber-400 font-semibold">⚠ Attention:</span> ${issues.join(' · ')}`;
-      } else {
-        statusLine.innerHTML = `<span class="text-emerald-400 font-semibold">✓ Ready:</span> All ${reachableCount} required destination(s) are valid and reachable from ${hub?.iata || 'hub'}.`;
-      }
+      statusLine.innerHTML = `<span class="text-emerald-400 font-semibold">✓ Scope:</span> ${totalInc} active rule(s)`;
     }
-  }
-
-  function cf_removeIncludeAirport(code) {
-    cf_includedAirports = cf_includedAirports.filter(c => c !== code);
-    const input = document.getElementById('cf_include_airports_input');
-    if (input) input.value = cf_includedAirports.join(' ');
-    cf_renderIncludeAirportsChips();
-    cf_debouncedFindCircuits();
-  }
-
-  function cf_onExcludeAirportsInputChange() {
-    const input = document.getElementById('cf_exclude_airports_input');
-    cf_excludedAirports = cf_parseIataString(input?.value || '');
-    cf_renderExcludeAirportsChips();
-    cf_debouncedFindCircuits();
   }
 
   function cf_renderExcludeAirportsChips() {
     const container = document.getElementById('cf_exclude_airports_chips');
     const statusLine = document.getElementById('cf_exclude_airports_status');
+    const badge = document.getElementById('cf_exc_badge');
     if (!container) return;
 
-    if (cf_excludedAirports.length === 0) {
+    const totalExc = cf_excludedAirports.length + cf_excludedCountries.length + cf_excludedContinents.length;
+    if (badge) {
+      badge.textContent = totalExc;
+      badge.classList.toggle('hidden', totalExc === 0);
+    }
+
+    if (totalExc === 0) {
       container.innerHTML = '';
       if (statusLine) statusLine.textContent = '';
       return;
     }
 
-    container.innerHTML = cf_excludedAirports.map(code => {
+    let html = '';
+    cf_excludedContinents.forEach(cn => {
+      html += `<span class="badge-pill bg-amber-950 text-amber-300 border-amber-800"><span>🌍 ${cn}</span><button type="button" onclick="cf_removeExcludeContinent('${cn}')" class="text-amber-400 hover:text-white font-bold ml-1">×</button></span>`;
+    });
+    cf_excludedCountries.forEach(ct => {
+      html += `<span class="badge-pill bg-purple-950 text-purple-300 border-purple-700"><span>🏳 ${ct}</span><button type="button" onclick="cf_removeExcludeCountry('${ct.replace(/'/g, "\\'")}')" class="text-purple-400 hover:text-white font-bold ml-1">×</button></span>`;
+    });
+    cf_excludedAirports.forEach(code => {
       const ap = cf_getAirport(code);
       const name = ap ? ap.city : 'Unknown';
-      return `
+      html += `
         <span class="badge-pill bg-rose-950/80 text-rose-300 border-rose-800 font-mono shadow-sm" title="${ap ? ap.name : code}">
-          <span>${code}</span>
+          <span>✈ ${code}</span>
           <span class="font-sans font-normal text-[10px] text-slate-400 hidden sm:inline">(${name})</span>
           <button type="button" onclick="cf_removeExcludeAirport('${code}')" class="text-rose-400 hover:text-white font-bold ml-1 transition">×</button>
         </span>
       `;
-    }).join('');
+    });
 
+    container.innerHTML = html;
     if (statusLine) {
-      statusLine.innerHTML = `<span class="text-slate-400">Excluding ${cf_excludedAirports.length} destination(s) from circuit generation.</span>`;
+      statusLine.innerHTML = `<span class="text-rose-400 font-semibold">⊘ Avoid:</span> ${totalExc} active rule(s)`;
     }
-  }
-
-  function cf_removeExcludeAirport(code) {
-    cf_excludedAirports = cf_excludedAirports.filter(c => c !== code);
-    const input = document.getElementById('cf_exclude_airports_input');
-    if (input) input.value = cf_excludedAirports.join(' ');
-    cf_renderExcludeAirportsChips();
-    cf_debouncedFindCircuits();
   }
 
   function cf_clearExcludedAirports() {
     cf_excludedAirports = [];
+    cf_excludedCountries = [];
+    cf_excludedContinents = [];
     const input = document.getElementById('cf_exclude_airports_input');
     if (input) input.value = '';
     cf_renderExcludeAirportsChips();
+    cf_saveStateToLocalStorage();
     cf_debouncedFindCircuits();
-    cf_showToast('Cleared excluded airports list', 'info');
+    cf_showToast('Cleared all exclusions', 'info');
+  }
+
+  function cf_closeAllDropdowns() {
+    document.getElementById('cf_inc_dropdown')?.classList.add('hidden');
+    document.getElementById('cf_exc_dropdown')?.classList.add('hidden');
   }
 
   function cf_onToggleMaxDistLimit() {
@@ -1031,11 +1464,15 @@
       }
     }
 
-    const excludedSet = new Set([
+    const incAirportsSet = new Set(cf_includedAirports);
+    const excAirportsSet = new Set([
       ...cf_excludedAirports,
       ...(excludeOwned ? cf_ownedHubs : [])
     ]);
-    const includedSet = new Set(cf_includedAirports);
+    const incCountriesSet = new Set(cf_includedCountries);
+    const excCountriesSet = new Set(cf_excludedCountries);
+    const incContinentsSet = new Set(cf_includedContinents);
+    const excContinentsSet = new Set(cf_excludedContinents);
 
     const allFoundCircuits = [];
 
@@ -1052,18 +1489,24 @@
       if (typeof AIRPORTS_DATABASE !== 'undefined') {
         for (const dst of AIRPORTS_DATABASE) {
           if (dst.iata === hub.iata) continue;
-          if (excludedSet.has(dst.iata) && !includedSet.has(dst.iata)) continue;
-          if (requireCatMatch && dst.cat < aircraft.category) continue;
-          if (isNaN(dst.lat) || isNaN(dst.lon)) continue;
 
           const continent = CF_CONTINENT_MAP[dst.country] || 'Other';
-          if (continentFilter !== 'all' && continent !== continentFilter) continue;
+          const isMustInclude = incAirportsSet.has(dst.iata);
+
+          if (excContinentsSet.has(continent)) continue;
+          if (excCountriesSet.has(dst.country)) continue;
+          if (excAirportsSet.has(dst.iata) && !isMustInclude) continue;
+          if (incContinentsSet.size > 0 && !incContinentsSet.has(continent) && !isMustInclude) continue;
+          if (incCountriesSet.size > 0 && !incCountriesSet.has(dst.country) && !isMustInclude) continue;
+          if (continentFilter !== 'all' && continent !== continentFilter && !isMustInclude) continue;
+
+          if (requireCatMatch && dst.cat < aircraft.category) continue;
+          if (isNaN(dst.lat) || isNaN(dst.lon)) continue;
 
           const dist = cf_haversineDistance(hub.lat, hub.lon, dst.lat, dst.lon);
           if (dist <= 0 || dist > effectiveMaxDist) continue;
 
           const dur = cf_calculateFlightTimeHours(dist, aircraft.speed_kmh);
-          const isMustInclude = includedSet.has(dst.iata);
 
           // If not must-include, enforce duration bounds & minStars
           if (!isMustInclude) {
@@ -1625,7 +2068,13 @@
       const isMaxDistLimitEnabled = !!cf_isMaxDistLimitEnabled;
       const maxRouteDistance = document.getElementById('cf_max_route_dist_input')?.value || '';
       const includedAirports = Array.isArray(cf_includedAirports) ? cf_includedAirports : [];
+      const includedCountries = Array.isArray(cf_includedCountries) ? cf_includedCountries : [];
+      const includedContinents = Array.isArray(cf_includedContinents) ? cf_includedContinents : [];
       const excludedAirports = Array.isArray(cf_excludedAirports) ? cf_excludedAirports : [];
+      const excludedCountries = Array.isArray(cf_excludedCountries) ? cf_excludedCountries : [];
+      const excludedContinents = Array.isArray(cf_excludedContinents) ? cf_excludedContinents : [];
+      const includeMode = cf_includeMode || 'ap';
+      const excludeMode = cf_excludeMode || 'ap';
       const minLegDur = document.getElementById('cf_min_leg_dur')?.value || '';
       const maxLegDur = document.getElementById('cf_max_leg_dur')?.value || '';
       const quickResultsFilter = cf_quickResultsFilter || 'all';
@@ -1648,7 +2097,13 @@
         isMaxDistLimitEnabled,
         maxRouteDistance,
         includedAirports,
+        includedCountries,
+        includedContinents,
         excludedAirports,
+        excludedCountries,
+        excludedContinents,
+        includeMode,
+        excludeMode,
         minLegDur,
         maxLegDur,
         quickResultsFilter
@@ -1811,19 +2266,43 @@
         }
       }
 
-      // 11. Restore Include / Exclude Airports
+      // 11. Restore Precision Inclusions & Exclusions
       if (Array.isArray(data.includedAirports)) {
         cf_includedAirports = data.includedAirports.filter(c => typeof c === 'string' && c.trim().length > 0);
-        const incInput = document.getElementById('cf_include_airports_input');
-        if (incInput) incInput.value = cf_includedAirports.join(' ');
-        cf_renderIncludeAirportsChips();
+      } else {
+        cf_includedAirports = [];
       }
+      if (Array.isArray(data.includedCountries)) {
+        cf_includedCountries = data.includedCountries.filter(c => typeof c === 'string' && c.trim().length > 0);
+      } else {
+        cf_includedCountries = [];
+      }
+      if (Array.isArray(data.includedContinents)) {
+        cf_includedContinents = data.includedContinents.filter(c => typeof c === 'string' && c.trim().length > 0);
+      } else {
+        cf_includedContinents = [];
+      }
+
       if (Array.isArray(data.excludedAirports)) {
         cf_excludedAirports = data.excludedAirports.filter(c => typeof c === 'string' && c.trim().length > 0);
-        const excInput = document.getElementById('cf_exclude_airports_input');
-        if (excInput) excInput.value = cf_excludedAirports.join(' ');
-        cf_renderExcludeAirportsChips();
+      } else {
+        cf_excludedAirports = [];
       }
+      if (Array.isArray(data.excludedCountries)) {
+        cf_excludedCountries = data.excludedCountries.filter(c => typeof c === 'string' && c.trim().length > 0);
+      } else {
+        cf_excludedCountries = [];
+      }
+      if (Array.isArray(data.excludedContinents)) {
+        cf_excludedContinents = data.excludedContinents.filter(c => typeof c === 'string' && c.trim().length > 0);
+      } else {
+        cf_excludedContinents = [];
+      }
+
+      cf_setIncludeMode(data.includeMode || 'ap');
+      cf_setExcludeMode(data.excludeMode || 'ap');
+      cf_renderIncludeAirportsChips();
+      cf_renderExcludeAirportsChips();
 
       // 12. Restore Quick Filter
       if (data.quickResultsFilter) {
@@ -1928,15 +2407,21 @@
     }
     cf_isMaxDistLimitEnabled = false;
 
-    // 7. Clear Include / Exclude Airports
+    // 7. Clear Include / Exclude Targets
     const incInput = document.getElementById('cf_include_airports_input');
     if (incInput) incInput.value = '';
     cf_includedAirports = [];
+    cf_includedCountries = [];
+    cf_includedContinents = [];
+    cf_setIncludeMode('ap');
     cf_renderIncludeAirportsChips();
 
     const excInput = document.getElementById('cf_exclude_airports_input');
     if (excInput) excInput.value = '';
     cf_excludedAirports = [];
+    cf_excludedCountries = [];
+    cf_excludedContinents = [];
+    cf_setExcludeMode('ap');
     cf_renderExcludeAirportsChips();
 
     // 8. Route Type: LH & Route Count: any
@@ -2257,6 +2742,19 @@
     cf_initAircraftCombobox();
     cf_renderOwnedHubs();
 
+    // Build unique countries lookup
+    const cMap = {};
+    if (typeof AIRPORTS_DATABASE !== 'undefined') {
+      AIRPORTS_DATABASE.forEach(a => {
+        if (!a.country) return;
+        if (!cMap[a.country]) {
+          cMap[a.country] = { name: a.country, continent: CF_CONTINENT_MAP[a.country] || 'Other', count: 0 };
+        }
+        cMap[a.country].count++;
+      });
+      cf_uniqueCountriesList = Object.values(cMap).sort((a, b) => a.name.localeCompare(b.name));
+    }
+
     const restored = cf_restoreStateFromLocalStorage();
 
     if (!restored) {
@@ -2271,15 +2769,20 @@
       const starSelect = document.getElementById('cf_star_filter_select');
       if (starSelect) starSelect.value = '3';
 
+      cf_setIncludeMode('ap');
+      cf_setExcludeMode('ap');
       cf_renderIncludeAirportsChips();
       cf_renderExcludeAirportsChips();
     }
 
-    // Click outside aircraft combobox popover to close
+    // Click outside aircraft combobox popover or dropdowns to close
     document.addEventListener('click', (e) => {
       const root = document.getElementById('cf_aircraft_combobox_root');
       if (root && !root.contains(e.target)) {
         cf_closeAircraftCombobox();
+      }
+      if (!e.target.closest('#cf_inc_root') && !e.target.closest('#cf_exc_root')) {
+        cf_closeAllDropdowns();
       }
     });
 
@@ -2309,11 +2812,28 @@
   window.cf_onClassStrategyChange = cf_onClassStrategyChange;
   window.cf_toggleCustomSliders = cf_toggleCustomSliders;
   window.cf_onCustomSliderChange = cf_onCustomSliderChange;
-  window.cf_onIncludeAirportsInputChange = cf_onIncludeAirportsInputChange;
+  window.cf_setIncludeMode = cf_setIncludeMode;
+  window.cf_setExcludeMode = cf_setExcludeMode;
+  window.cf_onIncludeInput = cf_onIncludeInput;
+  window.cf_onIncludeFocus = cf_onIncludeFocus;
+  window.cf_onExcludeInput = cf_onExcludeInput;
+  window.cf_onExcludeFocus = cf_onExcludeFocus;
+  window.cf_addIncludeAirport = cf_addIncludeAirport;
+  window.cf_addIncludeCountry = cf_addIncludeCountry;
+  window.cf_addIncludeContinent = cf_addIncludeContinent;
   window.cf_removeIncludeAirport = cf_removeIncludeAirport;
-  window.cf_onExcludeAirportsInputChange = cf_onExcludeAirportsInputChange;
+  window.cf_removeIncludeCountry = cf_removeIncludeCountry;
+  window.cf_removeIncludeContinent = cf_removeIncludeContinent;
+  window.cf_addExcludeAirport = cf_addExcludeAirport;
+  window.cf_addExcludeCountry = cf_addExcludeCountry;
+  window.cf_addExcludeContinent = cf_addExcludeContinent;
   window.cf_removeExcludeAirport = cf_removeExcludeAirport;
+  window.cf_removeExcludeCountry = cf_removeExcludeCountry;
+  window.cf_removeExcludeContinent = cf_removeExcludeContinent;
   window.cf_clearExcludedAirports = cf_clearExcludedAirports;
+  window.cf_closeAllDropdowns = cf_closeAllDropdowns;
+  window.cf_onIncludeAirportsInputChange = cf_onIncludeInput;
+  window.cf_onExcludeAirportsInputChange = cf_onExcludeInput;
   window.cf_onToggleMaxDistLimit = cf_onToggleMaxDistLimit;
   window.cf_debouncedFindCircuits = cf_debouncedFindCircuits;
   window.cf_executeCircuitSearch = cf_executeCircuitSearch;
