@@ -3,10 +3,9 @@
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/HTML5)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.x-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Python](https://img.shields.io/badge/Python-3.8+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![License](https://img.shields.io/badge/License-APACHE-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-A comprehensive, client-side web suite and companion desktop database editor tailored for players of **Airlines Manager: Tycoon**. The toolkit helps airline managers optimize ticket pricing to capture 100% of unsatisfied demand, configure multi-class aircraft cabin layouts, find profitable routes, and schedule 168-hour flight circuits without idle downtime.
+A high-performance, client-side web application suite tailored for players of **Airlines Manager: Tycoon**. The toolkit helps airline managers optimize ticket pricing to capture 100% of unsatisfied demand, configure multi-class aircraft cabin layouts, find profitable routes, and schedule 168-hour flight circuits without idle downtime.
 
 ---
 
@@ -16,13 +15,9 @@ A comprehensive, client-side web suite and companion desktop database editor tai
   - [1. Zero-Out Price Calculator](#1-zero-out-price-calculator)
   - [2. Seat Configuration Optimizer](#2-seat-configuration-optimizer)
   - [3. Route Finder & Circuit Builder](#3-route-finder--circuit-builder)
-  - [4. Desktop Database Editor](#4-desktop-database-editor)
 - [Formulas & Game Mechanics](#-formulas--game-mechanics)
 - [Project Structure](#-project-structure)
 - [Quick Start](#-quick-start)
-  - [Running the Web Application](#running-the-web-application)
-  - [Running the Database Editor](#running-the-database-editor)
-  - [Building the Executable](#building-the-executable)
 - [Data Customization](#-data-customization)
 - [Tech Stack](#-tech-stack)
 - [License](#-license)
@@ -67,15 +62,6 @@ A comprehensive, client-side web suite and companion desktop database editor tai
 
 ---
 
-### 4. Desktop Database Editor
-*A companion desktop tool for managing your fleet and airport dataset.*
-
-- **Python Tkinter GUI**: Standalone desktop app (`db_editor.py`) to easily view, search, add, edit, or remove aircraft and airport records.
-- **Direct JS Integration**: Directly reads and modifies `data/aircraft.js` and `data/airports.js` while maintaining JSON structure and file headers.
-- **Portable Binary**: Includes `build_editor.bat` to package the editor into a single-file executable (`AMT_Database_Editor.exe`) via PyInstaller.
-
----
-
 ## 🧮 Formulas & Game Mechanics
 
 ### Zero-Out Price Formula
@@ -101,37 +87,32 @@ $$\text{Flight Time} = \text{round}\left(\frac{\text{Distance (km)}}{\text{Cruis
 ## 📁 Project Structure
 
 ```
-HTML/
+AMT-Toolkit/
 │
-├── index.html               # Main single-page web application interface
-├── app.js                   # Application state, zero-out pricing & seat config engine
-├── route_finder.js          # Route search, great-circle distance & circuit builder
-├── styles.css               # Custom styling, dark mode accents & animations
+├── index.html          # Main single-page web application interface
+├── app.js              # Pricing calculations, seat configuration & state engine
+├── route_finder.js     # Airport database search, distance math & circuit builder
+├── styles.css          # Custom styling, dark mode theme & animations
 │
 ├── data/
-│   ├── aircraft.js          # Aircraft specifications database (JS module)
-│   └── airports.js          # Global airports dataset with IATA, coordinates, taxes
+│   ├── aircraft.js     # Aircraft specifications database
+│   └── airports.js     # Global airports dataset with IATA, coordinates & taxes
 │
-├── .gitignore               # Git ignore rules (builds, caches, local tools & drafts)
-└── README.md                # Project documentation
-
-# Local Development & Offline Utilities (Ignored in Git)
-├── db_editor.py             # Desktop GUI editor for aircraft & airport databases
-├── build_editor.bat         # Batch script to compile db_editor.py with PyInstaller
-└── Drafts/                  # UI prototypes and feature previews
+├── .gitignore          # Git ignore configuration
+├── LICENSE             # Apache 2.0 License
+└── README.md           # Project documentation
 ```
 
 ---
 
 ## ⚡ Quick Start
 
-### Running the Web Application
-No build steps or package installations are required! The web app runs completely client-side.
+No build tools, compilers, or server installations are required! The web application runs completely client-side.
 
 1. **Direct Browser Launch**:
    - Double-click `index.html` or open it with any modern web browser (Google Chrome, Microsoft Edge, Mozilla Firefox, Safari).
 
-2. **Using a Local Development Server (Optional)**:
+2. **Using a Local Static Server (Optional)**:
    ```bash
    # Using Python
    python -m http.server 8000
@@ -140,32 +121,6 @@ No build steps or package installations are required! The web app runs completel
    npx serve .
    ```
    Then navigate to `http://localhost:8000` in your browser.
-
----
-
-### Running the Database Editor
-To customize aircraft models, costs, categories, or airport fees:
-
-1. Ensure Python 3.8+ is installed.
-2. Run the script directly:
-   ```bash
-   python db_editor.py
-   ```
-
----
-
-### Building the Executable
-To package the Database Editor into a standalone `.exe`:
-
-1. Install PyInstaller:
-   ```bash
-   pip install pyinstaller
-   ```
-2. Run the build script:
-   ```cmd
-   build_editor.bat
-   ```
-3. The standalone `AMT_Database_Editor.exe` will be generated in the root directory.
 
 ---
 
@@ -214,12 +169,10 @@ To package the Database Editor into a standalone `.exe`:
 ## 🛠️ Tech Stack
 
 - **Frontend**: HTML5, CSS3, [Tailwind CSS](https://tailwindcss.com/) (v3 CDN), Vanilla JavaScript (ES6+).
-- **Desktop Utility**: Python 3, Tkinter GUI library.
-- **Packaging**: [PyInstaller](https://pyinstaller.org/).
-- **Data Formats**: Native JavaScript Objects & JSON.
+- **Data Formats**: Native JavaScript Objects & Arrays.
 
 ---
 
 ## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
+This project is open source and available under the [Apache License 2.0](LICENSE).
