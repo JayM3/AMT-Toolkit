@@ -1,4 +1,4 @@
-﻿# ✈️ AMT Toolkit — Airlines Manager Tycoon Toolkit
+# ✈️ AMT Toolkit — Airlines Manager Tycoon Toolkit
 
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/HTML5)
@@ -110,20 +110,15 @@ HTML/
 │
 ├── data/
 │   ├── aircraft.js          # Aircraft specifications database (JS module)
-│   ├── airports.js          # Global airports dataset with IATA, coordinates, taxes
-│   └── airports.json        # Raw JSON format of global airports data
+│   └── airports.js          # Global airports dataset with IATA, coordinates, taxes
 │
-├── Drafts/                  # UI prototypes, feature previews, and design drafts
-│   ├── aircraft_picker_preview.html
-│   ├── circuit_save_load_preview.html
-│   ├── planning_tools_integrated_preview.html
-│   ├── planning_tools_preview.html
-│   └── route_finder_preview.html
-│
+├── .gitignore               # Git ignore rules (builds, caches, local tools & drafts)
+└── README.md                # Project documentation
+
+# Local Development & Offline Utilities (Ignored in Git)
 ├── db_editor.py             # Desktop GUI editor for aircraft & airport databases
 ├── build_editor.bat         # Batch script to compile db_editor.py with PyInstaller
-├── .gitignore               # Git ignore rules for builds, caches, and system files
-└── README.md                # Project documentation
+└── Drafts/                  # UI prototypes and feature previews
 ```
 
 ---

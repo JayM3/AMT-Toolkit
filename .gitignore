@@ -11,6 +11,39 @@ $RECYCLE.BIN/
 .LSOverride
 ._*
 
+# Drafts & UI Previews
+Drafts/
+drafts/
+
+# Database Editor & Build Utilities
+db_editor.py
+build_editor.bat
+AMT_Database_Editor*
+build_tmp/
+*.manifest
+*.spec
+
+# Unused & Scratch Files
+scratch_aircraft.js
+scratch_*.js
+airports.json
+data/airports.json
+
+# Compiled Binaries & Standalone Executables
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Archive Files & Backups
+*.rar
+*.zip
+*.7z
+*.tar.gz
+*.iso
+*.bak
+*.backup
+
 # Python & Virtual Environments
 __pycache__/
 *.py[cod]
@@ -36,26 +69,6 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
-# PyInstaller Build Artifacts
-build_tmp/
-*.manifest
-*.spec
-
-# Compiled Binaries & Standalone Executables
-*.exe
-*.dll
-*.so
-*.dylib
-
-# Archive Files & Backups
-*.rar
-*.zip
-*.7z
-*.tar.gz
-*.iso
-*.bak
-*.backup
 
 # IDEs & Code Editors
 .vscode/
