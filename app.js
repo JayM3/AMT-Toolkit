@@ -4753,6 +4753,9 @@ function updateSavedCircuitsBadge() {
   if (countBadge) countBadge.textContent = count;
   if (rfFloatingBadge) rfFloatingBadge.textContent = count;
   if (rfHeaderBadge) rfHeaderBadge.textContent = count;
+  document.querySelectorAll('.floating_circuits_badge').forEach(el => {
+    el.textContent = count;
+  });
   if (modalCountBadge) modalCountBadge.textContent = `${count} ${count === 1 ? 'Circuit' : 'Circuits'} Saved`;
   if (modalStorageUsage) modalStorageUsage.textContent = `${count} ${count === 1 ? 'circuit' : 'circuits'}`;
 }
@@ -5499,6 +5502,10 @@ function updateAuditsBadges() {
 
   const navBadge = document.getElementById('nav_audits_badge');
   if (navBadge) navBadge.textContent = count;
+
+  document.querySelectorAll('.floating_audits_badge').forEach(el => {
+    el.textContent = count;
+  });
 
   const modalBadge = document.getElementById('modal_audits_count_badge');
   if (modalBadge) modalBadge.textContent = `${count} Audits`;

@@ -68,12 +68,6 @@
           <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse hidden"></span>
           <span>Circuit Finder</span>
         </button>
-        <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
-        <button id="nav_saved_audits" onclick="openSavedAuditsModal()" type="button" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/90 hover:bg-slate-800 text-cyan-300 hover:text-cyan-200 border border-slate-700/80 hover:border-cyan-500/50 transition shadow-sm" title="View and manage saved route audits (4-Class & Remaining Demand)">
-          <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-          <span>Route Audits</span>
-          <span id="nav_audits_badge" class="px-1.5 py-0.2 rounded-full bg-cyan-500 text-slate-950 font-bold text-[10px] font-mono-num">0</span>
-        </button>
       </nav>
       
     </div>
@@ -103,45 +97,13 @@
         </div>
 
         <!-- Right: Action Buttons -->
-        <div class="flex flex-wrap items-center gap-2 sm:gap-2.5">
+        <div class="flex items-center gap-2 sm:gap-2.5">
           
           <!-- Cargo Toggle Switch -->
           <label class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 cursor-pointer hover:bg-slate-800 transition text-xs font-medium text-slate-200 select-none">
             <input type="checkbox" id="toggle_cargo" checked class="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 bg-slate-700 border-slate-600">
             <span>Cargo</span>
           </label>
-
-          <!-- Save to Audits Library Button -->
-          <button onclick="saveZeroOutToAudit()" type="button" id="btn_zero_out_save_audit" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-700/70 text-cyan-300 hover:text-white transition text-xs font-semibold shadow-sm" title="Save current route demands, remaining and audit prices into Route Audits library">
-            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
-            </svg>
-            <span>Save as Audit</span>
-          </button>
-
-          <!-- Route Audits Library Trigger Button -->
-          <button onclick="openSavedAuditsModal()" type="button" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700/70 text-slate-300 hover:text-white transition text-xs font-medium shadow-sm" title="Browse saved route audits library">
-            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-            <span>Audits Library</span>
-          </button>
-
-          <!-- Copy All Button -->
-          <button onclick="copyAllPrices()" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700/70 text-slate-200 hover:text-white transition text-xs font-medium shadow-sm">
-            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
-            </svg>
-            <span>Copy All</span>
-          </button>
-
-          <!-- Clear Table Button -->
-          <button onclick="clearTable()" type="button" id="btn_clear_table" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/50 text-rose-300 hover:text-rose-100 transition text-xs font-medium shadow-sm active:scale-95">
-            <svg class="w-3.5 h-3.5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-            </svg>
-            <span>Clear Table</span>
-          </button>
 
         </div>
 
@@ -151,7 +113,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         
         <div class="bg-slate-900/70 border border-slate-800/90 rounded-xl p-3.5 flex flex-col justify-between">
-          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Scheduled Offer (C)</span>
+          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Scheduled Offer</span>
           <div class="text-xl font-bold text-white font-mono-num my-1" id="summary_total_capacity">0</div>
           <span class="text-[10px] text-slate-500">Seats & Cargo Units Scheduled</span>
         </div>
@@ -163,7 +125,7 @@
         </div>
 
         <div class="bg-slate-900/70 border border-emerald-500/25 bg-emerald-950/15 rounded-xl p-3.5 flex flex-col justify-between">
-          <span class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Daily Gain (Δ Rev)</span>
+          <span class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Daily Gain</span>
           <div class="text-xl font-bold text-emerald-400 font-mono-num my-1" id="summary_delta_revenue">+$0/day</div>
           <span class="text-[10px] text-emerald-500/70">Extra Profit from Zeroing Demand</span>
         </div>
@@ -179,7 +141,6 @@
           <span>Route Inputs</span>
           <span class="text-xs font-normal normal-case text-slate-400">(updates in real time as you type)</span>
         </h2>
-        <span class="text-xs text-slate-500 font-mono-num hidden sm:inline">Formula: C = D_sim − R &bull; P_target = P_audit &sdot; (1 + &frac13; &sdot; R / D_sim)</span>
       </div>
 
       <div class="space-y-2.5">
@@ -203,7 +164,7 @@
             </div>
 
             <div class="flex-1 min-w-[110px]">
-              <span class="block text-[10px] uppercase font-semibold text-cyan-400 mb-0.5">Remaining (R)</span>
+              <span class="block text-[10px] uppercase font-semibold text-cyan-400 mb-0.5">Remaining</span>
               <input type="number" id="eco_r" placeholder="e.g. 350" class="w-full px-2.5 py-1 bg-slate-900 border border-cyan-500/50 rounded-lg text-cyan-300 font-semibold font-mono-num text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none transition">
             </div>
 
@@ -219,7 +180,7 @@
           <!-- Results Pill on the Right -->
           <div class="flex items-center gap-3 border-t md:border-t-0 md:border-l border-slate-800 pt-2 md:pt-0 md:pl-4 min-w-[210px] justify-between">
             <div>
-              <div class="text-[10px] text-slate-400 uppercase">Offer (C): <span class="font-mono-num font-bold text-white" id="eco_card_c">—</span></div>
+              <div class="text-[10px] text-slate-400 uppercase">Offer: <span class="font-mono-num font-bold text-white" id="eco_card_c">—</span></div>
               <div class="text-[10px] text-emerald-400 font-mono-num" id="eco_card_deltap">—</div>
             </div>
             <div class="text-right">
@@ -253,7 +214,7 @@
             </div>
 
             <div class="flex-1 min-w-[110px]">
-              <span class="block text-[10px] uppercase font-semibold text-blue-400 mb-0.5">Remaining (R)</span>
+              <span class="block text-[10px] uppercase font-semibold text-blue-400 mb-0.5">Remaining</span>
               <input type="number" id="bus_r" placeholder="e.g. 50" class="w-full px-2.5 py-1 bg-slate-900 border border-blue-500/50 rounded-lg text-blue-300 font-semibold font-mono-num text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
             </div>
 
@@ -269,7 +230,7 @@
           <!-- Results Pill on the Right -->
           <div class="flex items-center gap-3 border-t md:border-t-0 md:border-l border-slate-800 pt-2 md:pt-0 md:pl-4 min-w-[210px] justify-between">
             <div>
-              <div class="text-[10px] text-slate-400 uppercase">Offer (C): <span class="font-mono-num font-bold text-white" id="bus_card_c">—</span></div>
+              <div class="text-[10px] text-slate-400 uppercase">Offer: <span class="font-mono-num font-bold text-white" id="bus_card_c">—</span></div>
               <div class="text-[10px] text-emerald-400 font-mono-num" id="bus_card_deltap">—</div>
             </div>
             <div class="text-right">
@@ -303,7 +264,7 @@
             </div>
 
             <div class="flex-1 min-w-[110px]">
-              <span class="block text-[10px] uppercase font-semibold text-amber-400 mb-0.5">Remaining (R)</span>
+              <span class="block text-[10px] uppercase font-semibold text-amber-400 mb-0.5">Remaining</span>
               <input type="number" id="first_r" placeholder="e.g. 18" class="w-full px-2.5 py-1 bg-slate-900 border border-amber-500/50 rounded-lg text-amber-300 font-semibold font-mono-num text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none transition">
             </div>
 
@@ -319,7 +280,7 @@
           <!-- Results Pill on the Right -->
           <div class="flex items-center gap-3 border-t md:border-t-0 md:border-l border-slate-800 pt-2 md:pt-0 md:pl-4 min-w-[210px] justify-between">
             <div>
-              <div class="text-[10px] text-slate-400 uppercase">Offer (C): <span class="font-mono-num font-bold text-white" id="first_card_c">—</span></div>
+              <div class="text-[10px] text-slate-400 uppercase">Offer: <span class="font-mono-num font-bold text-white" id="first_card_c">—</span></div>
               <div class="text-[10px] text-emerald-400 font-mono-num" id="first_card_deltap">—</div>
             </div>
             <div class="text-right">
@@ -353,7 +314,7 @@
             </div>
 
             <div class="flex-1 min-w-[110px]">
-              <span class="block text-[10px] uppercase font-semibold text-purple-400 mb-0.5">Remaining (R)</span>
+              <span class="block text-[10px] uppercase font-semibold text-purple-400 mb-0.5">Remaining</span>
               <input type="number" id="cargo_r" placeholder="e.g. 30" class="w-full px-2.5 py-1 bg-slate-900 border border-purple-500/50 rounded-lg text-purple-300 font-semibold font-mono-num text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none transition">
             </div>
 
@@ -369,7 +330,7 @@
           <!-- Results Pill on the Right -->
           <div class="flex items-center gap-3 border-t md:border-t-0 md:border-l border-slate-800 pt-2 md:pt-0 md:pl-4 min-w-[210px] justify-between">
             <div>
-              <div class="text-[10px] text-slate-400 uppercase">Offer (C): <span class="font-mono-num font-bold text-white" id="cargo_card_c">—</span></div>
+              <div class="text-[10px] text-slate-400 uppercase">Offer: <span class="font-mono-num font-bold text-white" id="cargo_card_c">—</span></div>
               <div class="text-[10px] text-emerald-400 font-mono-num" id="cargo_card_deltap">—</div>
             </div>
             <div class="text-right">
@@ -406,13 +367,13 @@
           <thead>
             <tr class="border-b border-slate-800 text-xs font-semibold uppercase tracking-wider text-slate-400 bg-slate-900/60">
               <th scope="col" class="py-3.5 px-4 sm:px-6">Class</th>
-              <th scope="col" class="py-3.5 px-3 text-right">Audit Price (P<sub>audit</sub>)</th>
-              <th scope="col" class="py-3.5 px-3 text-right">Sim Demand (D<sub>sim</sub>)</th>
-              <th scope="col" class="py-3.5 px-3 text-right">Offer (C)</th>
-              <th scope="col" class="py-3.5 px-3 text-right">Remaining (R)</th>
-              <th scope="col" class="py-3.5 px-4 text-right">Target Price (P<sub>target</sub>)</th>
-              <th scope="col" class="py-3.5 px-3 text-right">Price Change (Δ P)</th>
-              <th scope="col" class="py-3.5 px-4 text-right">Daily Impact (Δ Rev)</th>
+              <th scope="col" class="py-3.5 px-3 text-right">Audit Price</th>
+              <th scope="col" class="py-3.5 px-3 text-right">Sim Demand</th>
+              <th scope="col" class="py-3.5 px-3 text-right">Offer</th>
+              <th scope="col" class="py-3.5 px-3 text-right">Remaining</th>
+              <th scope="col" class="py-3.5 px-4 text-right">Target Price</th>
+              <th scope="col" class="py-3.5 px-3 text-right">Price Change</th>
+              <th scope="col" class="py-3.5 px-4 text-right">Daily Impact</th>
               <th scope="col" class="py-3.5 px-4 text-center">Copy</th>
             </tr>
           </thead>
@@ -531,54 +492,87 @@
       </div>
     </section>
 
-    <!-- Formula & Mechanics Guide Section -->
-    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Zero-Out Price Floating Actions Dock (Anchored Bottom-Right, follows user as they scroll) -->
+    <aside id="zo_floating_actions" aria-label="Zero-Out Quick Actions" class="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2 p-1.5 bg-slate-950/90 border border-slate-700/80 rounded-2xl shadow-2xl backdrop-blur-xl ring-1 ring-white/10 transition-all duration-200 hover:border-slate-600">
       
-      <!-- Mathematical Formula Card -->
-      <div class="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-800/80 space-y-3">
-        <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+      <!-- Copy All Prices Action -->
+      <div class="relative group">
+        <button onclick="copyAllPrices()" type="button" class="w-10 h-10 rounded-xl bg-slate-900/90 hover:bg-slate-800 active:scale-95 text-slate-300 hover:text-white border border-slate-700/80 transition flex items-center justify-center shadow-md shadow-slate-950/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" title="Copy All Prices">
+          <svg class="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
           </svg>
-          <span>Mathematical Formulation</span>
-        </h3>
-        <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 font-mono-num text-xs space-y-2 text-slate-300">
-          <div><span class="text-slate-500 font-sans">Scheduled Offer:</span> <span class="text-cyan-300 font-bold">C = D<sub>sim</sub> − R</span></div>
-          <div><span class="text-slate-500 font-sans">Target Zero-Out Price:</span></div>
-          <div class="pl-3 border-l-2 border-cyan-500/50 py-1 text-white font-semibold">
-            P<sub>target</sub> = P<sub>audit</sub> + &frac13; &sdot; P<sub>audit</sub> &sdot; (1 − C / D<sub>sim</sub>)
-          </div>
-          <div class="text-[11px] text-slate-400 pt-1">
-            &equiv; P<sub>audit</sub> &sdot; (1 + &frac13; &sdot; R / D<sub>sim</sub>)
+          <span class="sr-only">Copy All</span>
+        </button>
+        <div class="pointer-events-none absolute bottom-full right-0 mb-2.5 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-150 z-50 whitespace-nowrap">
+          <div class="bg-slate-900/95 border border-slate-700/90 text-slate-100 px-2.5 py-1.5 rounded-lg shadow-xl text-xs backdrop-blur-md">
+            <div class="font-semibold text-cyan-300 flex items-center gap-1">
+              <span>Copy All Prices</span>
+            </div>
+            <div class="text-[11px] text-slate-400">Copy all calculated target prices to clipboard</div>
           </div>
         </div>
-        <p class="text-xs text-slate-400 leading-relaxed">
-          In Airlines Manager Tycoon, price elasticity is approximately 3: every 1% price increase reduces passenger demand by ~3%. Therefore, multiplying remaining ratio <span class="font-mono-num text-cyan-300">R / D<sub>sim</sub></span> by <sup>1</sup>/<sub>3</sub> perfectly zeroes out unsatisfied demand.
-        </p>
       </div>
 
-      <!-- In-Game Usage Tips -->
-      <div class="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-800/80 space-y-3">
-        <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+      <!-- Save as Audit Action -->
+      <div class="relative group">
+        <button onclick="saveZeroOutToAudit()" id="btn_zero_out_save_audit" type="button" class="w-10 h-10 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 active:scale-95 text-emerald-300 hover:text-emerald-200 border border-emerald-700/70 transition flex items-center justify-center shadow-md shadow-emerald-950/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/50" title="Save as Audit">
+          <svg class="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
           </svg>
-          <span>Airlines Manager Pro Tips</span>
-        </h3>
-        <ul class="text-xs text-slate-300 space-y-2.5 list-disc list-inside">
-          <li>
-            <strong class="text-white">Whole Dollars:</strong> In-game ticket prices are integer amounts. The calculator automatically rounds <span class="font-mono-num text-amber-300">P<sub>target</sub></span> so you can paste it directly into your route pricing screen.
-          </li>
-          <li>
-            <strong class="text-white">Negative Remaining Demand:</strong> If <span class="font-mono-num text-cyan-300">R &lt; 0</span> (meaning you over-scheduled aircraft capacity), the price will automatically decrease to stimulate demand and fill all seats.
-          </li>
-          <li>
-            <strong class="text-white">Zero Leftover:</strong> When <span class="font-mono-num text-cyan-300">R = 0</span>, <span class="font-mono-num text-amber-300">P<sub>target</sub> = P<sub>audit</sub></span> since your current schedule exactly satisfies demand.
-          </li>
-        </ul>
+          <span class="sr-only">Save as Audit</span>
+        </button>
+        <div class="pointer-events-none absolute bottom-full right-0 mb-2.5 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-150 z-50 whitespace-nowrap">
+          <div class="bg-slate-900/95 border border-slate-700/90 text-slate-100 px-2.5 py-1.5 rounded-lg shadow-xl text-xs backdrop-blur-md">
+            <div class="font-semibold text-emerald-300 flex items-center gap-1">
+              <span>Save as Audit</span>
+            </div>
+            <div class="text-[11px] text-slate-400">Save route demands &amp; audit prices into library</div>
+          </div>
+        </div>
       </div>
 
-    </section>
+      <!-- Route Audits Action -->
+      <div class="relative group">
+        <button onclick="openSavedAuditsModal()" type="button" class="w-10 h-10 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 active:scale-95 text-cyan-300 hover:text-cyan-200 border border-cyan-700/70 transition flex items-center justify-center shadow-md shadow-cyan-950/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 relative" title="Route Audits">
+          <svg class="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <span class="floating_audits_badge absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-cyan-500 text-slate-950 rounded-full font-bold text-[10px] font-mono-num flex items-center justify-center ring-2 ring-slate-950 shadow-sm">0</span>
+          <span class="sr-only">Route Audits</span>
+        </button>
+        <div class="pointer-events-none absolute bottom-full right-0 mb-2.5 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-150 z-50 whitespace-nowrap">
+          <div class="bg-slate-900/95 border border-slate-700/90 text-slate-100 px-2.5 py-1.5 rounded-lg shadow-xl text-xs backdrop-blur-md">
+            <div class="font-semibold text-cyan-300 flex items-center gap-1">
+              <span>Route Audits</span>
+            </div>
+            <div class="text-[11px] text-slate-400">Browse &amp; load saved route audits library</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subtle Vertical Separator -->
+      <div class="h-6 w-px bg-slate-800"></div>
+
+      <!-- Clear Table Action -->
+      <div class="relative group">
+        <button onclick="clearTable()" id="btn_clear_table" type="button" class="w-10 h-10 rounded-xl bg-rose-950/80 hover:bg-rose-900 active:scale-95 text-rose-400 hover:text-rose-200 border border-rose-800/70 transition flex items-center justify-center shadow-md shadow-rose-950/50 focus:outline-none focus:ring-2 focus:ring-rose-500/50" title="Clear Table">
+          <svg class="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+          <span class="sr-only">Clear Table</span>
+        </button>
+        <div class="pointer-events-none absolute bottom-full right-0 mb-2.5 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-150 z-50 whitespace-nowrap">
+          <div class="bg-slate-900/95 border border-slate-700/90 text-slate-100 px-2.5 py-1.5 rounded-lg shadow-xl text-xs backdrop-blur-md">
+            <div class="font-semibold text-rose-300 flex items-center gap-1">
+              <span>Clear Table</span>
+            </div>
+            <div class="text-[11px] text-slate-400">Clear all inputs and reset calculations</div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
     </div><!-- End of #view_zero_out -->
 
     <!-- Seat Configurator View -->
@@ -1117,7 +1111,7 @@
             <svg class="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
             </svg>
-            <span id="saved_circuits_count_badge" class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-cyan-500 text-slate-950 rounded-full font-bold text-[10px] font-mono-num flex items-center justify-center ring-2 ring-slate-950 shadow-sm">0</span>
+            <span id="saved_circuits_count_badge" class="floating_circuits_badge absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-cyan-500 text-slate-950 rounded-full font-bold text-[10px] font-mono-num flex items-center justify-center ring-2 ring-slate-950 shadow-sm">0</span>
             <span class="sr-only">Saved Circuits</span>
           </button>
           <!-- Tooltip popping up above button -->
@@ -1127,6 +1121,26 @@
                 <span>Saved Circuits</span>
               </div>
               <div class="text-[11px] text-slate-400">Open saved circuits manager &amp; library</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Route Audits Action -->
+        <div class="relative group">
+          <button onclick="openSavedAuditsModal()" type="button" class="w-10 h-10 rounded-xl bg-slate-900/90 hover:bg-slate-800 active:scale-95 text-cyan-300 hover:text-cyan-200 border border-slate-700/80 hover:border-cyan-500/50 transition flex items-center justify-center shadow-md shadow-slate-950/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 relative" title="Route Audits">
+            <svg class="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <span class="floating_audits_badge absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-cyan-500 text-slate-950 rounded-full font-bold text-[10px] font-mono-num flex items-center justify-center ring-2 ring-slate-950 shadow-sm">0</span>
+            <span class="sr-only">Route Audits</span>
+          </button>
+          <!-- Tooltip popping up above button -->
+          <div class="pointer-events-none absolute bottom-full right-0 mb-2.5 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-150 z-50 whitespace-nowrap">
+            <div class="bg-slate-900/95 border border-slate-700/90 text-slate-100 px-2.5 py-1.5 rounded-lg shadow-xl text-xs backdrop-blur-md">
+              <div class="font-semibold text-cyan-300 flex items-center gap-1">
+                <span>Route Audits</span>
+              </div>
+              <div class="text-[11px] text-slate-400">View &amp; manage saved route audits</div>
             </div>
           </div>
         </div>
@@ -1844,7 +1858,7 @@
           <svg class="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
           </svg>
-          <span id="rf_floating_saved_circuits_count" class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-cyan-500 text-slate-950 rounded-full font-bold text-[10px] font-mono-num flex items-center justify-center ring-2 ring-slate-950 shadow-sm">0</span>
+          <span id="rf_floating_saved_circuits_count" class="floating_circuits_badge absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-cyan-500 text-slate-950 rounded-full font-bold text-[10px] font-mono-num flex items-center justify-center ring-2 ring-slate-950 shadow-sm">0</span>
           <span class="sr-only">Saved Circuits</span>
         </button>
         <!-- Tooltip popping up above button -->
@@ -1854,6 +1868,26 @@
               <span>Saved Circuits</span>
             </div>
             <div class="text-[11px] text-slate-400">Browse &amp; load saved circuits library</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Route Audits Action -->
+      <div class="relative group">
+        <button onclick="openSavedAuditsModal()" type="button" class="w-10 h-10 rounded-xl bg-slate-900/90 hover:bg-slate-800 active:scale-95 text-cyan-300 hover:text-cyan-200 border border-slate-700/80 hover:border-cyan-500/50 transition flex items-center justify-center shadow-md shadow-slate-950/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 relative" title="Route Audits">
+          <svg class="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <span class="floating_audits_badge absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-cyan-500 text-slate-950 rounded-full font-bold text-[10px] font-mono-num flex items-center justify-center ring-2 ring-slate-950 shadow-sm">0</span>
+          <span class="sr-only">Route Audits</span>
+        </button>
+        <!-- Tooltip popping up above button -->
+        <div class="pointer-events-none absolute bottom-full right-0 mb-2.5 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-150 z-50 whitespace-nowrap">
+          <div class="bg-slate-900/95 border border-slate-700/90 text-slate-100 px-2.5 py-1.5 rounded-lg shadow-xl text-xs backdrop-blur-md">
+            <div class="font-semibold text-cyan-300 flex items-center gap-1">
+              <span>Route Audits</span>
+            </div>
+            <div class="text-[11px] text-slate-400">View &amp; manage saved route audits</div>
           </div>
         </div>
       </div>
@@ -2358,6 +2392,49 @@
         </div>
 
       </section>
+
+    <!-- Circuit Finder Floating Actions Dock (Anchored Bottom-Right, follows user as they scroll) -->
+    <aside id="cf_floating_actions" aria-label="Circuit Finder Quick Actions" class="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2 p-1.5 bg-slate-950/90 border border-slate-700/80 rounded-2xl shadow-2xl backdrop-blur-xl ring-1 ring-white/10 transition-all duration-200 hover:border-slate-600">
+      
+      <!-- Saved Circuits Action -->
+      <div class="relative group">
+        <button onclick="openSavedCircuitsModal()" type="button" class="w-10 h-10 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 active:scale-95 text-cyan-300 hover:text-cyan-200 border border-cyan-700/70 transition flex items-center justify-center shadow-md shadow-cyan-950/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 relative" title="Saved Circuits">
+          <svg class="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+          </svg>
+          <span class="floating_circuits_badge absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-cyan-500 text-slate-950 rounded-full font-bold text-[10px] font-mono-num flex items-center justify-center ring-2 ring-slate-950 shadow-sm">0</span>
+          <span class="sr-only">Saved Circuits</span>
+        </button>
+        <div class="pointer-events-none absolute bottom-full right-0 mb-2.5 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-150 z-50 whitespace-nowrap">
+          <div class="bg-slate-900/95 border border-slate-700/90 text-slate-100 px-2.5 py-1.5 rounded-lg shadow-xl text-xs backdrop-blur-md">
+            <div class="font-semibold text-cyan-300 flex items-center gap-1">
+              <span>Saved Circuits</span>
+            </div>
+            <div class="text-[11px] text-slate-400">Open saved circuits manager &amp; library</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Route Audits Action -->
+      <div class="relative group">
+        <button onclick="openSavedAuditsModal()" type="button" class="w-10 h-10 rounded-xl bg-slate-900/90 hover:bg-slate-800 active:scale-95 text-cyan-300 hover:text-cyan-200 border border-slate-700/80 hover:border-cyan-500/50 transition flex items-center justify-center shadow-md shadow-slate-950/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 relative" title="Route Audits">
+          <svg class="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <span class="floating_audits_badge absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-cyan-500 text-slate-950 rounded-full font-bold text-[10px] font-mono-num flex items-center justify-center ring-2 ring-slate-950 shadow-sm">0</span>
+          <span class="sr-only">Route Audits</span>
+        </button>
+        <div class="pointer-events-none absolute bottom-full right-0 mb-2.5 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-150 z-50 whitespace-nowrap">
+          <div class="bg-slate-900/95 border border-slate-700/90 text-slate-100 px-2.5 py-1.5 rounded-lg shadow-xl text-xs backdrop-blur-md">
+            <div class="font-semibold text-cyan-300 flex items-center gap-1">
+              <span>Route Audits</span>
+            </div>
+            <div class="text-[11px] text-slate-400">View &amp; manage saved route audits</div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
 
     </div><!-- End of #view_circuit_finder -->
 

@@ -2238,6 +2238,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (rfFloatEl) rfFloatEl.textContent = count;
       const scBadge = document.getElementById('saved_circuits_count_badge');
       if (scBadge) scBadge.textContent = count;
+      document.querySelectorAll('.floating_circuits_badge').forEach(el => {
+        el.textContent = count;
+      });
       const modalCountEl = document.getElementById('saved_library_count_badge');
       if (modalCountEl) modalCountEl.textContent = `${count} Circuits`;
     }
