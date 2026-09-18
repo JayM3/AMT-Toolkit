@@ -936,16 +936,11 @@
             <span class="w-7 h-7 rounded-lg bg-cyan-950/80 border border-cyan-800/60 text-cyan-400 flex items-center justify-center text-xs shadow-inner">
               📅
             </span>
-            <div>
-              <div class="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
-                <span>In-Game Circuit Schedule Timeline</span>
-                <span id="sched_header_type_badge" class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-semibold">
-                  Detecting...
-                </span>
-              </div>
-              <div class="text-[11px] text-slate-400 font-mono-num mt-0.5" id="sched_header_aircraft_info">
-                Visual flight rotation across the 24h day or 168h week
-              </div>
+            <div class="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
+              <span>In-Game Circuit Schedule Timeline</span>
+              <span id="sched_header_type_badge" class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-semibold">
+                Detecting...
+              </span>
             </div>
           </div>
           <div class="flex items-center gap-3 self-end sm:self-center font-mono-num text-xs shrink-0">
@@ -1071,16 +1066,8 @@
             <span class="w-7 h-7 rounded-lg bg-emerald-950/80 border border-emerald-800/60 text-emerald-400 flex items-center justify-center text-xs shadow-inner">
               💰
             </span>
-            <div>
-              <div class="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
-                <span>Detailed Financial & Demand Overview</span>
-                <span id="sc_financials_header_badge" class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
-                  Zero Empty PAX Seats ($0 Lost)
-                </span>
-              </div>
-              <div class="text-[11px] text-slate-400 font-mono-num mt-0.5">
-                Comprehensive turnover, yield analysis, and per-route balance
-              </div>
+            <div class="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
+              <span>Detailed Financial & Demand Overview</span>
             </div>
           </div>
           <div class="flex items-center gap-3 self-end sm:self-center font-mono-num text-xs shrink-0">
@@ -1097,7 +1084,7 @@
         </button>
 
         <!-- Financial Overview Dropdown Body -->
-        <div id="circuit_financials_body" class="p-4 sm:p-5 border-t border-slate-800/80 space-y-4">
+        <div id="circuit_financials_body" class="p-4 sm:p-5 border-t border-slate-800/80 space-y-4 accordion-collapsed">
           <!-- Dynamically populated with KPI cards and per-route breakdown table -->
         </div>
       </section>
@@ -1181,10 +1168,6 @@
         <p class="text-xs text-slate-400">Discover compatible destinations from your hub and build optimized rotation circuits</p>
       </div>
       <div class="flex items-center gap-2 shrink-0">
-        <button onclick="rf_openSavedCircuitsModal()" type="button" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold transition border border-slate-700 flex items-center gap-1.5 shadow-sm" title="Browse saved circuits library">
-          <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
-          <span>Saved Circuits (<span id="header_saved_circuits_count">0</span>)</span>
-        </button>
         <button onclick="rf_resetAllFilters()" type="button" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium transition border border-slate-700 flex items-center gap-1.5 shadow-sm" title="Reset all filters and aircraft to default">
           <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
           <span>Reset Filters</span>
@@ -1832,6 +1815,73 @@
         </div>
       </div>
     </section>
+
+    <!-- Route Finder Floating Circuit Actions Dock (Anchored Bottom-Right, follows user as they scroll) -->
+    <aside id="rf_floating_circuit_actions" aria-label="Route Finder Circuit Quick Actions" class="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2 p-1.5 bg-slate-950/90 border border-slate-700/80 rounded-2xl shadow-2xl backdrop-blur-xl ring-1 ring-white/10 transition-all duration-200 hover:border-slate-600">
+      
+      <!-- Save Circuit Action -->
+      <div class="relative group">
+        <button onclick="rf_openSaveCircuitModal()" type="button" class="w-10 h-10 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 active:scale-95 text-emerald-300 hover:text-emerald-200 border border-emerald-700/70 transition flex items-center justify-center shadow-md shadow-emerald-950/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/50" title="Save Circuit">
+          <svg class="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+          </svg>
+          <span class="sr-only">Save Circuit</span>
+        </button>
+        <!-- Tooltip popping up above button -->
+        <div class="pointer-events-none absolute bottom-full right-0 mb-2.5 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-150 z-50 whitespace-nowrap">
+          <div class="bg-slate-900/95 border border-slate-700/90 text-slate-100 px-2.5 py-1.5 rounded-lg shadow-xl text-xs backdrop-blur-md">
+            <div class="font-semibold text-emerald-300 flex items-center gap-1">
+              <span>Save Circuit</span>
+            </div>
+            <div class="text-[11px] text-slate-400">Save current active circuit into library</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Saved Circuits Manager Action -->
+      <div class="relative group">
+        <button onclick="rf_openSavedCircuitsModal()" type="button" class="w-10 h-10 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 active:scale-95 text-cyan-300 hover:text-cyan-200 border border-cyan-700/70 transition flex items-center justify-center shadow-md shadow-cyan-950/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 relative" title="Saved Circuits">
+          <svg class="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+          </svg>
+          <span id="rf_floating_saved_circuits_count" class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-cyan-500 text-slate-950 rounded-full font-bold text-[10px] font-mono-num flex items-center justify-center ring-2 ring-slate-950 shadow-sm">0</span>
+          <span class="sr-only">Saved Circuits</span>
+        </button>
+        <!-- Tooltip popping up above button -->
+        <div class="pointer-events-none absolute bottom-full right-0 mb-2.5 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-150 z-50 whitespace-nowrap">
+          <div class="bg-slate-900/95 border border-slate-700/90 text-slate-100 px-2.5 py-1.5 rounded-lg shadow-xl text-xs backdrop-blur-md">
+            <div class="font-semibold text-cyan-300 flex items-center gap-1">
+              <span>Saved Circuits</span>
+            </div>
+            <div class="text-[11px] text-slate-400">Browse &amp; load saved circuits library</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subtle Vertical Separator -->
+      <div class="h-6 w-px bg-slate-800"></div>
+
+      <!-- Clear Circuit Action -->
+      <div class="relative group">
+        <button onclick="rf_clearCurrentCircuit()" type="button" class="w-10 h-10 rounded-xl bg-rose-950/80 hover:bg-rose-900 active:scale-95 text-rose-400 hover:text-rose-200 border border-rose-800/70 transition flex items-center justify-center shadow-md shadow-rose-950/50 focus:outline-none focus:ring-2 focus:ring-rose-500/50" title="Clear Circuit">
+          <svg class="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+          <span class="sr-only">Clear Circuit</span>
+        </button>
+        <!-- Tooltip popping up above button -->
+        <div class="pointer-events-none absolute bottom-full right-0 mb-2.5 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-150 z-50 whitespace-nowrap">
+          <div class="bg-slate-900/95 border border-slate-700/90 text-slate-100 px-2.5 py-1.5 rounded-lg shadow-xl text-xs backdrop-blur-md">
+            <div class="font-semibold text-rose-300 flex items-center gap-1">
+              <span>Clear Circuit</span>
+            </div>
+            <div class="text-[11px] text-slate-400">Clear current circuit timetable</div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
     </div><!-- End of #view_route_finder -->
 
     <!-- ===================================================================== -->

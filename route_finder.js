@@ -2231,10 +2231,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function rf_updateSavedCircuitsCount() {
       const circuits = rf_getSavedCircuitsFromStorage();
+      const count = circuits.length;
       const countEl = document.getElementById('header_saved_circuits_count');
-      if (countEl) countEl.textContent = circuits.length;
+      if (countEl) countEl.textContent = count;
+      const rfFloatEl = document.getElementById('rf_floating_saved_circuits_count');
+      if (rfFloatEl) rfFloatEl.textContent = count;
+      const scBadge = document.getElementById('saved_circuits_count_badge');
+      if (scBadge) scBadge.textContent = count;
       const modalCountEl = document.getElementById('saved_library_count_badge');
-      if (modalCountEl) modalCountEl.textContent = `${circuits.length} Circuits`;
+      if (modalCountEl) modalCountEl.textContent = `${count} Circuits`;
     }
 
     function rf_openSaveCircuitModal() {

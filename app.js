@@ -646,65 +646,124 @@ function formatHoursMinutes(hrs) {
 }
 
 /**
- * Dropdown Box Toggles (Point 5)
+ * Dropdown Box Toggles & State Persistence (Schedule, Fleet Config, Financials)
  */
-function toggleScheduleDropdown() {
-  window.isScheduleDropdownOpen = !window.isScheduleDropdownOpen;
-  const body = document.getElementById('circuit_schedule_body');
-  const btnText = document.getElementById('sched_dropdown_btn_text');
-  const chevron = document.getElementById('sched_dropdown_chevron');
+const DROPDOWN_STATE_KEY = 'am_circuit_dropdown_states_v1';
 
-  if (body) {
-    if (window.isScheduleDropdownOpen) {
-      body.classList.remove('accordion-collapsed');
-      if (btnText) btnText.textContent = 'Collapse';
-      if (chevron) chevron.classList.remove('rotate-180');
-    } else {
-      body.classList.add('accordion-collapsed');
-      if (btnText) btnText.textContent = 'Show Schedule';
-      if (chevron) chevron.classList.add('rotate-180');
+function applyDropdownStateUI(type, isOpen) {
+  if (type === 'schedule') {
+    window.isScheduleDropdownOpen = isOpen;
+    const body = document.getElementById('circuit_schedule_body');
+    const btnText = document.getElementById('sched_dropdown_btn_text');
+    const chevron = document.getElementById('sched_dropdown_chevron');
+    if (body) {
+      if (isOpen) {
+        body.classList.remove('accordion-collapsed');
+        if (btnText) btnText.textContent = 'Collapse';
+        if (chevron) chevron.classList.remove('rotate-180');
+      } else {
+        body.classList.add('accordion-collapsed');
+        if (btnText) btnText.textContent = 'Show Schedule';
+        if (chevron) chevron.classList.add('rotate-180');
+      }
+    }
+  } else if (type === 'fleetConfig') {
+    window.isFleetConfigDropdownOpen = isOpen;
+    const body = document.getElementById('circuit_fleet_config_body');
+    const btnText = document.getElementById('fleet_config_dropdown_btn_text');
+    const chevron = document.getElementById('fleet_config_dropdown_chevron');
+    if (body) {
+      if (isOpen) {
+        body.classList.remove('accordion-collapsed');
+        if (btnText) btnText.textContent = 'Collapse';
+        if (chevron) chevron.classList.remove('rotate-180');
+      } else {
+        body.classList.add('accordion-collapsed');
+        if (btnText) btnText.textContent = 'Show Configurations';
+        if (chevron) chevron.classList.add('rotate-180');
+      }
+    }
+  } else if (type === 'financials') {
+    window.isFinancialsDropdownOpen = isOpen;
+    const body = document.getElementById('circuit_financials_body');
+    const btnText = document.getElementById('financials_dropdown_btn_text');
+    const chevron = document.getElementById('financials_dropdown_chevron');
+    if (body) {
+      if (isOpen) {
+        body.classList.remove('accordion-collapsed');
+        if (btnText) btnText.textContent = 'Collapse';
+        if (chevron) chevron.classList.remove('rotate-180');
+      } else {
+        body.classList.add('accordion-collapsed');
+        if (btnText) btnText.textContent = 'Show Details';
+        if (chevron) chevron.classList.add('rotate-180');
+      }
     }
   }
+}
+window.applyDropdownStateUI = applyDropdownStateUI;
+
+function saveDropdownStatesToLocalStorage() {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const states = {
+      schedule: !!window.isScheduleDropdownOpen,
+      fleetConfig: !!window.isFleetConfigDropdownOpen,
+      financials: !!window.isFinancialsDropdownOpen
+    };
+    localStorage.setItem(DROPDOWN_STATE_KEY, JSON.stringify(states));
+  } catch (e) {
+    console.warn('Failed to save dropdown states to localStorage:', e);
+  }
+}
+window.saveDropdownStatesToLocalStorage = saveDropdownStatesToLocalStorage;
+
+function restoreDropdownStatesFromLocalStorage() {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(DROPDOWN_STATE_KEY);
+    if (!raw) {
+      // Default initial states: schedule=open, fleetConfig=open, financials=collapsed
+      applyDropdownStateUI('schedule', window.isScheduleDropdownOpen !== undefined ? !!window.isScheduleDropdownOpen : true);
+      applyDropdownStateUI('fleetConfig', window.isFleetConfigDropdownOpen !== undefined ? !!window.isFleetConfigDropdownOpen : true);
+      applyDropdownStateUI('financials', window.isFinancialsDropdownOpen !== undefined ? !!window.isFinancialsDropdownOpen : false);
+      return;
+    }
+    const states = JSON.parse(raw);
+    if (states && typeof states === 'object') {
+      if (states.schedule !== undefined) applyDropdownStateUI('schedule', !!states.schedule);
+      if (states.fleetConfig !== undefined) applyDropdownStateUI('fleetConfig', !!states.fleetConfig);
+      if (states.financials !== undefined) applyDropdownStateUI('financials', !!states.financials);
+    }
+  } catch (e) {
+    console.warn('Failed to restore dropdown states from localStorage:', e);
+  }
+}
+window.restoreDropdownStatesFromLocalStorage = restoreDropdownStatesFromLocalStorage;
+
+// Restore dropdown states immediately if DOM elements are available
+if (typeof document !== 'undefined') {
+  restoreDropdownStatesFromLocalStorage();
+}
+
+function toggleScheduleDropdown() {
+  const next = !window.isScheduleDropdownOpen;
+  applyDropdownStateUI('schedule', next);
+  saveDropdownStatesToLocalStorage();
 }
 window.toggleScheduleDropdown = toggleScheduleDropdown;
 
 function toggleFinancialsDropdown() {
-  window.isFinancialsDropdownOpen = !window.isFinancialsDropdownOpen;
-  const body = document.getElementById('circuit_financials_body');
-  const btnText = document.getElementById('financials_dropdown_btn_text');
-  const chevron = document.getElementById('financials_dropdown_chevron');
-
-  if (body) {
-    if (window.isFinancialsDropdownOpen) {
-      body.classList.remove('accordion-collapsed');
-      if (btnText) btnText.textContent = 'Collapse';
-      if (chevron) chevron.classList.remove('rotate-180');
-    } else {
-      body.classList.add('accordion-collapsed');
-      if (btnText) btnText.textContent = 'Show Details';
-      if (chevron) chevron.classList.add('rotate-180');
-    }
-  }
+  const next = !window.isFinancialsDropdownOpen;
+  applyDropdownStateUI('financials', next);
+  saveDropdownStatesToLocalStorage();
 }
 window.toggleFinancialsDropdown = toggleFinancialsDropdown;
 
 function toggleFleetConfigDropdown() {
-  window.isFleetConfigDropdownOpen = !window.isFleetConfigDropdownOpen;
-  const body = document.getElementById('circuit_fleet_config_body');
-  const btnText = document.getElementById('fleet_config_dropdown_btn_text');
-  const chevron = document.getElementById('fleet_config_dropdown_chevron');
-
-  if (body) {
-    if (window.isFleetConfigDropdownOpen) {
-      body.classList.remove('accordion-collapsed');
-      if (btnText) btnText.textContent = 'Collapse';
-      if (chevron) chevron.classList.remove('rotate-180');
-    } else {
-      body.classList.add('accordion-collapsed');
-      if (btnText) btnText.textContent = 'Show Configurations';
-      if (chevron) chevron.classList.add('rotate-180');
-    }
-  }
+  const next = !window.isFleetConfigDropdownOpen;
+  applyDropdownStateUI('fleetConfig', next);
+  saveDropdownStatesToLocalStorage();
 }
 window.toggleFleetConfigDropdown = toggleFleetConfigDropdown;
 
@@ -1044,6 +1103,7 @@ function initSeatConfigurator() {
 
   // Restore saved state or initialize default (starts empty if no saved circuit)
   const restored = restoreSeatConfigFromLocalStorage();
+  restoreDropdownStatesFromLocalStorage();
   onCircuitHubChange();
   renderCircuitAll();
 
@@ -1696,32 +1756,53 @@ function renderCircuitTable() {
         </div>
 
         <!-- Middle: 24h Repetition Flights Control (Point 1) & Demand Pills -->
-        <div class="flex flex-wrap items-center gap-2 text-[11px] font-mono-num">
-          ${stats.type === '24h' ? `
-            <div class="flex items-center gap-1 px-2 py-1 rounded-lg bg-cyan-950/80 border border-cyan-800/80 text-cyan-300">
+        ${stats.type === '24h' ? `
+          <div class="flex flex-col items-start gap-1.5 text-[11px] font-mono-num">
+            <!-- Top: Flights/Day Chooser -->
+            <div class="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-800/80 text-cyan-300">
               <span class="text-[10px] text-slate-400 font-sans font-medium">Flights/Day:</span>
               <button type="button" onclick="updateLegFlights(${idx}, -1)" class="w-4 h-4 rounded bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center text-xs font-bold" title="Decrease flights per day">-</button>
               <span class="font-bold text-white px-1">${flights}×</span>
               <button type="button" onclick="updateLegFlights(${idx}, 1)" class="w-4 h-4 rounded bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center text-xs font-bold" title="Increase flights per day">+</button>
               <span class="text-[10px] text-cyan-400 ml-1">(${totalLegTime})</span>
             </div>
-          ` : ''}
 
-          <span class="px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-cyan-300" title="Daily Demand: ${leg.demand.eco} @ $${leg.prices.eco}">
-            💺 ${leg.demand.eco} <span class="opacity-60">($${leg.prices.eco})</span>
-          </span>
-          <span class="px-2 py-0.5 rounded bg-blue-950/60 border border-blue-500/30 text-blue-300" title="Daily Demand: ${leg.demand.bus} @ $${leg.prices.bus}">
-            💼 ${leg.demand.bus} <span class="opacity-60">($${leg.prices.bus})</span>
-          </span>
-          <span class="px-2 py-0.5 rounded bg-amber-950/60 border border-amber-500/30 text-amber-300" title="Daily Demand: ${leg.demand.first} @ $${leg.prices.first}">
-            👑 ${leg.demand.first} <span class="opacity-60">($${leg.prices.first})</span>
-          </span>
-          ${leg.cargoEnabled ? `
-            <span class="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/30 text-emerald-300" title="Daily Demand: ${leg.demand.cargo}T @ $${leg.prices.cargo}/T">
-              📦 ${leg.demand.cargo}T <span class="opacity-60">($${leg.prices.cargo})</span>
+            <!-- Bottom: Demand & Price of Seats & Cargo -->
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-cyan-300" title="Daily Demand: ${leg.demand.eco} @ $${leg.prices.eco}">
+                💺 ${leg.demand.eco} <span class="opacity-60">($${leg.prices.eco})</span>
+              </span>
+              <span class="px-2 py-0.5 rounded bg-blue-950/60 border border-blue-500/30 text-blue-300" title="Daily Demand: ${leg.demand.bus} @ $${leg.prices.bus}">
+                💼 ${leg.demand.bus} <span class="opacity-60">($${leg.prices.bus})</span>
+              </span>
+              <span class="px-2 py-0.5 rounded bg-amber-950/60 border border-amber-500/30 text-amber-300" title="Daily Demand: ${leg.demand.first} @ $${leg.prices.first}">
+                👑 ${leg.demand.first} <span class="opacity-60">($${leg.prices.first})</span>
+              </span>
+              ${leg.cargoEnabled ? `
+                <span class="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/30 text-emerald-300" title="Daily Demand: ${leg.demand.cargo}T @ $${leg.prices.cargo}/T">
+                  📦 ${leg.demand.cargo}T <span class="opacity-60">($${leg.prices.cargo})</span>
+                </span>
+              ` : '<span class="text-[10px] text-slate-500 font-sans px-1">No Cargo</span>'}
+            </div>
+          </div>
+        ` : `
+          <div class="flex flex-wrap items-center gap-1.5 text-[11px] font-mono-num">
+            <span class="px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-cyan-300" title="Daily Demand: ${leg.demand.eco} @ $${leg.prices.eco}">
+              💺 ${leg.demand.eco} <span class="opacity-60">($${leg.prices.eco})</span>
             </span>
-          ` : '<span class="text-[10px] text-slate-500 font-sans">No Cargo</span>'}
-        </div>
+            <span class="px-2 py-0.5 rounded bg-blue-950/60 border border-blue-500/30 text-blue-300" title="Daily Demand: ${leg.demand.bus} @ $${leg.prices.bus}">
+              💼 ${leg.demand.bus} <span class="opacity-60">($${leg.prices.bus})</span>
+            </span>
+            <span class="px-2 py-0.5 rounded bg-amber-950/60 border border-amber-500/30 text-amber-300" title="Daily Demand: ${leg.demand.first} @ $${leg.prices.first}">
+              👑 ${leg.demand.first} <span class="opacity-60">($${leg.prices.first})</span>
+            </span>
+            ${leg.cargoEnabled ? `
+              <span class="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/30 text-emerald-300" title="Daily Demand: ${leg.demand.cargo}T @ $${leg.prices.cargo}/T">
+                📦 ${leg.demand.cargo}T <span class="opacity-60">($${leg.prices.cargo})</span>
+              </span>
+            ` : '<span class="text-[10px] text-slate-500 font-sans px-1">No Cargo</span>'}
+          </div>
+        `}
 
         <!-- Right: Action Buttons -->
         <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
@@ -1757,7 +1838,6 @@ function renderCircuitSchedule() {
   const activePlan = window.ACTIVE_FLEET_PLAN;
 
   const headerTypeBadge = document.getElementById('sched_header_type_badge');
-  const headerAircraftInfo = document.getElementById('sched_header_aircraft_info');
   const timeUsedEl = document.getElementById('sched_time_used');
   const timeTargetEl = document.getElementById('sched_time_target');
   const remainingEl = document.getElementById('sched_header_remaining');
@@ -1773,11 +1853,6 @@ function renderCircuitSchedule() {
       headerTypeBadge.textContent = 'No Routes';
       headerTypeBadge.className = 'px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700 text-[10px]';
     }
-  }
-
-  if (headerAircraftInfo && aircraft) {
-    const fleetText = activePlan ? `${activePlan.totalPlanes} Aircraft Needed` : `${aircraft.name}`;
-    headerAircraftInfo.textContent = `${aircraft.name} • ${fleetText} • ${aircraft.seats} Seats • ${aircraft.payload_ton}T Max Payload`;
   }
 
   if (timeUsedEl) timeUsedEl.textContent = stats.totalHoursFormatted;
@@ -3411,7 +3486,6 @@ if (typeof window !== 'undefined') {
 function renderFinancialOverview() {
   const container = document.getElementById('circuit_financials_body');
   const headerSummary = document.getElementById('sc_financials_header_summary');
-  const headerBadge = document.getElementById('sc_financials_header_badge');
   const plan = window.ACTIVE_FLEET_PLAN;
 
   if (!container) return;
@@ -3433,20 +3507,6 @@ function renderFinancialOverview() {
       <span>Max: <strong class="text-cyan-300">${formatCurrency(plan.fleetMaxDailyRev)}</strong>/day</span> &bull;
       <span>Unmet: <strong class="${plan.fleetDailyTotalUnmetLoss > 0 ? 'text-amber-400' : 'text-slate-400'}">${plan.fleetDailyTotalUnmetLoss > 0 ? `-${formatCurrency(plan.fleetDailyTotalUnmetLoss)}` : '$0'}</strong></span>
     `;
-  }
-
-  // Dynamic header status badge
-  if (headerBadge) {
-    if (plan.fleetDailyTotalUnmetLoss === 0 && plan.fleetDailyTotalEmptyLoss === 0) {
-      headerBadge.className = 'text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold';
-      headerBadge.textContent = '✓ 100% Demand Captured • $0 Lost';
-    } else if (plan.strategy === 'max_profit') {
-      headerBadge.className = 'text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold';
-      headerBadge.innerHTML = `💰 Max Profit Plan &bull; ${plan.circuitLoadFactor}% Load Factor &bull; Unmet: <strong class="text-amber-400 font-mono">-${formatCurrency(plan.fleetDailyTotalUnmetLoss)}</strong>`;
-    } else {
-      headerBadge.className = 'text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-medium';
-      headerBadge.innerHTML = `0 Empty PAX Seats ($0) &bull; Unmet Loss: <strong class="text-amber-400 font-mono">-${formatCurrency(plan.fleetDailyTotalUnmetLoss)}</strong>`;
-    }
   }
 
   // Class yield aggregations
@@ -4031,7 +4091,12 @@ function saveSeatConfigToLocalStorage() {
     legs: window.CIRCUIT_LEGS || [],
     currentSavedCircuitId: window.CURRENT_SAVED_CIRCUIT_ID || null,
     currentSavedCircuitName: window.CURRENT_SAVED_CIRCUIT_NAME || null,
-    fulfilledConfigs: window.CIRCUIT_FULFILLED_CONFIGS || {}
+    fulfilledConfigs: window.CIRCUIT_FULFILLED_CONFIGS || {},
+    dropdownStates: {
+      schedule: !!window.isScheduleDropdownOpen,
+      fleetConfig: !!window.isFleetConfigDropdownOpen,
+      financials: !!window.isFinancialsDropdownOpen
+    }
   };
 
   try {
@@ -4072,6 +4137,13 @@ function restoreSeatConfigFromLocalStorage() {
       window.CURRENT_SAVED_CIRCUIT_ID = data.currentSavedCircuitId;
       window.CURRENT_SAVED_CIRCUIT_NAME = data.currentSavedCircuitName || null;
       if (typeof updateActiveCircuitIndicator === 'function') updateActiveCircuitIndicator();
+    }
+    if (data.dropdownStates && typeof data.dropdownStates === 'object') {
+      if (typeof applyDropdownStateUI === 'function') {
+        if (data.dropdownStates.schedule !== undefined) applyDropdownStateUI('schedule', !!data.dropdownStates.schedule);
+        if (data.dropdownStates.fleetConfig !== undefined) applyDropdownStateUI('fleetConfig', !!data.dropdownStates.fleetConfig);
+        if (data.dropdownStates.financials !== undefined) applyDropdownStateUI('financials', !!data.dropdownStates.financials);
+      }
     }
 
     const aircraft = getActiveAircraft();
@@ -4673,10 +4745,14 @@ function updateSavedCircuitsBadge() {
   const circuits = getSavedCircuits();
   const count = circuits.length;
   const countBadge = document.getElementById('saved_circuits_count_badge');
+  const rfFloatingBadge = document.getElementById('rf_floating_saved_circuits_count');
+  const rfHeaderBadge = document.getElementById('header_saved_circuits_count');
   const modalCountBadge = document.getElementById('modal_circuits_count_badge');
   const modalStorageUsage = document.getElementById('modal_storage_usage');
 
   if (countBadge) countBadge.textContent = count;
+  if (rfFloatingBadge) rfFloatingBadge.textContent = count;
+  if (rfHeaderBadge) rfHeaderBadge.textContent = count;
   if (modalCountBadge) modalCountBadge.textContent = `${count} ${count === 1 ? 'Circuit' : 'Circuits'} Saved`;
   if (modalStorageUsage) modalStorageUsage.textContent = `${count} ${count === 1 ? 'circuit' : 'circuits'}`;
 }
