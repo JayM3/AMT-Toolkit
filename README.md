@@ -55,7 +55,7 @@ The app runs entirely in the browser with no build step or dependencies.
 - **Chrome / Brave Extension**:
   1. Open `chrome://extensions` (or `brave://extensions`) in your browser.
   2. Toggle **Developer mode** on (top-right corner).
-  3. Click **Load unpacked** and select this directory (`AMT-Toolkit`).
+  3. Click **Load unpacked** and select the `extension/` directory inside `AMT-Toolkit`.
   4. Visit [Airlines Manager](https://www.airlines-manager.com/) to see the docked sidebar, or click the extension icon (<img src="icons/icon16.png" alt="AMT Icon" width="16" height="16" style="vertical-align: middle;">) to open the native side panel!
 
 Optional local server:
@@ -84,25 +84,32 @@ The extension assets in [`icons/`](icons/) provide icons across multiple display
 
 ```
 AMT-Toolkit/
-├── manifest.json       # Chrome extension manifest (MV3)
-├── background.js       # Extension service worker (Side Panel API)
-├── content.js          # In-page docked sidebar script for Airlines Manager
-├── content.css         # Docked sidebar styling and animations
-├── sidepanel.html      # Native Chrome Side Panel page
-├── icons/              # Extension icons
+├── .github/
+│   └── workflows/
+│       └── deploy.yml
+├── css/                # Web app stylesheets
+│   ├── homepage.css    # Homepage styles & landing components
+│   └── styles.css      # Core styles & dark theme
+├── js/                 # Web app application logic
+│   ├── app.js          # Pricing & seat configuration logic
+│   ├── circuit_finder.js # Circuit solver & 168h scheduler
+│   └── route_finder.js # Airport search & route catalog
+├── data/               # Static datasets
+│   ├── aircraft.js     # Aircraft specifications (102 models)
+│   └── airports.js     # Airport database (2,650 airports)
+├── extension/          # Standalone Chrome Extension (MV3)
+│   ├── manifest.json   # Chrome extension manifest (MV3)
+│   ├── background.js   # Extension service worker (Side Panel API)
+│   ├── content.js      # In-page docked sidebar script
+│   ├── content.css     # Docked sidebar styling & animations
+│   ├── sidepanel.html  # Native Chrome Side Panel page
+│   └── icons/          # Extension icons
+├── icons/              # Web app / favicon assets
 │   ├── icon16.png      # 16×16 toolbar icon
 │   ├── icon32.png      # 32×32 high-DPI icon
 │   ├── icon48.png      # 48×48 extension management icon
-│   └── icon128.png     # 128×128 main logo & Web Store icon
-├── index.html          # Main single-page application
-├── app.js              # Pricing and seat configuration logic
-├── route_finder.js     # Airport search and route catalog
-├── circuit_finder.js   # Circuit solver and scheduler
-├── styles.css          # Core styles and theme
-├── homepage.css        # Homepage styles
-├── data/
-│   ├── aircraft.js     # Aircraft specifications (102 models)
-│   └── airports.js     # Airport database (2,650 airports)
+│   └── icon128.png     # 128×128 main logo
+├── index.html          # Main single-page web application
 └── LICENSE             # MIT License
 ```
 
