@@ -301,4 +301,34 @@ body.amt-compact-mode #zero_out_compact_container {
   background-color: #0f172a;
 }
 
+/* Compact Draggable FAB */
+body.amt-compact-mode #zo_floating_actions { display: none !important; }
+body.amt-compact-mode #zo_compact_fab { display: block !important; }
+body:not(.amt-compact-mode) #zo_compact_fab { display: none !important; }
+
+.fab-menu {
+  transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: bottom right;
+}
+.fab-menu.closed {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.85) translateY(6px);
+}
+.fab-menu.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1) translateY(0);
+}
+#zo_compact_fab.is-dragging {
+  opacity: 0.92;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#zo_compact_fab.is-dragging #zo_fab_trigger {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.7);
+}
+
+
 

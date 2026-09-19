@@ -530,6 +530,19 @@ window.setUIMode = function(mode) {
     compCont.style.setProperty('display', isCompact ? 'block' : 'none', 'important');
   }
 
+  // Manage Action Dock: Standard vs Compact Draggable FAB
+  const stdFloating = document.getElementById('zo_floating_actions');
+  const compFab = document.getElementById('zo_compact_fab');
+  if (stdFloating) {
+    stdFloating.style.setProperty('display', isCompact ? 'none' : 'flex', 'important');
+  }
+  if (compFab) {
+    compFab.style.setProperty('display', isCompact ? 'block' : 'none', 'important');
+    if (isCompact && window.initDraggableFab) {
+      window.initDraggableFab();
+    }
+  }
+
   try {
     localStorage.setItem('amt_ui_mode', mode);
   } catch (e) {}
@@ -556,6 +569,214 @@ window.setUIMode = function(mode) {
     compCargo.checked = stdCargo.checked;
   }
 };
+
+// =========================================================================
+// DRAGGABLE COLLAPSIBLE MINI FAB (SPEED DIAL) FOR COMPACT MODE
+// =========================================================================
+let fabInitialized = false;
+
+window.initDraggableFab = function() {
+  const fab = document.getElementById('zo_compact_fab');
+  const trigger = document.getElementById('zo_fab_trigger');
+  if (!fab || !trigger) return;
+
+  restoreFabPosition();
+
+  if (fabInitialized) return;
+  fabInitialized = true;
+
+  let isPointerDown = false;
+  let hasMoved = false;
+  let startX = 0;
+  let startY = 0;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  trigger.addEventListener('pointerdown', (e) => {
+    // Only respond to primary button (left click / single touch)
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    
+    isPointerDown = true;
+    hasMoved = false;
+    startX = e.clientX;
+    startY = e.clientY;
+
+    const rect = fab.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+
+    try {
+      trigger.setPointerCapture(e.pointerId);
+    } catch (_) {}
+  });
+
+  trigger.addEventListener('pointermove', (e) => {
+    if (!isPointerDown) return;
+
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    if (!hasMoved && Math.hypot(dx, dy) > 4) {
+      hasMoved = true;
+      fab.classList.add('is-dragging');
+      window.closeFabMenu();
+    }
+
+    if (hasMoved) {
+      e.preventDefault();
+      const newLeft = e.clientX - offsetX;
+      const newTop = e.clientY - offsetY;
+
+      const minX = 8;
+      const maxX = Math.max(minX, window.innerWidth - (fab.offsetWidth || 40) - 8);
+      const minY = 8;
+      const maxY = Math.max(minY, window.innerHeight - (fab.offsetHeight || 40) - 8);
+
+      const clampedX = Math.max(minX, Math.min(maxX, newLeft));
+      const clampedY = Math.max(minY, Math.min(maxY, newTop));
+
+      fab.style.left = clampedX + 'px';
+      fab.style.top = clampedY + 'px';
+      fab.style.right = 'auto';
+      fab.style.bottom = 'auto';
+
+      updateFabOrientation(clampedX, clampedY);
+    }
+  });
+
+  const handlePointerUp = (e) => {
+    if (!isPointerDown) return;
+    isPointerDown = false;
+    fab.classList.remove('is-dragging');
+
+    try {
+      trigger.releasePointerCapture(e.pointerId);
+    } catch (_) {}
+
+    if (hasMoved) {
+      try {
+        localStorage.setItem('amt_fab_pos', JSON.stringify({
+          left: fab.offsetLeft,
+          top: fab.offsetTop
+        }));
+      } catch (_) {}
+    } else {
+      window.toggleFabMenu();
+    }
+  };
+
+  trigger.addEventListener('pointerup', handlePointerUp);
+  trigger.addEventListener('pointercancel', () => {
+    isPointerDown = false;
+    fab.classList.remove('is-dragging');
+    try {
+      trigger.releasePointerCapture(e.pointerId);
+    } catch (_) {}
+  });
+
+  // Close menu when clicking outside
+  document.addEventListener('pointerdown', (e) => {
+    if (!fab.contains(e.target)) {
+      window.closeFabMenu();
+    }
+  });
+
+  // Re-clamp on window resize
+  window.addEventListener('resize', () => {
+    if (fab.style.display !== 'none') {
+      restoreFabPosition();
+    }
+  });
+};
+
+function restoreFabPosition() {
+  const fab = document.getElementById('zo_compact_fab');
+  if (!fab) return;
+
+  let pos = null;
+  try {
+    const raw = localStorage.getItem('amt_fab_pos');
+    if (raw) pos = JSON.parse(raw);
+  } catch (_) {}
+
+  const fabWidth = fab.offsetWidth || 40;
+  const fabHeight = fab.offsetHeight || 40;
+  const minX = 8;
+  const maxX = Math.max(minX, window.innerWidth - fabWidth - 8);
+  const minY = 8;
+  const maxY = Math.max(minY, window.innerHeight - fabHeight - 8);
+
+  let targetX = maxX;
+  let targetY = maxY;
+
+  if (pos && typeof pos.left === 'number' && typeof pos.top === 'number') {
+    targetX = Math.max(minX, Math.min(maxX, pos.left));
+    targetY = Math.max(minY, Math.min(maxY, pos.top));
+  }
+
+  fab.style.left = targetX + 'px';
+  fab.style.top = targetY + 'px';
+  fab.style.right = 'auto';
+  fab.style.bottom = 'auto';
+
+  updateFabOrientation(targetX, targetY);
+}
+
+function updateFabOrientation(left, top) {
+  const container = document.getElementById('zo_fab_container');
+  const menu = document.getElementById('zo_fab_menu');
+  if (!container || !menu) return;
+
+  const isNearTop = top < 220;
+  const isNearLeft = left < 160;
+
+  if (isNearTop) {
+    container.classList.remove('flex-col');
+    container.classList.add('flex-col-reverse');
+    menu.style.transformOrigin = isNearLeft ? 'top left' : 'top right';
+  } else {
+    container.classList.remove('flex-col-reverse');
+    container.classList.add('flex-col');
+    menu.style.transformOrigin = isNearLeft ? 'bottom left' : 'bottom right';
+  }
+
+  if (isNearLeft) {
+    container.classList.remove('items-end');
+    container.classList.add('items-start');
+  } else {
+    container.classList.remove('items-start');
+    container.classList.add('items-end');
+  }
+}
+
+window.toggleFabMenu = function() {
+  const menu = document.getElementById('zo_fab_menu');
+  if (!menu) return;
+  if (menu.classList.contains('open')) {
+    window.closeFabMenu();
+  } else {
+    window.openFabMenu();
+  }
+};
+
+window.openFabMenu = function() {
+  const menu = document.getElementById('zo_fab_menu');
+  const icon = document.getElementById('zo_fab_icon');
+  if (!menu) return;
+  menu.classList.remove('closed');
+  menu.classList.add('open');
+  if (icon) icon.textContent = '✕';
+};
+
+window.closeFabMenu = function() {
+  const menu = document.getElementById('zo_fab_menu');
+  const icon = document.getElementById('zo_fab_icon');
+  if (!menu) return;
+  menu.classList.remove('open');
+  menu.classList.add('closed');
+  if (icon) icon.textContent = '⚡';
+};
+
 
 // Listen for messages from extension parent window
 window.addEventListener('message', (e) => {
