@@ -793,6 +793,9 @@ window.closeFabMenu = function() {
 // AIRLINES MANAGER GAME IMPORT / EXPORT INTEGRATION
 // =========================================================================
 
+let importTimeoutId = null;
+let exportTimeoutId = null;
+
 window.importValuesFromGame = function() {
   const isInsideIframe = window.self !== window.top;
   if (!isInsideIframe) {
@@ -807,15 +810,27 @@ window.importValuesFromGame = function() {
     btn.classList.add('opacity-70', 'pointer-events-none');
   }
 
+  // Safety timeout: 4.5s
+  if (importTimeoutId) clearTimeout(importTimeoutId);
+  importTimeoutId = setTimeout(() => {
+    resetImportBtn();
+    showToast('Import timed out. Please reload the extension in chrome://extensions and refresh the Airlines Manager page.', 'warning');
+  }, 4500);
+
   try {
     window.parent.postMessage({ type: 'AMT_IMPORT_REQUEST' }, '*');
   } catch (err) {
     console.error('[AMT App] Error posting AMT_IMPORT_REQUEST:', err);
     resetImportBtn();
+    if (importTimeoutId) clearTimeout(importTimeoutId);
   }
 };
 
 function resetImportBtn() {
+  if (importTimeoutId) {
+    clearTimeout(importTimeoutId);
+    importTimeoutId = null;
+  }
   const btn = document.getElementById('btn_import_game_values');
   const btnText = document.getElementById('btn_import_text');
   if (btnText) btnText.textContent = 'Import Values';
@@ -858,6 +873,12 @@ window.exportValuesToGame = function() {
   if (btnText) btnText.textContent = 'Exporting...';
   if (btn) btn.classList.add('opacity-70', 'pointer-events-none');
 
+  if (exportTimeoutId) clearTimeout(exportTimeoutId);
+  exportTimeoutId = setTimeout(() => {
+    resetExportBtn();
+    showToast('Export timed out. Please reload the extension in chrome://extensions and refresh the Airlines Manager page.', 'warning');
+  }, 4500);
+
   try {
     window.parent.postMessage({
       type: 'AMT_EXPORT_PRICES_REQUEST',
@@ -866,10 +887,15 @@ window.exportValuesToGame = function() {
   } catch (err) {
     console.error('[AMT App] Error posting AMT_EXPORT_PRICES_REQUEST:', err);
     resetExportBtn();
+    if (exportTimeoutId) clearTimeout(exportTimeoutId);
   }
 };
 
 function resetExportBtn() {
+  if (exportTimeoutId) {
+    clearTimeout(exportTimeoutId);
+    exportTimeoutId = null;
+  }
   const btn = document.getElementById('btn_export_game_values');
   const btnText = document.getElementById('btn_export_text');
   if (btnText) btnText.textContent = 'Export Values';
