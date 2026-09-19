@@ -189,6 +189,25 @@ function updateAllCalculations() {
     }
   }
 
+  // Update Compact Summary Footer
+  const compSummaryOffer = document.getElementById('compact_summary_offer');
+  const compSummaryRev = document.getElementById('compact_summary_revenue');
+  const compSummaryGain = document.getElementById('compact_summary_gain');
+  if (compSummaryOffer) compSummaryOffer.textContent = hasAnyData ? formatNumber(totalCapacity) : '0';
+  if (compSummaryRev) compSummaryRev.textContent = hasAnyData ? formatCurrency(totalTargetRev) : '$0';
+  if (compSummaryGain) {
+    if (hasAnyData && totalDeltaRev !== 0) {
+      const sign = totalDeltaRev > 0 ? '+' : '';
+      compSummaryGain.textContent = `${sign}${formatCurrency(totalDeltaRev)}/day`;
+      compSummaryGain.className = totalDeltaRev >= 0 
+        ? 'py-2 px-2.5 text-right text-emerald-400' 
+        : 'py-2 px-2.5 text-right text-rose-400';
+    } else {
+      compSummaryGain.textContent = '+$0/day';
+      compSummaryGain.className = 'py-2 px-2.5 text-right text-slate-400';
+    }
+  }
+
   saveToLocalStorage();
 }
 
@@ -197,16 +216,19 @@ function updateClassUI(classId, calc, isVisible) {
   const rowEl = document.getElementById(`row_${classId}`);
   const cardEl = document.getElementById(`card_${classId}`);
   const compactRowEl = document.getElementById(`compact_row_${classId}`);
+  const compResRow = document.getElementById(`compact_res_row_${classId}`);
 
   if (!isVisible) {
     if (rowEl) rowEl.classList.add('hidden');
     if (cardEl) cardEl.classList.add('opacity-40', 'pointer-events-none');
     if (compactRowEl) compactRowEl.classList.add('hidden');
+    if (compResRow) compResRow.classList.add('hidden');
     return;
   } else {
     if (rowEl) rowEl.classList.remove('hidden');
     if (cardEl) cardEl.classList.remove('opacity-40', 'pointer-events-none');
     if (compactRowEl) compactRowEl.classList.remove('hidden');
+    if (compResRow) compResRow.classList.remove('hidden');
   }
 
   // Sync Compact Inputs
@@ -220,13 +242,56 @@ function updateClassUI(classId, calc, isVisible) {
   if (cDSim && stdDSim && cDSim.value !== stdDSim.value) cDSim.value = stdDSim.value;
   if (cR && stdR && cR.value !== stdR.value) cR.value = stdR.value;
 
-  // Update Compact Target Price
+  // Update Compact Target Price in Input Table
   const compactTargetEl = document.getElementById(`compact_${classId}_target`);
   if (compactTargetEl) {
     if (calc && calc.hasData) {
       compactTargetEl.textContent = formatCurrency(calc.pTargetRounded);
     } else {
       compactTargetEl.textContent = '$—';
+    }
+  }
+
+  // Update Compact Results Table Elements
+  const compResC = document.getElementById(`compact_res_${classId}_c`);
+  const compResTarget = document.getElementById(`compact_res_${classId}_target`);
+  const compResDeltaP = document.getElementById(`compact_res_${classId}_deltap`);
+  const compResGain = document.getElementById(`compact_res_${classId}_gain`);
+
+  if (compResC) {
+    const rInput = document.getElementById(`${classId}_r`);
+    compResC.textContent = calc && (!isNaN(calc.c) && (calc.dSim > 0 || calc.r > 0) && rInput && rInput.value.trim() !== '') ? formatNumber(calc.c) : '—';
+  }
+
+  if (compResTarget) {
+    compResTarget.textContent = calc && calc.hasData ? formatCurrency(calc.pTargetRounded) : '—';
+  }
+
+  if (compResDeltaP) {
+    if (calc && calc.hasData) {
+      const sign = calc.deltaP > 0 ? '+' : '';
+      compResDeltaP.textContent = `${sign}${formatCurrency(calc.deltaP)}`;
+      compResDeltaP.className = calc.deltaP > 0 
+        ? 'py-1.5 px-2 text-right text-[10px] text-emerald-400 font-mono-num font-semibold' 
+        : calc.deltaP < 0 
+          ? 'py-1.5 px-2 text-right text-[10px] text-rose-400 font-mono-num font-semibold' 
+          : 'py-1.5 px-2 text-right text-[10px] text-slate-400 font-mono-num';
+    } else {
+      compResDeltaP.textContent = '—';
+      compResDeltaP.className = 'py-1.5 px-2 text-right text-[10px] text-slate-500 font-mono-num';
+    }
+  }
+
+  if (compResGain) {
+    if (calc && calc.hasData) {
+      const sign = calc.deltaRevenue > 0 ? '+' : '';
+      compResGain.textContent = `${sign}${formatCurrency(calc.deltaRevenue)}`;
+      compResGain.className = calc.deltaRevenue >= 0 
+        ? 'py-1.5 px-2.5 text-right font-semibold text-emerald-400 font-mono-num' 
+        : 'py-1.5 px-2.5 text-right font-semibold text-rose-400 font-mono-num';
+    } else {
+      compResGain.textContent = '—';
+      compResGain.className = 'py-1.5 px-2.5 text-right font-semibold text-slate-500 font-mono-num';
     }
   }
 
