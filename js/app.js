@@ -1173,24 +1173,24 @@ function saveToLocalStorage() {
   const data = {
     cargoEnabled: state.cargoEnabled,
     eco: {
-      dSim: document.getElementById('eco_dsim')?.value || '',
-      r: document.getElementById('eco_r')?.value || '',
-      pAudit: document.getElementById('eco_paudit')?.value || ''
+      dSim: document.getElementById('eco_dsim')?.value || document.getElementById('compact_eco_dsim')?.value || '',
+      r: document.getElementById('eco_r')?.value || document.getElementById('compact_eco_r')?.value || '',
+      pAudit: document.getElementById('eco_paudit')?.value || document.getElementById('compact_eco_paudit')?.value || ''
     },
     bus: {
-      dSim: document.getElementById('bus_dsim')?.value || '',
-      r: document.getElementById('bus_r')?.value || '',
-      pAudit: document.getElementById('bus_paudit')?.value || ''
+      dSim: document.getElementById('bus_dsim')?.value || document.getElementById('compact_bus_dsim')?.value || '',
+      r: document.getElementById('bus_r')?.value || document.getElementById('compact_bus_r')?.value || '',
+      pAudit: document.getElementById('bus_paudit')?.value || document.getElementById('compact_bus_paudit')?.value || ''
     },
     first: {
-      dSim: document.getElementById('first_dsim')?.value || '',
-      r: document.getElementById('first_r')?.value || '',
-      pAudit: document.getElementById('first_paudit')?.value || ''
+      dSim: document.getElementById('first_dsim')?.value || document.getElementById('compact_first_dsim')?.value || '',
+      r: document.getElementById('first_r')?.value || document.getElementById('compact_first_r')?.value || '',
+      pAudit: document.getElementById('first_paudit')?.value || document.getElementById('compact_first_paudit')?.value || ''
     },
     cargo: {
-      dSim: document.getElementById('cargo_dsim')?.value || '',
-      r: document.getElementById('cargo_r')?.value || '',
-      pAudit: document.getElementById('cargo_paudit')?.value || ''
+      dSim: document.getElementById('cargo_dsim')?.value || document.getElementById('compact_cargo_dsim')?.value || '',
+      r: document.getElementById('cargo_r')?.value || document.getElementById('compact_cargo_r')?.value || '',
+      pAudit: document.getElementById('cargo_paudit')?.value || document.getElementById('compact_cargo_paudit')?.value || ''
     }
   };
 
@@ -1198,7 +1198,7 @@ function saveToLocalStorage() {
     const d = data[cls.id]?.dSim;
     const r = data[cls.id]?.r;
     const p = data[cls.id]?.pAudit;
-    return (d && d.trim() !== '') || (r && r.trim() !== '') || (p && p.trim() !== '');
+    return (d && String(d).trim() !== '') || (r && String(r).trim() !== '') || (p && String(p).trim() !== '');
   });
 
   if (!hasData) {
@@ -1222,6 +1222,8 @@ function restoreFromLocalStorage() {
       state.cargoEnabled = data.cargoEnabled;
       const cargoCb = document.getElementById('toggle_cargo');
       if (cargoCb) cargoCb.checked = data.cargoEnabled;
+      const compCargoCb = document.getElementById('compact_toggle_cargo');
+      if (compCargoCb) compCargoCb.checked = data.cargoEnabled;
     }
 
     CLASSES.forEach(cls => {
@@ -1232,6 +1234,19 @@ function restoreFromLocalStorage() {
         if (dSim && data[cls.id].dSim !== undefined) dSim.value = data[cls.id].dSim;
         if (r && data[cls.id].r !== undefined) r.value = data[cls.id].r;
         if (pAudit && data[cls.id].pAudit !== undefined) pAudit.value = data[cls.id].pAudit;
+
+        const cDSim = document.getElementById(`compact_${cls.id}_dsim`);
+        const cR = document.getElementById(`compact_${cls.id}_r`);
+        const cPAudit = document.getElementById(`compact_${cls.id}_paudit`);
+        if (cDSim && data[cls.id].dSim !== undefined) cDSim.value = data[cls.id].dSim;
+        if (cR && data[cls.id].r !== undefined) cR.value = data[cls.id].r;
+        if (cPAudit && data[cls.id].pAudit !== undefined) cPAudit.value = data[cls.id].pAudit;
+
+        if (state[cls.id]) {
+          if (data[cls.id].dSim !== undefined) state[cls.id].dSim = data[cls.id].dSim;
+          if (data[cls.id].r !== undefined) state[cls.id].r = data[cls.id].r;
+          if (data[cls.id].pAudit !== undefined) state[cls.id].pAudit = data[cls.id].pAudit;
+        }
       }
     });
 
@@ -1734,7 +1749,7 @@ window.updateGlobeHubDisplay = updateGlobeHubDisplay;
 /**
  * Switch top navigation tabs
  */
-function switchTab(tabId) {
+function switchTab(tabId, pushHistory = true) {
   const isSidebar = window.isSidebarMode && window.isSidebarMode();
   if (isSidebar && tabId === 'home') {
     tabId = 'zero-out';
@@ -1804,7 +1819,7 @@ function switchTab(tabId) {
 
   if (tabId === 'home') {
     if (isSidebar) {
-      switchTab('zero-out');
+      switchTab('zero-out', pushHistory);
       return;
     }
     if (navHome) {
@@ -1845,11 +1860,18 @@ function switchTab(tabId) {
     }
   }
 
-  // Update URL hash only when NOT running inside an iframe/sidebar to prevent trapping browser history
+  // Update URL hash and history
   if (!isSidebar && window.location) {
-    const targetHash = '#' + (tabId === 'home' || tabId === 'circuit-finder' || tabId === 'route-finder' || tabId === 'seat-config' ? tabId : 'zero-out');
-    if (window.history && window.history.replaceState) {
-      window.history.replaceState(null, '', targetHash);
+    const validTabs = ['home', 'circuit-finder', 'route-finder', 'seat-config', 'zero-out'];
+    const currentTab = validTabs.includes(tabId) ? tabId : 'zero-out';
+    const targetHash = '#' + currentTab;
+
+    if (pushHistory && window.history && window.history.pushState) {
+      if (window.location.hash !== targetHash) {
+        window.history.pushState({ tabId: currentTab }, '', targetHash);
+      }
+    } else if (window.history && window.history.replaceState) {
+      window.history.replaceState({ tabId: currentTab }, '', targetHash);
     } else if (window.location.hash !== targetHash) {
       window.location.hash = targetHash;
     }
@@ -1915,7 +1937,7 @@ function initSeatConfigurator() {
   // Restore saved state or initialize default (starts empty if no saved circuit)
   const restored = restoreSeatConfigFromLocalStorage();
   restoreDropdownStatesFromLocalStorage();
-  onCircuitHubChange();
+  onCircuitHubChange(restored);
   renderCircuitAll();
 
   if (typeof updateSavedCircuitsBadge === 'function') updateSavedCircuitsBadge();
@@ -1932,9 +1954,14 @@ document.addEventListener('DOMContentLoaded', () => {
     updateAllCalculations();
   }
 
-  const zeroOutInputs = document.querySelectorAll('#view_zero_out input');
+  const zeroOutInputs = document.querySelectorAll('#view_zero_out input, #view_zero_out select');
   zeroOutInputs.forEach(input => {
     input.addEventListener('input', () => {
+      if (typeof updateAllCalculations === 'function') {
+        updateAllCalculations();
+      }
+    });
+    input.addEventListener('change', () => {
       if (typeof updateAllCalculations === 'function') {
         updateAllCalculations();
       }
@@ -1945,8 +1972,24 @@ document.addEventListener('DOMContentLoaded', () => {
   if (cargoToggle && typeof toggleCargo === 'function') {
     cargoToggle.addEventListener('change', toggleCargo);
   }
+  const compCargoToggle = document.getElementById('compact_toggle_cargo');
+  if (compCargoToggle && typeof toggleCargo === 'function') {
+    compCargoToggle.addEventListener('change', (e) => toggleCargo(e.target.checked));
+  }
 
   initSeatConfigurator();
+
+  // Attach reactive auto-save listeners on all Seat Configurator inputs & selects
+  const scInputs = document.querySelectorAll('#view_seat_config input, #view_seat_config select');
+  scInputs.forEach(input => {
+    input.addEventListener('input', () => {
+      saveSeatConfigToLocalStorage();
+    });
+    input.addEventListener('change', () => {
+      saveSeatConfigToLocalStorage();
+    });
+  });
+
   if (typeof updateAuditsBadges === 'function') {
     updateAuditsBadges();
   }
@@ -1978,13 +2021,22 @@ document.addEventListener('DOMContentLoaded', () => {
             ? 'zero-out'
             : (hash === '#home' ? 'home' : (savedTab || 'home')))));
   }
-  switchTab(initialTab);
+  switchTab(initialTab, false);
+
+  // Popstate listener for browser Back and Forward buttons
+  window.addEventListener('popstate', (e) => {
+    if (window.isSidebarMode && window.isSidebarMode()) return;
+    const tabId = (e.state && e.state.tabId) || (window.location.hash || '').replace('#', '') || 'home';
+    if (['home', 'zero-out', 'seat-config', 'route-finder', 'circuit-finder'].includes(tabId)) {
+      switchTab(tabId, false);
+    }
+  });
 
   window.addEventListener('hashchange', () => {
     if (window.isSidebarMode && window.isSidebarMode()) return;
     const rawHash = (window.location.hash || '').replace('#', '');
     if (['home', 'zero-out', 'seat-config', 'route-finder', 'circuit-finder'].includes(rawHash)) {
-      switchTab(rawHash);
+      switchTab(rawHash, false);
     }
   });
 
@@ -1994,7 +2046,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const latestTab = localStorage.getItem('am_sidebar_active_tab');
         if (latestTab && latestTab !== 'home' && ['zero-out', 'seat-config', 'route-finder', 'circuit-finder'].includes(latestTab)) {
-          switchTab(latestTab);
+          switchTab(latestTab, false);
         }
       } catch (e) {}
     }
@@ -2005,7 +2057,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'am_sidebar_active_tab' && e.newValue) {
       if (window.isSidebarMode && window.isSidebarMode()) {
         if (['zero-out', 'seat-config', 'route-finder', 'circuit-finder'].includes(e.newValue)) {
-          switchTab(e.newValue);
+          switchTab(e.newValue, false);
         }
       }
     }
@@ -2013,7 +2065,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Hub change handler
-function onCircuitHubChange() {
+function onCircuitHubChange(isRestoring = false) {
   const hubInput = document.getElementById('sc_circuit_hub');
   const hubCode = hubInput?.value?.trim().toUpperCase() || 'OSL';
   window.CIRCUIT_HUB = hubCode;
@@ -2036,7 +2088,7 @@ function onCircuitHubChange() {
     updateGlobeHubDisplay();
   }
 
-  onLegDestinationChange();
+  onLegDestinationChange(isRestoring);
   renderCircuitAll();
   saveSeatConfigToLocalStorage();
 }
@@ -2101,7 +2153,7 @@ function updateAircraftBadges(aircraft) {
 }
 
 // Leg Destination Input Change (Enhanced with Saved Route Audits Auto-fill)
-function onLegDestinationChange() {
+function onLegDestinationChange(preserveExistingValues = false) {
   const hubCode = document.getElementById('sc_circuit_hub')?.value || window.CIRCUIT_HUB || 'OSL';
   const dstCode = (document.getElementById('sc_leg_dst')?.value || '').trim().toUpperCase();
 
@@ -2159,45 +2211,47 @@ function onLegDestinationChange() {
     infoEl.className = 'text-[11px] text-slate-400 truncate';
   }
 
-  if (!manualOverride) {
-    if (hubAirport && dstAirport && hubAirport.iata !== dstAirport.iata) {
-      const dist = calculateHaversineDistance(hubAirport.lat, hubAirport.lon, dstAirport.lat, dstAirport.lon);
-      if (distInput) distInput.value = dist;
-    } else {
-      if (distInput) distInput.value = '';
+  if (!preserveExistingValues) {
+    if (!manualOverride) {
+      if (hubAirport && dstAirport && hubAirport.iata !== dstAirport.iata) {
+        const dist = calculateHaversineDistance(hubAirport.lat, hubAirport.lon, dstAirport.lat, dstAirport.lon);
+        if (distInput) distInput.value = dist;
+      } else {
+        if (distInput) distInput.value = '';
+      }
+    }
+
+    // Auto-populate demands and prices if audit found
+    if (auditMatch) {
+      const pEco = document.getElementById('sc_leg_price_eco');
+      const dEco = document.getElementById('sc_leg_demand_eco');
+      const pBus = document.getElementById('sc_leg_price_bus');
+      const dBus = document.getElementById('sc_leg_demand_bus');
+      const pFirst = document.getElementById('sc_leg_price_first');
+      const dFirst = document.getElementById('sc_leg_demand_first');
+      const pCargo = document.getElementById('sc_leg_price_cargo');
+      const dCargo = document.getElementById('sc_leg_demand_cargo');
+
+      if (pEco && auditMatch.eco) pEco.value = auditMatch.eco.price ?? auditMatch.eco.pAudit ?? '';
+      if (pBus && auditMatch.bus) pBus.value = auditMatch.bus.price ?? auditMatch.bus.pAudit ?? '';
+      if (pFirst && auditMatch.first) pFirst.value = auditMatch.first.price ?? auditMatch.first.pAudit ?? '';
+      if (pCargo && auditMatch.cargo) pCargo.value = auditMatch.cargo.price ?? auditMatch.cargo.pAudit ?? '';
+
+      if (mode === 'remaining') {
+        if (dEco && auditMatch.eco) dEco.value = auditMatch.eco.remaining ?? auditMatch.eco.r ?? 0;
+        if (dBus && auditMatch.bus) dBus.value = auditMatch.bus.remaining ?? auditMatch.bus.r ?? 0;
+        if (dFirst && auditMatch.first) dFirst.value = auditMatch.first.remaining ?? auditMatch.first.r ?? 0;
+        if (dCargo && auditMatch.cargo) dCargo.value = auditMatch.cargo.remaining ?? auditMatch.cargo.r ?? 0;
+      } else {
+        if (dEco && auditMatch.eco) dEco.value = auditMatch.eco.demand ?? auditMatch.eco.dSim ?? '';
+        if (dBus && auditMatch.bus) dBus.value = auditMatch.bus.demand ?? auditMatch.bus.dSim ?? '';
+        if (dFirst && auditMatch.first) dFirst.value = auditMatch.first.demand ?? auditMatch.first.dSim ?? '';
+        if (dCargo && auditMatch.cargo) dCargo.value = auditMatch.cargo.demand ?? auditMatch.cargo.dSim ?? '';
+      }
     }
   }
 
-  // Auto-populate demands and prices if audit found
-  if (auditMatch) {
-    const pEco = document.getElementById('sc_leg_price_eco');
-    const dEco = document.getElementById('sc_leg_demand_eco');
-    const pBus = document.getElementById('sc_leg_price_bus');
-    const dBus = document.getElementById('sc_leg_demand_bus');
-    const pFirst = document.getElementById('sc_leg_price_first');
-    const dFirst = document.getElementById('sc_leg_demand_first');
-    const pCargo = document.getElementById('sc_leg_price_cargo');
-    const dCargo = document.getElementById('sc_leg_demand_cargo');
-
-    if (pEco && auditMatch.eco) pEco.value = auditMatch.eco.price ?? auditMatch.eco.pAudit ?? '';
-    if (pBus && auditMatch.bus) pBus.value = auditMatch.bus.price ?? auditMatch.bus.pAudit ?? '';
-    if (pFirst && auditMatch.first) pFirst.value = auditMatch.first.price ?? auditMatch.first.pAudit ?? '';
-    if (pCargo && auditMatch.cargo) pCargo.value = auditMatch.cargo.price ?? auditMatch.cargo.pAudit ?? '';
-
-    if (mode === 'remaining') {
-      if (dEco && auditMatch.eco) dEco.value = auditMatch.eco.remaining ?? auditMatch.eco.r ?? 0;
-      if (dBus && auditMatch.bus) dBus.value = auditMatch.bus.remaining ?? auditMatch.bus.r ?? 0;
-      if (dFirst && auditMatch.first) dFirst.value = auditMatch.first.remaining ?? auditMatch.first.r ?? 0;
-      if (dCargo && auditMatch.cargo) dCargo.value = auditMatch.cargo.remaining ?? auditMatch.cargo.r ?? 0;
-    } else {
-      if (dEco && auditMatch.eco) dEco.value = auditMatch.eco.demand ?? auditMatch.eco.dSim ?? '';
-      if (dBus && auditMatch.bus) dBus.value = auditMatch.bus.demand ?? auditMatch.bus.dSim ?? '';
-      if (dFirst && auditMatch.first) dFirst.value = auditMatch.first.demand ?? auditMatch.first.dSim ?? '';
-      if (dCargo && auditMatch.cargo) dCargo.value = auditMatch.cargo.demand ?? auditMatch.cargo.dSim ?? '';
-    }
-  }
-
-  onLegDistanceChange();
+  onLegDistanceChange(preserveExistingValues);
 }
 window.onLegDestinationChange = onLegDestinationChange;
 
@@ -2225,7 +2279,7 @@ function toggleLegDistanceOverride() {
 }
 window.toggleLegDistanceOverride = toggleLegDistanceOverride;
 
-function onLegDistanceChange() {
+function onLegDistanceChange(preserveDuration = false) {
   const dist = parseFloat(document.getElementById('sc_leg_dist_km')?.value) || 0;
   const aircraft = getActiveAircraft();
   const speed = aircraft?.speed_kmh || 800;
@@ -2250,7 +2304,7 @@ function onLegDistanceChange() {
   }
 
   const editingLegId = document.getElementById('sc_editing_leg_id')?.value;
-  if (!editingLegId) {
+  if (!editingLegId && !preserveDuration) {
     const flightHours = calculateFlightTimeHours(dist, speed);
     const h = Math.floor(flightHours);
     const m = Math.round((flightHours - h) * 60);
@@ -2406,7 +2460,8 @@ function editLeg(id) {
   document.getElementById('sc_leg_demand_cargo').value = leg.demand.cargo || '';
   document.getElementById('sc_leg_price_cargo').value = leg.prices.cargo || '';
 
-  onLegDestinationChange();
+  onLegDestinationChange(true);
+  saveSeatConfigToLocalStorage();
   document.getElementById('sc_leg_form_title')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 window.editLeg = editLeg;
@@ -2430,6 +2485,7 @@ function cancelLegEdit() {
   document.getElementById('sc_leg_demand_cargo').value = '';
   document.getElementById('sc_leg_price_cargo').value = '';
   onLegDestinationChange();
+  saveSeatConfigToLocalStorage();
 }
 window.cancelLegEdit = cancelLegEdit;
 
@@ -2443,6 +2499,7 @@ function clearLegForm() {
   }
   const dstInput = document.getElementById('sc_leg_dst');
   if (dstInput) dstInput.focus();
+  saveSeatConfigToLocalStorage();
   if (typeof showToast === 'function') {
     showToast('Route form fields cleared', 'info');
   }
@@ -4947,12 +5004,32 @@ window.resetCircuitConfig = resetCircuitConfig;
 function saveSeatConfigToLocalStorage() {
   if (isResettingCircuit || typeof localStorage === 'undefined') return;
 
+  const legForm = {
+    dst: document.getElementById('sc_leg_dst')?.value || '',
+    distOverride: !!document.getElementById('sc_leg_dist_override')?.checked,
+    distKm: document.getElementById('sc_leg_dist_km')?.value || '',
+    durHours: document.getElementById('sc_leg_dur_hours')?.value || '',
+    durMins: document.getElementById('sc_leg_dur_mins')?.value || '',
+    cargoEnabled: document.getElementById('sc_leg_cargo_enabled')?.checked !== false,
+    demandEco: document.getElementById('sc_leg_demand_eco')?.value || '',
+    priceEco: document.getElementById('sc_leg_price_eco')?.value || '',
+    demandBus: document.getElementById('sc_leg_demand_bus')?.value || '',
+    priceBus: document.getElementById('sc_leg_price_bus')?.value || '',
+    demandFirst: document.getElementById('sc_leg_demand_first')?.value || '',
+    priceFirst: document.getElementById('sc_leg_price_first')?.value || '',
+    demandCargo: document.getElementById('sc_leg_demand_cargo')?.value || '',
+    priceCargo: document.getElementById('sc_leg_price_cargo')?.value || '',
+    editingLegId: document.getElementById('sc_editing_leg_id')?.value || '',
+    auditMode: window.CURRENT_LEG_AUDIT_MODE || 'audited'
+  };
+
   const data = {
     hub: document.getElementById('sc_circuit_hub')?.value || window.CIRCUIT_HUB || 'OSL',
     acSelect: document.getElementById('sc_aircraft_select')?.value || '',
     strategy: window.CIRCUIT_STRATEGY || 'max_profit',
     strategyManual: !!window.CIRCUIT_STRATEGY_MANUAL,
     legs: window.CIRCUIT_LEGS || [],
+    legForm: legForm,
     currentSavedCircuitId: window.CURRENT_SAVED_CIRCUIT_ID || null,
     currentSavedCircuitName: window.CURRENT_SAVED_CIRCUIT_NAME || null,
     fulfilledConfigs: window.CIRCUIT_FULFILLED_CONFIGS || {},
@@ -5007,6 +5084,66 @@ function restoreSeatConfigFromLocalStorage() {
         if (data.dropdownStates.schedule !== undefined) applyDropdownStateUI('schedule', !!data.dropdownStates.schedule);
         if (data.dropdownStates.fleetConfig !== undefined) applyDropdownStateUI('fleetConfig', !!data.dropdownStates.fleetConfig);
         if (data.dropdownStates.financials !== undefined) applyDropdownStateUI('financials', !!data.dropdownStates.financials);
+      }
+    }
+
+    // Restore active route form inputs
+    if (data.legForm && typeof data.legForm === 'object') {
+      const lf = data.legForm;
+      if (lf.auditMode) window.CURRENT_LEG_AUDIT_MODE = lf.auditMode;
+
+      const dstInput = document.getElementById('sc_leg_dst');
+      if (dstInput && lf.dst !== undefined) dstInput.value = lf.dst;
+
+      const distOverrideCb = document.getElementById('sc_leg_dist_override');
+      const distInput = document.getElementById('sc_leg_dist_km');
+      if (distOverrideCb && lf.distOverride !== undefined) {
+        distOverrideCb.checked = !!lf.distOverride;
+        if (distInput) distInput.readOnly = !lf.distOverride;
+      }
+      if (distInput && lf.distKm !== undefined) distInput.value = lf.distKm;
+
+      const durH = document.getElementById('sc_leg_dur_hours');
+      const durM = document.getElementById('sc_leg_dur_mins');
+      if (durH && lf.durHours !== undefined) durH.value = lf.durHours;
+      if (durM && lf.durMins !== undefined) durM.value = lf.durMins;
+
+      const cargoCb = document.getElementById('sc_leg_cargo_enabled');
+      if (cargoCb && lf.cargoEnabled !== undefined) {
+        cargoCb.checked = !!lf.cargoEnabled;
+        if (typeof toggleLegCargo === 'function') toggleLegCargo();
+      }
+
+      const pEco = document.getElementById('sc_leg_price_eco');
+      const dEco = document.getElementById('sc_leg_demand_eco');
+      const pBus = document.getElementById('sc_leg_price_bus');
+      const dBus = document.getElementById('sc_leg_demand_bus');
+      const pFirst = document.getElementById('sc_leg_price_first');
+      const dFirst = document.getElementById('sc_leg_demand_first');
+      const pCargo = document.getElementById('sc_leg_price_cargo');
+      const dCargo = document.getElementById('sc_leg_demand_cargo');
+
+      if (pEco && lf.priceEco !== undefined) pEco.value = lf.priceEco;
+      if (dEco && lf.demandEco !== undefined) dEco.value = lf.demandEco;
+      if (pBus && lf.priceBus !== undefined) pBus.value = lf.priceBus;
+      if (dBus && lf.demandBus !== undefined) dBus.value = lf.demandBus;
+      if (pFirst && lf.priceFirst !== undefined) pFirst.value = lf.priceFirst;
+      if (dFirst && lf.demandFirst !== undefined) dFirst.value = lf.demandFirst;
+      if (pCargo && lf.priceCargo !== undefined) pCargo.value = lf.priceCargo;
+      if (dCargo && lf.demandCargo !== undefined) dCargo.value = lf.demandCargo;
+
+      if (lf.editingLegId) {
+        const editInput = document.getElementById('sc_editing_leg_id');
+        if (editInput) editInput.value = lf.editingLegId;
+        const leg = (window.CIRCUIT_LEGS || []).find(l => l.id === lf.editingLegId);
+        if (leg) {
+          const formTitle = document.getElementById('sc_leg_form_title');
+          const btnLabel = document.getElementById('sc_add_leg_btn_label');
+          const cancelBtn = document.getElementById('sc_cancel_edit_btn');
+          if (formTitle) formTitle.textContent = `✏️ Edit Route: ${leg.hub} ✈ ${leg.dst}`;
+          if (btnLabel) btnLabel.textContent = 'Update Route in Circuit';
+          if (cancelBtn) cancelBtn.classList.remove('hidden');
+        }
       }
     }
 

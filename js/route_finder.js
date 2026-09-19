@@ -459,6 +459,17 @@ function initRouteFinder() {
     rf_updateTableHeaderSortIndicators();
     rf_refreshAll();
   }
+
+  // Reactive auto-save listeners for all Route Finder inputs & selects
+  const rfInputs = document.querySelectorAll('#view_route_finder input, #view_route_finder select');
+  rfInputs.forEach(input => {
+    input.addEventListener('input', () => {
+      rf_saveStateToLocalStorage();
+    });
+    input.addEventListener('change', () => {
+      rf_saveStateToLocalStorage();
+    });
+  });
 }
 window.initRouteFinder = initRouteFinder;
 document.addEventListener('DOMContentLoaded', () => {
@@ -1149,6 +1160,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (input) input.value = '';
       document.getElementById('rf_clear_table_search_btn')?.classList.add('hidden');
       rf_applyFilters();
+      rf_saveStateToLocalStorage();
     }
 
     function rf_setDurationPreset(preset) {

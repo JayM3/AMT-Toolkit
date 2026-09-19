@@ -2862,6 +2862,17 @@
       }
     });
 
+    // Reactive auto-save listeners for all Circuit Finder inputs & selects
+    const cfInputs = document.querySelectorAll('#view_circuit_finder input, #view_circuit_finder select');
+    cfInputs.forEach(input => {
+      input.addEventListener('input', () => {
+        cf_saveStateToLocalStorage();
+      });
+      input.addEventListener('change', () => {
+        cf_saveStateToLocalStorage();
+      });
+    });
+
     cf_executeCircuitSearch();
   }
 
