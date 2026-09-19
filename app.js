@@ -789,11 +789,174 @@ window.closeFabMenu = function() {
 };
 
 
+// =========================================================================
+// AIRLINES MANAGER GAME IMPORT / EXPORT INTEGRATION
+// =========================================================================
+
+window.importValuesFromGame = function() {
+  const isInsideIframe = window.self !== window.top;
+  if (!isInsideIframe) {
+    showToast('Auto-import is available when docked inside Airlines Manager.', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btn_import_game_values');
+  const btnText = document.getElementById('btn_import_text');
+  if (btnText) btnText.textContent = 'Importing...';
+  if (btn) {
+    btn.classList.add('opacity-70', 'pointer-events-none');
+  }
+
+  try {
+    window.parent.postMessage({ type: 'AMT_IMPORT_REQUEST' }, '*');
+  } catch (err) {
+    console.error('[AMT App] Error posting AMT_IMPORT_REQUEST:', err);
+    resetImportBtn();
+  }
+};
+
+function resetImportBtn() {
+  const btn = document.getElementById('btn_import_game_values');
+  const btnText = document.getElementById('btn_import_text');
+  if (btnText) btnText.textContent = 'Import Values';
+  if (btn) {
+    btn.classList.remove('opacity-70', 'pointer-events-none');
+  }
+}
+
+window.exportValuesToGame = function() {
+  const isInsideIframe = window.self !== window.top;
+  if (!isInsideIframe) {
+    showToast('Price export is available when docked inside Airlines Manager.', 'warning');
+    return;
+  }
+
+  const calcEco = calculateClass('eco');
+  const calcBus = calculateClass('bus');
+  const calcFirst = calculateClass('first');
+  const calcCargo = calculateClass('cargo');
+
+  const hasAnyPrice = (calcEco && calcEco.hasData) ||
+                      (calcBus && calcBus.hasData) ||
+                      (calcFirst && calcFirst.hasData) ||
+                      (calcCargo && calcCargo.hasData);
+
+  if (!hasAnyPrice) {
+    showToast('Please calculate target prices before exporting.', 'warning');
+    return;
+  }
+
+  const prices = {
+    eco: calcEco && calcEco.hasData ? calcEco.pTargetRounded : null,
+    bus: calcBus && calcBus.hasData ? calcBus.pTargetRounded : null,
+    first: calcFirst && calcFirst.hasData ? calcFirst.pTargetRounded : null,
+    cargo: calcCargo && calcCargo.hasData ? calcCargo.pTargetRounded : null
+  };
+
+  const btn = document.getElementById('btn_export_game_values');
+  const btnText = document.getElementById('btn_export_text');
+  if (btnText) btnText.textContent = 'Exporting...';
+  if (btn) btn.classList.add('opacity-70', 'pointer-events-none');
+
+  try {
+    window.parent.postMessage({
+      type: 'AMT_EXPORT_PRICES_REQUEST',
+      prices: prices
+    }, '*');
+  } catch (err) {
+    console.error('[AMT App] Error posting AMT_EXPORT_PRICES_REQUEST:', err);
+    resetExportBtn();
+  }
+};
+
+function resetExportBtn() {
+  const btn = document.getElementById('btn_export_game_values');
+  const btnText = document.getElementById('btn_export_text');
+  if (btnText) btnText.textContent = 'Export Values';
+  if (btn) {
+    btn.classList.remove('opacity-70', 'pointer-events-none');
+  }
+}
+
 // Listen for messages from extension parent window
 window.addEventListener('message', (e) => {
-  if (e.data && e.data.type === 'AMT_SET_MODE') {
+  if (!e.data) return;
+
+  if (e.data.type === 'AMT_SET_MODE') {
     console.log('[AMT App] Message received from parent:', e.data);
     window.setUIMode(e.data.mode);
+  }
+
+  // Handle successful import from Airlines Manager
+  if (e.data.type === 'AMT_IMPORT_SUCCESS') {
+    resetImportBtn();
+    const data = e.data.data;
+    if (!data) return;
+
+    CLASSES.forEach(cls => {
+      const classData = data[cls.id];
+      if (classData) {
+        // Standard inputs
+        const stdPAudit = document.getElementById(`${cls.id}_paudit`);
+        const stdDSim = document.getElementById(`${cls.id}_dsim`);
+        const stdR = document.getElementById(`${cls.id}_r`);
+        if (stdPAudit) stdPAudit.value = classData.pAudit ?? '';
+        if (stdDSim) stdDSim.value = classData.dSim ?? '';
+        if (stdR) stdR.value = classData.r ?? '';
+
+        // Compact inputs
+        const cPAudit = document.getElementById(`compact_${cls.id}_paudit`);
+        const cDSim = document.getElementById(`compact_${cls.id}_dsim`);
+        const cR = document.getElementById(`compact_${cls.id}_r`);
+        if (cPAudit) cPAudit.value = classData.pAudit ?? '';
+        if (cDSim) cDSim.value = classData.dSim ?? '';
+        if (cR) cR.value = classData.r ?? '';
+      }
+    });
+
+    // Update Route Badges if route name exists
+    if (data.routeName) {
+      const activeRouteBadge = document.getElementById('zero_out_active_route_badge');
+      const compactRouteBadge = document.getElementById('compact_route_badge');
+      if (activeRouteBadge) {
+        activeRouteBadge.textContent = data.routeName;
+        activeRouteBadge.classList.remove('hidden');
+      }
+      if (compactRouteBadge) {
+        compactRouteBadge.textContent = data.routeName;
+        compactRouteBadge.classList.remove('hidden');
+      }
+    }
+
+    // Trigger calculation updates
+    updateAllCalculations();
+
+    const name = data.routeName || `Route #${data.lineId || ''}`;
+    showToast(`Successfully imported audit and offer values for ${name}!`, 'success');
+  }
+
+  // Handle import error
+  if (e.data.type === 'AMT_IMPORT_ERROR') {
+    resetImportBtn();
+    showToast(e.data.message || 'Failed to import values from game.', 'warning');
+  }
+
+  // Handle successful export to game
+  if (e.data.type === 'AMT_EXPORT_SUCCESS') {
+    resetExportBtn();
+    const p = e.data.prices || {};
+    const summary = [];
+    if (p.eco) summary.push(`Eco: $${p.eco}`);
+    if (p.bus) summary.push(`Bus: $${p.bus}`);
+    if (p.first) summary.push(`First: $${p.first}`);
+    if (p.cargo) summary.push(`Cargo: $${p.cargo}`);
+    showToast(`Target prices written to game pricing form! (${summary.join(', ')})`, 'success');
+  }
+
+  // Handle export error
+  if (e.data.type === 'AMT_EXPORT_ERROR') {
+    resetExportBtn();
+    showToast(e.data.message || 'Failed to export prices to game.', 'warning');
   }
 });
 

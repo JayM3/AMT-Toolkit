@@ -202,4 +202,316 @@
     }
   });
 
+  // =========================================================================
+  // AIRLINES MANAGER GAME SCRAPING & PRICE EXPORT INTEGRATION
+  // =========================================================================
+
+  function parseNumber(str) {
+    if (!str) return null;
+    const clean = str.replace(/[^\d.-]/g, '').trim();
+    const num = parseFloat(clean);
+    return isNaN(num) ? null : num;
+  }
+
+  function sendToIframe(msg) {
+    try {
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage(msg, '*');
+      }
+    } catch (e) {
+      console.warn('[AMT Extension] Failed to send message to iframe:', e);
+    }
+  }
+
+  // 1. Scrape Pricing Page (/marketing/pricing/{lineId}) & /network/showline/{lineId}
+  async function handleImportRequest() {
+    const pathname = window.location.pathname;
+    const pricingMatch = pathname.match(/\/marketing\/pricing\/(\d+)/);
+
+    if (!pricingMatch) {
+      sendToIframe({
+        type: 'AMT_IMPORT_ERROR',
+        message: 'Please navigate to a Route Pricing page (marketing/pricing/...) to import values.'
+      });
+      return;
+    }
+
+    const lineId = pricingMatch[1];
+
+    try {
+      // Find route name if available
+      let routeName = '';
+      const allText = document.body.innerText || document.body.textContent || '';
+      const routeMatch = allText.match(/Route\s+([A-Z]{3})\s*[-–/].*?([A-Z]{3})\s*[-–/]/i);
+      if (routeMatch) {
+        routeName = `${routeMatch[1]} / ${routeMatch[2]}`;
+      } else {
+        const iataMatches = Array.from(allText.matchAll(/\b([A-Z]{3})\b/g)).map(m => m[1]);
+        if (iataMatches.length >= 2) {
+          routeName = `${iataMatches[0]} / ${iataMatches[1]}`;
+        }
+      }
+
+      // Scrape LAST AUDIT section
+      let pAudit = { eco: null, bus: null, first: null, cargo: null };
+      let dAudit = { eco: null, bus: null, first: null, cargo: null };
+
+      const allElements = Array.from(document.querySelectorAll('div, table, section, td'));
+      const lastAuditBlock = allElements.find(el => {
+        const text = (el.textContent || '').trim();
+        return (text.includes('LAST AUDIT') || text.includes('DERNIER AUDIT')) &&
+               (text.includes('Ideal ticket price') || text.includes('Prix idéal') || text.includes('Ideal price/Tonne'));
+      });
+
+      const scope = lastAuditBlock || document.body;
+
+      // Extract by Class Column
+      const classConfigs = [
+        { key: 'eco', names: ['Economy class', 'Classe économique', 'Economy'] },
+        { key: 'bus', names: ['Business class', 'Classe affaires', 'Business'] },
+        { key: 'first', names: ['First class', 'Première classe', 'First'] },
+        { key: 'cargo', names: ['Cargo'] }
+      ];
+
+      const scopeElements = Array.from(scope.querySelectorAll('*'));
+
+      classConfigs.forEach(({ key, names }) => {
+        const headerEl = scopeElements.find(e => 
+          names.some(n => e.textContent && e.textContent.trim().toLowerCase() === n.toLowerCase())
+        );
+
+        if (headerEl) {
+          let container = headerEl.closest('td, th, [class*="col"], div');
+          if (!container || !/(?:Ideal|Prix)/i.test(container.innerText || '')) {
+            container = headerEl.parentElement;
+          }
+
+          if (container) {
+            const blockText = container.innerText || container.textContent || '';
+            const priceMatch = blockText.match(/(?:Ideal ticket price|Ideal price\/Tonne|Prix idéal|Prix idéal\/Tonne)\s*:\s*\$?([\d\s,]+)/i);
+            const demandMatch = blockText.match(/(?:Demand|Demande)\s*:\s*([\d\s,]+)\s*(?:Pax|T)?/i);
+            if (priceMatch) pAudit[key] = parseNumber(priceMatch[1]);
+            if (demandMatch) dAudit[key] = parseNumber(demandMatch[1]);
+          }
+        }
+      });
+
+      // Regex fallback if needed
+      const scopeText = scope.innerText || scope.textContent || '';
+      if (!pAudit.eco || !dAudit.eco) {
+        const prices = Array.from(scopeText.matchAll(/(?:Ideal ticket price|Ideal price\/Tonne|Prix idéal|Prix idéal\/Tonne)\s*:\s*\$?([\d\s,]+)/gi));
+        const demands = Array.from(scopeText.matchAll(/(?:Demand|Demande)\s*:\s*([\d\s,]+)\s*(?:Pax|T)?/gi));
+        if (prices.length >= 4) {
+          pAudit.eco = pAudit.eco ?? parseNumber(prices[0][1]);
+          pAudit.bus = pAudit.bus ?? parseNumber(prices[1][1]);
+          pAudit.first = pAudit.first ?? parseNumber(prices[2][1]);
+          pAudit.cargo = pAudit.cargo ?? parseNumber(prices[3][1]);
+        }
+        if (demands.length >= 4) {
+          dAudit.eco = dAudit.eco ?? parseNumber(demands[0][1]);
+          dAudit.bus = dAudit.bus ?? parseNumber(demands[1][1]);
+          dAudit.first = dAudit.first ?? parseNumber(demands[2][1]);
+          dAudit.cargo = dAudit.cargo ?? parseNumber(demands[3][1]);
+        }
+      }
+
+      if (!pAudit.eco || !dAudit.eco) {
+        sendToIframe({
+          type: 'AMT_IMPORT_ERROR',
+          message: 'Could not locate Last Audit values. Please make sure an internal audit exists for this route.'
+        });
+        return;
+      }
+
+      // Fetch scheduled Offer from /network/showline/{lineId}
+      let offers = { eco: null, bus: null, first: null, cargo: null };
+
+      try {
+        const showlineUrl = `${window.location.origin}/network/showline/${lineId}`;
+        console.log('[AMT Extension] Fetching showline statistics:', showlineUrl);
+        const resp = await fetch(showlineUrl, { credentials: 'include' });
+        if (resp.ok) {
+          const html = await resp.text();
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+          
+          const rows = Array.from(doc.querySelectorAll('tr'));
+          const offerRow = rows.find(r => {
+            const firstCell = r.querySelector('th, td');
+            return firstCell && /Offer|Offre/i.test(firstCell.textContent || '');
+          });
+
+          if (offerRow) {
+            const cells = Array.from(offerRow.querySelectorAll('td'));
+            if (cells.length >= 4) {
+              offers.eco = parseNumber(cells[0].textContent);
+              offers.bus = parseNumber(cells[1].textContent);
+              offers.first = parseNumber(cells[2].textContent);
+              offers.cargo = parseNumber(cells[3].textContent);
+            }
+          }
+        }
+      } catch (fetchErr) {
+        console.warn('[AMT Extension] Fetch /network/showline failed, trying page fallback:', fetchErr);
+      }
+
+      // Fallback for Offer: compute from INFORMATION ABOUT THE ROUTE (Current Demand - Remaining Demand)
+      if (offers.eco === null) {
+        const routeInfoBlock = allElements.find(el => {
+          const text = (el.textContent || '').trim();
+          return (text.includes('INFORMATION ABOUT THE ROUTE') || text.includes('INFORMATIONS SUR LA LIGNE')) &&
+                 (text.includes('Remaining demand') || text.includes('Demande restante'));
+        });
+
+        if (routeInfoBlock) {
+          const infoText = routeInfoBlock.innerText || routeInfoBlock.textContent || '';
+          const curDemands = Array.from(infoText.matchAll(/(?:Demand|Demande)\s*:\s*([\d\s,]+)\s*(?:Pax|T)?/gi));
+          const remDemands = Array.from(infoText.matchAll(/(?:Remaining demand|Demande restante)\s*:\s*([\d\s,]+)\s*(?:Pax|T)?/gi));
+
+          if (curDemands.length >= 4 && remDemands.length >= 4) {
+            offers.eco = parseNumber(curDemands[0][1]) - parseNumber(remDemands[0][1]);
+            offers.bus = parseNumber(curDemands[1][1]) - parseNumber(remDemands[1][1]);
+            offers.first = parseNumber(curDemands[2][1]) - parseNumber(remDemands[2][1]);
+            offers.cargo = parseNumber(curDemands[3][1]) - parseNumber(remDemands[3][1]);
+          }
+        }
+      }
+
+      if (offers.eco === null) {
+        sendToIframe({
+          type: 'AMT_IMPORT_ERROR',
+          message: 'Found audit data, but could not retrieve scheduled Offer. Please check network connection.'
+        });
+        return;
+      }
+
+      // Compute Remain = dSim (Audit Demand) - Offer
+      const importedData = {
+        lineId,
+        routeName: routeName || `Route #${lineId}`,
+        eco: {
+          pAudit: pAudit.eco,
+          dSim: dAudit.eco,
+          offer: offers.eco,
+          r: dAudit.eco - offers.eco
+        },
+        bus: {
+          pAudit: pAudit.bus,
+          dSim: dAudit.bus,
+          offer: offers.bus,
+          r: dAudit.bus - offers.bus
+        },
+        first: {
+          pAudit: pAudit.first,
+          dSim: dAudit.first,
+          offer: offers.first,
+          r: dAudit.first - offers.first
+        },
+        cargo: {
+          pAudit: pAudit.cargo,
+          dSim: dAudit.cargo,
+          offer: offers.cargo,
+          r: dAudit.cargo - offers.cargo
+        }
+      };
+
+      console.log('[AMT Extension] Import successful:', importedData);
+
+      sendToIframe({
+        type: 'AMT_IMPORT_SUCCESS',
+        data: importedData
+      });
+
+    } catch (err) {
+      console.error('[AMT Extension] Error importing values:', err);
+      sendToIframe({
+        type: 'AMT_IMPORT_ERROR',
+        message: 'An error occurred while importing: ' + err.message
+      });
+    }
+  }
+
+  // 2. Export Target Prices into "CHANGE YOUR PRICES"
+  function handleExportPrices(prices) {
+    if (!prices) return;
+
+    try {
+      const allHeaders = Array.from(document.querySelectorAll('h1, h2, h3, h4, div, span'));
+      const changeHeader = allHeaders.find(h => 
+        /CHANGE YOUR PRICES|MODIFIER VOS PRIX/i.test(h.textContent || '')
+      );
+
+      let inputs = [];
+      if (changeHeader) {
+        const container = changeHeader.closest('.box, form, section, div');
+        if (container) {
+          inputs = Array.from(container.querySelectorAll('input[type="text"], input[type="number"]'));
+        }
+      }
+
+      if (inputs.length < 4) {
+        const namedEco = document.querySelector('input[name*="priceEco"], input[name*="PriceEco"], input[id*="priceEco"]');
+        const namedBus = document.querySelector('input[name*="priceBus"], input[name*="PriceBus"], input[id*="priceBus"]');
+        const namedFirst = document.querySelector('input[name*="priceFirst"], input[name*="PriceFirst"], input[id*="priceFirst"]');
+        const namedCargo = document.querySelector('input[name*="priceCargo"], input[name*="PriceCargo"], input[id*="priceCargo"]');
+        if (namedEco && namedBus && namedFirst && namedCargo) {
+          inputs = [namedEco, namedBus, namedFirst, namedCargo];
+        }
+      }
+
+      if (inputs.length < 4) {
+        sendToIframe({
+          type: 'AMT_EXPORT_ERROR',
+          message: 'Could not find the price input fields on this page. Make sure "CHANGE YOUR PRICES" is visible.'
+        });
+        return;
+      }
+
+      const priceList = [prices.eco, prices.bus, prices.first, prices.cargo];
+      inputs.slice(0, 4).forEach((input, idx) => {
+        const p = priceList[idx];
+        if (p !== null && p !== undefined && !isNaN(p)) {
+          input.value = p;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+          
+          // Visual highlight
+          const origTransition = input.style.transition;
+          const origBorder = input.style.border;
+          const origBoxShadow = input.style.boxShadow;
+          input.style.transition = 'all 0.2s ease';
+          input.style.border = '2px solid #10b981';
+          input.style.boxShadow = '0 0 12px rgba(16, 185, 129, 0.7)';
+          setTimeout(() => {
+            input.style.border = origBorder;
+            input.style.boxShadow = origBoxShadow;
+            input.style.transition = origTransition;
+          }, 2200);
+        }
+      });
+
+      sendToIframe({
+        type: 'AMT_EXPORT_SUCCESS',
+        prices: prices
+      });
+
+    } catch (err) {
+      console.error('[AMT Extension] Error exporting prices:', err);
+      sendToIframe({
+        type: 'AMT_EXPORT_ERROR',
+        message: 'Failed to export prices: ' + err.message
+      });
+    }
+  }
+
+  // Listen for messages from iframe
+  window.addEventListener('message', (e) => {
+    if (!e.data) return;
+    if (e.data.type === 'AMT_IMPORT_REQUEST') {
+      handleImportRequest();
+    } else if (e.data.type === 'AMT_EXPORT_PRICES_REQUEST') {
+      handleExportPrices(e.data.prices);
+    }
+  });
+
 })();
+

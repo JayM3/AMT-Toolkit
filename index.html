@@ -27,8 +27,8 @@
       }
     }
   </script>
-  <link rel="stylesheet" href="styles.css?v=2.6">
-  <link rel="stylesheet" href="homepage.css?v=2.6">
+  <link rel="stylesheet" href="styles.css?v=2.7">
+  <link rel="stylesheet" href="homepage.css?v=2.7">
   <style>
     body.amt-compact-mode #zero_out_standard_container { display: none !important; }
     body.amt-compact-mode #zero_out_compact_container { display: block !important; }
@@ -551,6 +551,25 @@
             </tr>
           </tfoot>
         </table>
+      </div>
+
+      <!-- Inline Action Bar: Import & Export Values with Airlines Manager -->
+      <div class="glass-panel rounded-xl p-2 border border-slate-800 flex items-center justify-between gap-2 shadow-md">
+        <!-- Import Values Button -->
+        <button type="button" onclick="importValuesFromGame()" id="btn_import_game_values" class="flex-1 px-3 py-2 rounded-lg bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-700/80 text-cyan-300 hover:text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95" title="Auto-import audit prices, demand, and scheduled offer from Airlines Manager">
+          <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+          </svg>
+          <span id="btn_import_text">Import Values</span>
+        </button>
+
+        <!-- Export Values Button -->
+        <button type="button" onclick="exportValuesToGame()" id="btn_export_game_values" class="flex-1 px-3 py-2 rounded-lg bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-700/80 text-emerald-300 hover:text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95" title="Write calculated target prices into 'Change Your Prices' on Airlines Manager">
+          <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+          </svg>
+          <span id="btn_export_text">Export Values</span>
+        </button>
       </div>
 
     </div>
@@ -1085,6 +1104,22 @@
             </svg>
             <span>Route Audits</span>
             <span class="floating_audits_badge ml-auto px-1.5 py-0.2 rounded-full bg-cyan-500 text-slate-950 text-[10px] font-bold">0</span>
+          </button>
+
+          <!-- Import Values from Game -->
+          <button type="button" onclick="importValuesFromGame()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-700/70 text-cyan-300 hover:text-white text-xs font-semibold transition active:scale-95 text-left w-full" title="Import Values from Game">
+            <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            <span>Import Values</span>
+          </button>
+
+          <!-- Export Values to Game -->
+          <button type="button" onclick="exportValuesToGame()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-700/70 text-emerald-300 hover:text-white text-xs font-semibold transition active:scale-95 text-left w-full" title="Export Target Prices to Game">
+            <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+            </svg>
+            <span>Export Values</span>
           </button>
 
           <!-- Clear Table -->
@@ -3801,7 +3836,7 @@
   <!-- JavaScript Datasets & Logic -->
   <script src="data/aircraft.js?v=2.3"></script>
   <script src="data/airports.js?v=2.3"></script>
-  <script src="app.js?v=2.6"></script>
+  <script src="app.js?v=2.7"></script>
   <script src="route_finder.js?v=2.3"></script>
   <script src="circuit_finder.js?v=2.3"></script>
 </body>
