@@ -447,41 +447,42 @@ window.clearAllInputs = window.clearTable;
 // UI Mode Toggle (Compact vs Standard)
 window.setUIMode = function(mode) {
   const isCompact = mode === 'compact';
+  console.log('[AMT App] setUIMode:', mode, 'isCompact:', isCompact);
+
   if (isCompact) {
     document.body.classList.add('amt-compact-mode');
   } else {
     document.body.classList.remove('amt-compact-mode');
   }
 
+  // Directly set display styles so it never fails due to CSS caching
+  const stdCont = document.getElementById('zero_out_standard_container');
+  const compCont = document.getElementById('zero_out_compact_container');
+  if (stdCont) {
+    stdCont.style.setProperty('display', isCompact ? 'none' : 'block', 'important');
+  }
+  if (compCont) {
+    compCont.style.setProperty('display', isCompact ? 'block' : 'none', 'important');
+  }
+
   try {
     localStorage.setItem('amt_ui_mode', mode);
   } catch (e) {}
 
-  // Update in-page nav toggle buttons
-  const btnCompact = document.getElementById('nav_btn_compact');
-  const btnStandard = document.getElementById('nav_btn_standard');
-  if (btnCompact && btnStandard) {
-    if (isCompact) {
-      btnCompact.className = 'px-2.5 py-1 rounded-full font-semibold transition bg-cyan-600 text-white shadow';
-      btnStandard.className = 'px-2.5 py-1 rounded-full font-semibold transition text-slate-400 hover:text-white';
-    } else {
-      btnStandard.className = 'px-2.5 py-1 rounded-full font-semibold transition bg-cyan-600 text-white shadow';
-      btnCompact.className = 'px-2.5 py-1 rounded-full font-semibold transition text-slate-400 hover:text-white';
-    }
-  }
-
   // Synchronize inputs across both views
-  CLASSES.forEach(cls => {
-    const stdPAudit = document.getElementById(`${cls.id}_paudit`);
-    const stdDSim = document.getElementById(`${cls.id}_dsim`);
-    const stdR = document.getElementById(`${cls.id}_r`);
-    const cPAudit = document.getElementById(`compact_${cls.id}_paudit`);
-    const cDSim = document.getElementById(`compact_${cls.id}_dsim`);
-    const cR = document.getElementById(`compact_${cls.id}_r`);
-    if (stdPAudit && cPAudit && stdPAudit.value) cPAudit.value = stdPAudit.value;
-    if (stdDSim && cDSim && stdDSim.value) cDSim.value = stdDSim.value;
-    if (stdR && cR && stdR.value) cR.value = stdR.value;
-  });
+  if (typeof CLASSES !== 'undefined') {
+    CLASSES.forEach(cls => {
+      const stdPAudit = document.getElementById(`${cls.id}_paudit`);
+      const stdDSim = document.getElementById(`${cls.id}_dsim`);
+      const stdR = document.getElementById(`${cls.id}_r`);
+      const cPAudit = document.getElementById(`compact_${cls.id}_paudit`);
+      const cDSim = document.getElementById(`compact_${cls.id}_dsim`);
+      const cR = document.getElementById(`compact_${cls.id}_r`);
+      if (stdPAudit && cPAudit && stdPAudit.value) cPAudit.value = stdPAudit.value;
+      if (stdDSim && cDSim && stdDSim.value) cDSim.value = stdDSim.value;
+      if (stdR && cR && stdR.value) cR.value = stdR.value;
+    });
+  }
 
   // Sync cargo toggles
   const stdCargo = document.getElementById('toggle_cargo');
@@ -494,6 +495,7 @@ window.setUIMode = function(mode) {
 // Listen for messages from extension parent window
 window.addEventListener('message', (e) => {
   if (e.data && e.data.type === 'AMT_SET_MODE') {
+    console.log('[AMT App] Message received from parent:', e.data);
     window.setUIMode(e.data.mode);
   }
 });

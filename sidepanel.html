@@ -232,7 +232,8 @@
         spinner.style.opacity = '0';
         setTimeout(() => { spinner.style.display = 'none'; }, 300);
       }
-      setTimeout(() => sendModeToIframe(currentMode), 250);
+      setTimeout(() => sendModeToIframe(currentMode), 200);
+      setTimeout(() => sendModeToIframe(currentMode), 800);
     });
 
     btnRefresh.addEventListener('click', () => {

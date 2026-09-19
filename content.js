@@ -99,9 +99,12 @@
   function sendModeToIframe(mode) {
     try {
       if (iframe && iframe.contentWindow) {
+        console.log('[AMT Extension] Posting message to iframe:', mode);
         iframe.contentWindow.postMessage({ type: 'AMT_SET_MODE', mode: mode }, '*');
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[AMT Extension] Error posting message to iframe:', e);
+    }
   }
 
   function setMode(mode) {
@@ -121,8 +124,9 @@
       spinner.style.opacity = '0';
       setTimeout(() => { spinner.style.display = 'none'; }, 300);
     }
-    // Delay slightly to ensure app.js is initialized
-    setTimeout(() => sendModeToIframe(currentMode), 250);
+    // Delay slightly to ensure app.js is fully loaded and listener is registered
+    setTimeout(() => sendModeToIframe(currentMode), 200);
+    setTimeout(() => sendModeToIframe(currentMode), 800);
   });
 
   // Toggle Functionality
