@@ -1009,7 +1009,9 @@ window.addEventListener('message', (e) => {
     updateAllCalculations();
 
     const name = data.routeName || `Route #${data.lineId || ''}`;
-    if (data.hasRemainingDemand) {
+    if (data.simPriceMismatch) {
+      showToast(`Warning: Simulated demand price does not match last audit! Values were imported for ${name}.`, 'warning', 6000);
+    } else if (data.hasRemainingDemand) {
       showToast(`Successfully imported audit and remaining demand for ${name}!`, 'success');
     } else {
       showToast(`Remaining demand not found on route page, but Audit $ and Audit Demand were imported for ${name}!`, 'warning');

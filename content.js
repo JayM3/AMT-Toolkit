@@ -341,6 +341,49 @@
         return;
       }
 
+      // Check if simulated demand prices match last audit prices
+      let simPriceMismatch = false;
+
+      // Check derived prices from Turnover / Simulated Demand in simSection
+      const simDemands = Array.from(simSection.matchAll(/(?:Simulated demand|Demande simulée)\s*:\s*([0-9\s,]+)\s*(?:Pax|T)/gi))
+        .map(m => parseNumber(m[1]));
+      const turnovers = Array.from(simSection.matchAll(/(?:Turnover|Chiffre d'affaires)\s*:\s*([0-9\s,]+)\s*\$/gi))
+        .map(m => parseNumber(m[1]));
+
+      if (simDemands.length >= 4 && turnovers.length >= 4) {
+        for (let i = 0; i < 4; i++) {
+          if (simDemands[i] > 0 && turnovers[i] > 0 && pAudit[i] > 0) {
+            const derivedPrice = Math.round(turnovers[i] / simDemands[i]);
+            if (Math.abs(derivedPrice - pAudit[i]) > 1) {
+              simPriceMismatch = true;
+              break;
+            }
+          }
+        }
+      }
+
+      // Also check inputs currently entered under "CHANGE YOUR PRICES"
+      if (!simPriceMismatch) {
+        const changeHeader = Array.from(document.querySelectorAll('h1, h2, h3, h4, div, legend')).find(el => 
+          /CHANGE YOUR PRICES|MODIFIER VOS PRIX/i.test(el.textContent || '')
+        );
+        if (changeHeader) {
+          const container = changeHeader.closest('.box, form, section, div');
+          if (container) {
+            const changeInputs = Array.from(container.querySelectorAll('input[type="text"], input[type="number"]'));
+            if (changeInputs.length >= 4) {
+              for (let i = 0; i < 4; i++) {
+                const val = parseNumber(changeInputs[i].value);
+                if (val && pAudit[i] && Math.abs(val - pAudit[i]) > 1) {
+                  simPriceMismatch = true;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+
       // Build import payload
       const importedData = {
         lineId,
@@ -348,6 +391,7 @@
         dst,
         routeName: routeName || (hub && dst ? `${hub} / ${dst}` : `Route #${lineId}`),
         hasRemainingDemand: true,
+        simPriceMismatch: Boolean(simPriceMismatch),
         eco: {
           pAudit: pAudit[0],
           dSim: dAudit[0],
