@@ -6416,12 +6416,12 @@ const AIRPORTS_DATABASE = [
     "lat": 52.3667,
     "lon": 13.5033,
     "cat": 9,
-    "flightTax": null,
-    "grossPrice": null,
-    "economy": null,
-    "business": null,
-    "first": null,
-    "cargo": null
+    "flightTax": 10000,
+    "grossPrice": 8428000000,
+    "economy": 47.61,
+    "business": 28.99,
+    "first": 26.9,
+    "cargo": 51.78
   },
   {
     "iata": "BIL",
