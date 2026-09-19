@@ -1179,13 +1179,13 @@ const AIRCRAFT_DATABASE = [
     "manufacturer": "Embraer",
     "type": "Short-Haul",
     "category": 4,
-    "seats": 124,
-    "payload_ton": 12.4,
-    "range_km": 4077,
+    "seats": 30,
+    "payload_ton": 3.3,
+    "range_km": 2555,
     "speed_kmh": 552,
     "price": 10700000,
-    "fuel_consumption": "2555",
-    "wear_rate": "1.8",
+    "fuel_consumption": "4.36",
+    "wear_rate": "2.7",
     "rd_unlock": ""
   },
   {
