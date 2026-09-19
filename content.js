@@ -223,8 +223,8 @@
     }
   }
 
-  // 1. Scrape Pricing Page (/marketing/pricing/{lineId}) & /network/showline/{lineId}
-  async function handleImportRequest() {
+  // 1. Scrape Pricing Page (/marketing/pricing/{lineId})
+  function handleImportRequest() {
     console.log('[AMT Extension] handleImportRequest triggered on:', window.location.href);
     const pathname = window.location.pathname;
     const pricingMatch = pathname.match(/\/marketing\/pricing\/(\d+)/);
@@ -242,7 +242,7 @@
     try {
       const pageText = document.body.innerText || document.body.textContent || '';
 
-      // Route name (e.g. DWC / DFW)
+      // Route name (e.g. DWC / ANC)
       let routeName = '';
       const routeMatch = pageText.match(/Route\s+([A-Z]{3})\s*[-–/].*?([A-Z]{3})\s*[-–/]/i);
       if (routeMatch) {
@@ -258,11 +258,11 @@
       const routeInfoText = (auditSplit[1] || '').split(/CHANGE YOUR PRICES|MODIFIER VOS PRIX/i)[0] || '';
 
       // Extract Audit Prices: Eco, Bus, First, Cargo
-      const auditPriceMatches = Array.from(auditText.matchAll(/(?:Ideal ticket price|Ideal price\/Tonne|Prix idéal|Prix idéal\/Tonne)\s*:\s*\$?([0-9\s,]+)/gi));
+      const auditPriceMatches = Array.from(auditText.matchAll(/(?:Ideal ticket price|Ideal price\/Tonne|Prix idéal|Prix idéal\/Tonne)\s*:\s*\$?(-?[0-9\s,]+)/gi));
       const pAudit = auditPriceMatches.map(m => parseNumber(m[1]));
 
       // Extract Audit Demands: Eco, Bus, First, Cargo
-      const auditDemandMatches = Array.from(auditText.matchAll(/(?:^|[^\w])Demand\s*:\s*([0-9\s,]+)\s*(?:Pax|T)/gi));
+      const auditDemandMatches = Array.from(auditText.matchAll(/(?:^|[^\w])Demand\s*:\s*(-?[0-9\s,]+)\s*(?:Pax|T)/gi));
       const dAudit = auditDemandMatches.map(m => parseNumber(m[1]));
 
       if (pAudit.length < 4 || dAudit.length < 4) {
@@ -273,90 +273,37 @@
         return;
       }
 
-      // Extract Current Demands and Remaining Demands from INFORMATION ABOUT THE ROUTE
-      const curDemandMatches = Array.from(routeInfoText.matchAll(/(?:^|[^\w])(?:Current\s+)?Demand\s*:\s*([0-9\s,]+)\s*(?:Pax|T)/gi))
-        .filter(m => !m[0].includes('Remaining') && !m[0].includes('restante'))
-        .map(m => parseNumber(m[1]));
+      // Extract Remaining Demands directly from INFORMATION ABOUT THE ROUTE
+      // Handles both positive and negative remaining demands (e.g. -504 Pax)
+      const remDemandMatches = Array.from(routeInfoText.matchAll(/(?:Remaining demand|Demande restante)\s*:\s*(-?[0-9\s,]+)\s*(?:Pax|T)/gi));
+      const rDemand = remDemandMatches.map(m => parseNumber(m[1]));
 
-      const remDemandMatches = Array.from(routeInfoText.matchAll(/(?:Remaining demand|Demande restante)\s*:\s*([0-9\s,]+)\s*(?:Pax|T)/gi))
-        .map(m => parseNumber(m[1]));
-
-      let offers = [null, null, null, null];
-
-      // Instant calculation: Offer = Current Demand - Remaining Demand
-      if (curDemandMatches.length >= 4 && remDemandMatches.length >= 4) {
-        offers = curDemandMatches.slice(0, 4).map((d, idx) => d - remDemandMatches[idx]);
-        console.log('[AMT Extension] Derived offers from pricing page:', offers);
-      }
-
-      // Secondary verification / fallback: fetch /network/showline/{lineId} with 2s timeout
-      if (offers.some(o => o === null || isNaN(o))) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 2000);
-          const resp = await fetch(`${window.location.origin}/network/showline/${lineId}`, {
-            credentials: 'include',
-            signal: controller.signal
-          });
-          clearTimeout(timeoutId);
-
-          if (resp.ok) {
-            const html = await resp.text();
-            const doc = new DOMParser().parseFromString(html, 'text/html');
-            const rows = Array.from(doc.querySelectorAll('tr'));
-            const offerRow = rows.find(r => {
-              const firstCell = r.querySelector('th, td');
-              return firstCell && /Offer|Offre/i.test(firstCell.textContent || '');
-            });
-
-            if (offerRow) {
-              const cells = Array.from(offerRow.querySelectorAll('td'));
-              if (cells.length >= 4) {
-                offers = cells.slice(0, 4).map(c => parseNumber(c.textContent));
-                console.log('[AMT Extension] Fetched offers from showline:', offers);
-              }
-            }
-          }
-        } catch (fetchErr) {
-          console.warn('[AMT Extension] Fetch /network/showline timed out or failed:', fetchErr);
-        }
-      }
-
-      if (offers.some(o => o === null || isNaN(o))) {
-        sendToIframe({
-          type: 'AMT_IMPORT_ERROR',
-          message: 'Found audit data, but could not determine scheduled Offer. Please check network connection.'
-        });
-        return;
-      }
+      const hasRemainingDemand = rDemand.length >= 4 && rDemand.every(r => r !== null && !isNaN(r));
 
       // Build import payload
       const importedData = {
         lineId,
         routeName: routeName || `Route #${lineId}`,
+        hasRemainingDemand,
         eco: {
           pAudit: pAudit[0],
           dSim: dAudit[0],
-          offer: offers[0],
-          r: dAudit[0] - offers[0]
+          r: hasRemainingDemand ? rDemand[0] : ''
         },
         bus: {
           pAudit: pAudit[1],
           dSim: dAudit[1],
-          offer: offers[1],
-          r: dAudit[1] - offers[1]
+          r: hasRemainingDemand ? rDemand[1] : ''
         },
         first: {
           pAudit: pAudit[2],
           dSim: dAudit[2],
-          offer: offers[2],
-          r: dAudit[2] - offers[2]
+          r: hasRemainingDemand ? rDemand[2] : ''
         },
         cargo: {
           pAudit: pAudit[3],
           dSim: dAudit[3],
-          offer: offers[3],
-          r: dAudit[3] - offers[3]
+          r: hasRemainingDemand ? rDemand[3] : ''
         }
       };
 
