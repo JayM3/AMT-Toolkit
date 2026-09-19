@@ -495,6 +495,7 @@ window.clearTable = function() {
   });
 
   window.LAST_ZERO_OUT_DST = null;
+  window.LAST_ZERO_OUT_HUB = null;
   const routeBadge = document.getElementById('zero_out_active_route_badge');
   const compactBadge = document.getElementById('compact_route_badge');
   if (routeBadge) routeBadge.classList.add('hidden');
@@ -851,22 +852,25 @@ window.exportValuesToGame = function() {
   const calcFirst = calculateClass('first');
   const calcCargo = calculateClass('cargo');
 
-  const hasAnyPrice = (calcEco && calcEco.hasData) ||
-                      (calcBus && calcBus.hasData) ||
-                      (calcFirst && calcFirst.hasData) ||
-                      (calcCargo && calcCargo.hasData);
-
-  if (!hasAnyPrice) {
-    showToast('Please calculate target prices before exporting.', 'warning');
-    return;
-  }
+  // Only export classes with positive daily gain (deltaRevenue > 0)
+  const shouldExport = (calc, clsId) => {
+    if (!calc || !calc.hasData) return false;
+    if (clsId === 'cargo' && !state.cargoEnabled) return false;
+    return typeof calc.deltaRevenue === 'number' && calc.deltaRevenue > 0;
+  };
 
   const prices = {
-    eco: calcEco && calcEco.hasData ? calcEco.pTargetRounded : null,
-    bus: calcBus && calcBus.hasData ? calcBus.pTargetRounded : null,
-    first: calcFirst && calcFirst.hasData ? calcFirst.pTargetRounded : null,
-    cargo: calcCargo && calcCargo.hasData ? calcCargo.pTargetRounded : null
+    eco: shouldExport(calcEco, 'eco') ? calcEco.pTargetRounded : null,
+    bus: shouldExport(calcBus, 'bus') ? calcBus.pTargetRounded : null,
+    first: shouldExport(calcFirst, 'first') ? calcFirst.pTargetRounded : null,
+    cargo: shouldExport(calcCargo, 'cargo') ? calcCargo.pTargetRounded : null
   };
+
+  const eligibleCount = Object.values(prices).filter(p => p !== null && p !== undefined).length;
+  if (eligibleCount === 0) {
+    showToast('No classes have a positive daily gain to export.', 'warning');
+    return;
+  }
 
   const btn = document.getElementById('btn_export_game_values');
   const btnText = document.getElementById('btn_export_text');
@@ -918,6 +922,9 @@ window.addEventListener('message', (e) => {
     resetImportBtn();
     const data = e.data.data;
     if (!data) return;
+
+    window.LAST_ZERO_OUT_HUB = data.hub || '';
+    window.LAST_ZERO_OUT_DST = data.dst || '';
 
     CLASSES.forEach(cls => {
       const classData = data[cls.id];
@@ -976,11 +983,15 @@ window.addEventListener('message', (e) => {
     resetExportBtn();
     const p = e.data.prices || {};
     const summary = [];
-    if (p.eco) summary.push(`Eco: $${p.eco}`);
-    if (p.bus) summary.push(`Bus: $${p.bus}`);
-    if (p.first) summary.push(`First: $${p.first}`);
-    if (p.cargo) summary.push(`Cargo: $${p.cargo}`);
-    showToast(`Target prices written to game pricing form! (${summary.join(', ')})`, 'success');
+    if (p.eco !== null && p.eco !== undefined) summary.push(`Eco: $${Number(p.eco).toLocaleString()}`);
+    if (p.bus !== null && p.bus !== undefined) summary.push(`Bus: $${Number(p.bus).toLocaleString()}`);
+    if (p.first !== null && p.first !== undefined) summary.push(`First: $${Number(p.first).toLocaleString()}`);
+    if (p.cargo !== null && p.cargo !== undefined) summary.push(`Cargo: $${Number(p.cargo).toLocaleString()}`);
+    if (summary.length > 0) {
+      showToast(`Exported target prices for ${summary.join(', ')} (positive daily gain). Classes with negative/zero gain skipped!`, 'success');
+    } else {
+      showToast('No eligible target prices were exported.', 'warning');
+    }
   }
 
   // Handle export error
@@ -6437,6 +6448,7 @@ function renderSavedAuditsTable() {
 window.renderSavedAuditsTable = renderSavedAuditsTable;
 
 window.LAST_ZERO_OUT_DST = null;
+window.LAST_ZERO_OUT_HUB = null;
 
 function sendAuditToZeroOut(dst) {
   const audits = getSavedAudits();
@@ -6444,6 +6456,7 @@ function sendAuditToZeroOut(dst) {
   if (!a) return;
 
   window.LAST_ZERO_OUT_DST = dst;
+  window.LAST_ZERO_OUT_HUB = a.hub || '';
 
   const classes = [
     { id: 'eco', data: a.eco },
@@ -6534,7 +6547,20 @@ function saveZeroOutToAudit() {
   const modal = document.getElementById('audit_editor_modal');
   if (!modal) return;
 
-  const currentHub = document.getElementById('sc_circuit_hub')?.value || window.CIRCUIT_HUB || 'OSL';
+  // Detect Hub and Destination from saved state or route badges
+  let detectedDst = window.LAST_ZERO_OUT_DST || '';
+  let detectedHub = window.LAST_ZERO_OUT_HUB || '';
+  if (!detectedDst || !detectedHub) {
+    const badgeText = document.getElementById('compact_route_badge')?.textContent ||
+                      document.getElementById('zero_out_active_route_badge')?.textContent || '';
+    const parts = badgeText.split('/').map(s => s.trim().toUpperCase());
+    if (parts.length === 2 && parts[0].length === 3 && parts[1].length === 3) {
+      if (!detectedHub) detectedHub = parts[0];
+      if (!detectedDst) detectedDst = parts[1];
+    }
+  }
+
+  const currentHub = detectedHub || document.getElementById('sc_circuit_hub')?.value || window.CIRCUIT_HUB || 'OSL';
   const titleEl = document.getElementById('audit_editor_modal_title');
   const hubInput = document.getElementById('editor_audit_hub');
   const dstInput = document.getElementById('editor_audit_dst');
@@ -6553,7 +6579,7 @@ function saveZeroOutToAudit() {
   if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
 
   if (dstInput) {
-    dstInput.value = window.LAST_ZERO_OUT_DST || '';
+    dstInput.value = detectedDst;
     dstInput.readOnly = false;
   }
 

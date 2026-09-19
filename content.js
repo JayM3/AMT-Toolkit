@@ -242,14 +242,49 @@
     try {
       const pageText = document.body.innerText || document.body.textContent || '';
 
-      // Route name (e.g. DWC / ANC)
+      // Extract Route Hub and Destination (e.g. DWC / BUD)
+      let hub = '';
+      let dst = '';
       let routeName = '';
-      const routeMatch = pageText.match(/Route\s+([A-Z]{3})\s*[-–/].*?([A-Z]{3})\s*[-–/]/i);
-      if (routeMatch) {
-        routeName = `${routeMatch[1]} / ${routeMatch[2]}`;
-      } else {
-        const iatas = Array.from(pageText.matchAll(/\b([A-Z]{3})\b/g)).map(m => m[1]);
-        if (iatas.length >= 2) routeName = `${iatas[0]} / ${iatas[1]}`;
+
+      // 1. Primary: Match the Route line: e.g. "Route DWC - Dubai - Al Maktoum Airport BUD Budapest - Budapest Ferenc Liszt Airport /"
+      const routeLineMatch = pageText.match(/(?:Route|Ligne)\s+([A-Z]{3})[\s\S]*?(?=(?:Internal audit|Audit interne|Ideal ticket price|Prix idéal|Economy class|Classe économique|\n\n|$))/);
+      if (routeLineMatch) {
+        const lineText = routeLineMatch[0];
+        // Match only ALL-CAPS 3-letter IATA codes (case-sensitive, avoiding city names like Dubai/Budapest)
+        const iataMatches = Array.from(lineText.matchAll(/\b([A-Z]{3})\b/g)).map(m => m[1]);
+        if (iataMatches.length >= 2) {
+          hub = iataMatches[0];
+          dst = iataMatches[1];
+          routeName = `${hub} / ${dst}`;
+        } else if (iataMatches.length === 1) {
+          hub = iataMatches[0];
+          routeName = hub;
+        }
+      }
+
+      // 2. Secondary: Check DOM element around the Route button link (/network/showline/{lineId})
+      if (!dst) {
+        const showlineLink = document.querySelector('a[href*="/network/showline/"]');
+        if (showlineLink) {
+          const parentText = showlineLink.parentElement ? (showlineLink.parentElement.innerText || '') : '';
+          const iataMatches = Array.from(parentText.matchAll(/\b([A-Z]{3})\b/g)).map(m => m[1]);
+          if (iataMatches.length >= 2) {
+            hub = iataMatches[0];
+            dst = iataMatches[1];
+            routeName = `${hub} / ${dst}`;
+          }
+        }
+      }
+
+      // 3. Fallback: Check document title or breadcrumbs
+      if (!dst) {
+        const titleMatch = document.title.match(/\b([A-Z]{3})\s*[-/]\s*([A-Z]{3})\b/);
+        if (titleMatch) {
+          hub = titleMatch[1];
+          dst = titleMatch[2];
+          routeName = `${hub} / ${dst}`;
+        }
       }
 
       // Split page into sections: LAST AUDIT, INFORMATION ABOUT THE ROUTE, CHANGE YOUR PRICES
@@ -283,7 +318,9 @@
       // Build import payload
       const importedData = {
         lineId,
-        routeName: routeName || `Route #${lineId}`,
+        hub,
+        dst,
+        routeName: routeName || (hub && dst ? `${hub} / ${dst}` : `Route #${lineId}`),
         hasRemainingDemand,
         eco: {
           pAudit: pAudit[0],
