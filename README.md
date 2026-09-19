@@ -35,7 +35,11 @@ $$\text{Flight Time (Hours)} = \text{round}\left(\frac{\text{Distance (km)}}{\te
 The app runs entirely in the browser with no build step or dependencies.
 
 - **Online**: Visit [https://jaym3.github.io/AMT-Toolkit/](https://jaym3.github.io/AMT-Toolkit/)
-- **Local**: Open `index.html` in any modern web browser.
+- **Chrome / Brave Extension**:
+  1. Open `chrome://extensions` (or `brave://extensions`) in your browser.
+  2. Toggle **Developer mode** on (top-right corner).
+  3. Click **Load unpacked** and select this directory (`AMT-Toolkit`).
+  4. Visit [Airlines Manager](https://www.airlines-manager.com/) to see the docked sidebar, or click the extension icon to open the native side panel!
 
 Optional local server:
 ```bash
@@ -50,6 +54,12 @@ npx serve .
 
 ```
 AMT-Toolkit/
+├── manifest.json       # Chrome extension manifest (MV3)
+├── background.js       # Extension service worker (Side Panel API)
+├── content.js          # In-page docked sidebar script for Airlines Manager
+├── content.css         # Docked sidebar styling and animations
+├── sidepanel.html      # Native Chrome Side Panel page
+├── icons/              # Extension icons (16px, 48px, 128px)
 ├── index.html          # Main single-page application
 ├── app.js              # Pricing and seat configuration logic
 ├── route_finder.js     # Airport search and route catalog

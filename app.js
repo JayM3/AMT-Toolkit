@@ -174,6 +174,21 @@ function updateAllCalculations() {
     totalSeatsEl.textContent = hasAnyData ? formatNumber(totalCapacity) : '0';
   }
 
+  // Update Compact Daily Gain KPI
+  const compactGainEl = document.getElementById('compact_daily_gain');
+  if (compactGainEl) {
+    if (hasAnyData && totalDeltaRev !== 0) {
+      const sign = totalDeltaRev > 0 ? '+' : '';
+      compactGainEl.textContent = `${sign}${formatCurrency(totalDeltaRev)}/day`;
+      compactGainEl.className = totalDeltaRev >= 0 
+        ? 'text-emerald-400 font-bold font-mono-num text-xs' 
+        : 'text-rose-400 font-bold font-mono-num text-xs';
+    } else {
+      compactGainEl.textContent = '+$0/day';
+      compactGainEl.className = 'text-slate-400 font-bold font-mono-num text-xs';
+    }
+  }
+
   saveToLocalStorage();
 }
 
@@ -181,14 +196,38 @@ function updateAllCalculations() {
 function updateClassUI(classId, calc, isVisible) {
   const rowEl = document.getElementById(`row_${classId}`);
   const cardEl = document.getElementById(`card_${classId}`);
+  const compactRowEl = document.getElementById(`compact_row_${classId}`);
 
   if (!isVisible) {
     if (rowEl) rowEl.classList.add('hidden');
     if (cardEl) cardEl.classList.add('opacity-40', 'pointer-events-none');
+    if (compactRowEl) compactRowEl.classList.add('hidden');
     return;
   } else {
     if (rowEl) rowEl.classList.remove('hidden');
     if (cardEl) cardEl.classList.remove('opacity-40', 'pointer-events-none');
+    if (compactRowEl) compactRowEl.classList.remove('hidden');
+  }
+
+  // Sync Compact Inputs
+  const cPAudit = document.getElementById(`compact_${classId}_paudit`);
+  const cDSim = document.getElementById(`compact_${classId}_dsim`);
+  const cR = document.getElementById(`compact_${classId}_r`);
+  const stdPAudit = document.getElementById(`${classId}_paudit`);
+  const stdDSim = document.getElementById(`${classId}_dsim`);
+  const stdR = document.getElementById(`${classId}_r`);
+  if (cPAudit && stdPAudit && cPAudit.value !== stdPAudit.value) cPAudit.value = stdPAudit.value;
+  if (cDSim && stdDSim && cDSim.value !== stdDSim.value) cDSim.value = stdDSim.value;
+  if (cR && stdR && cR.value !== stdR.value) cR.value = stdR.value;
+
+  // Update Compact Target Price
+  const compactTargetEl = document.getElementById(`compact_${classId}_target`);
+  if (compactTargetEl) {
+    if (calc && calc.hasData) {
+      compactTargetEl.textContent = formatCurrency(calc.pTargetRounded);
+    } else {
+      compactTargetEl.textContent = '$—';
+    }
   }
 
   // Update card inline calculated capacity C
@@ -305,15 +344,18 @@ window.copyTargetPrice = function(classId) {
   navigator.clipboard.writeText(priceVal).then(() => {
     showToast(`Copied ${classId.toUpperCase()} Target Price: $${priceVal}`);
     
-    // Quick visual button feedback
+    // Visual button feedback on both standard & compact copy buttons
     const btn = document.getElementById(`copy_btn_${classId}`);
-    if (btn) {
-      const origHtml = btn.innerHTML;
-      btn.innerHTML = `<svg class="w-4 h-4 text-emerald-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
-      setTimeout(() => {
-        btn.innerHTML = origHtml;
-      }, 1500);
-    }
+    const compactBtn = document.getElementById(`compact_copy_btn_${classId}`);
+    [btn, compactBtn].forEach(b => {
+      if (b) {
+        const origHtml = b.innerHTML;
+        b.innerHTML = `<svg class="w-3.5 h-3.5 text-emerald-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+        setTimeout(() => {
+          b.innerHTML = origHtml;
+        }, 1500);
+      }
+    });
   });
 };
 
@@ -336,7 +378,34 @@ window.copyAllPrices = function() {
   const text = prices.join(' | ');
   navigator.clipboard.writeText(text).then(() => {
     showToast(`Copied all prices: ${text}`);
+    const btn = document.getElementById('btn_compact_copy_all');
+    if (btn) {
+      const origText = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.classList.add('bg-emerald-600', 'text-white');
+      setTimeout(() => {
+        btn.textContent = origText;
+        btn.classList.remove('bg-emerald-600', 'text-white');
+      }, 1500);
+    }
   });
+};
+
+window.copyAllCompactTargetPrices = function() {
+  window.copyAllPrices();
+};
+
+// Compact Input Handler (Prototype B)
+window.onCompactInput = function(classId, field, value) {
+  const stdInput = document.getElementById(`${classId}_${field}`);
+  if (stdInput) {
+    stdInput.value = value;
+  }
+  const stateField = field === 'paudit' ? 'pAudit' : (field === 'dsim' ? 'dSim' : 'r');
+  if (state[classId]) {
+    state[classId][stateField] = value;
+  }
+  updateAllCalculations();
 };
 
 // Clear Table & Reset all inputs
@@ -350,11 +419,21 @@ window.clearTable = function() {
     if (dSim) dSim.value = '';
     if (r) r.value = '';
     if (pAudit) pAudit.value = '';
+
+    // Clear compact inputs as well
+    const cDSim = document.getElementById(`compact_${cls.id}_dsim`);
+    const cR = document.getElementById(`compact_${cls.id}_r`);
+    const cPAudit = document.getElementById(`compact_${cls.id}_paudit`);
+    if (cDSim) cDSim.value = '';
+    if (cR) cR.value = '';
+    if (cPAudit) cPAudit.value = '';
   });
 
   window.LAST_ZERO_OUT_DST = null;
   const routeBadge = document.getElementById('zero_out_active_route_badge');
+  const compactBadge = document.getElementById('compact_route_badge');
   if (routeBadge) routeBadge.classList.add('hidden');
+  if (compactBadge) compactBadge.classList.add('hidden');
 
   updateAllCalculations();
   if (typeof localStorage !== 'undefined') {
@@ -363,6 +442,74 @@ window.clearTable = function() {
   isClearingZeroOut = false;
   showToast('Table cleared successfully');
 };
+window.clearAllInputs = window.clearTable;
+
+// UI Mode Toggle (Compact vs Standard)
+window.setUIMode = function(mode) {
+  const isCompact = mode === 'compact';
+  if (isCompact) {
+    document.body.classList.add('amt-compact-mode');
+  } else {
+    document.body.classList.remove('amt-compact-mode');
+  }
+
+  try {
+    localStorage.setItem('amt_ui_mode', mode);
+  } catch (e) {}
+
+  // Update in-page nav toggle buttons
+  const btnCompact = document.getElementById('nav_btn_compact');
+  const btnStandard = document.getElementById('nav_btn_standard');
+  if (btnCompact && btnStandard) {
+    if (isCompact) {
+      btnCompact.className = 'px-2.5 py-1 rounded-full font-semibold transition bg-cyan-600 text-white shadow';
+      btnStandard.className = 'px-2.5 py-1 rounded-full font-semibold transition text-slate-400 hover:text-white';
+    } else {
+      btnStandard.className = 'px-2.5 py-1 rounded-full font-semibold transition bg-cyan-600 text-white shadow';
+      btnCompact.className = 'px-2.5 py-1 rounded-full font-semibold transition text-slate-400 hover:text-white';
+    }
+  }
+
+  // Synchronize inputs across both views
+  CLASSES.forEach(cls => {
+    const stdPAudit = document.getElementById(`${cls.id}_paudit`);
+    const stdDSim = document.getElementById(`${cls.id}_dsim`);
+    const stdR = document.getElementById(`${cls.id}_r`);
+    const cPAudit = document.getElementById(`compact_${cls.id}_paudit`);
+    const cDSim = document.getElementById(`compact_${cls.id}_dsim`);
+    const cR = document.getElementById(`compact_${cls.id}_r`);
+    if (stdPAudit && cPAudit && stdPAudit.value) cPAudit.value = stdPAudit.value;
+    if (stdDSim && cDSim && stdDSim.value) cDSim.value = stdDSim.value;
+    if (stdR && cR && stdR.value) cR.value = stdR.value;
+  });
+
+  // Sync cargo toggles
+  const stdCargo = document.getElementById('toggle_cargo');
+  const compCargo = document.getElementById('compact_toggle_cargo');
+  if (stdCargo && compCargo) {
+    compCargo.checked = stdCargo.checked;
+  }
+};
+
+// Listen for messages from extension parent window
+window.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'AMT_SET_MODE') {
+    window.setUIMode(e.data.mode);
+  }
+});
+
+// Initialize UI mode
+(function initUIMode() {
+  const isInsideIframe = window.self !== window.top;
+  if (!isInsideIframe) {
+    // On the main website, always stay in standard mode
+    window.setUIMode('standard');
+  } else {
+    // Inside the extension sidebar, use saved preference or default to compact
+    const savedMode = localStorage.getItem('amt_ui_mode') || 'compact';
+    window.setUIMode(savedMode);
+  }
+})();
 
 // Load Preset Data (e.g. CDG -> JFK)
 window.loadPreset = function(presetKey = 'jfk') {

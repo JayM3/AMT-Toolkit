@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AMT Toolkit - Side Panel</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #020617;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      height: 40px;
+      background: #0f172a;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #f8fafc;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .badge {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 9999px;
+      background: rgba(6, 182, 212, 0.15);
+      color: #22d3ee;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      font-weight: 600;
+    }
+
+    .mode-toggle {
+      display: flex;
+      align-items: center;
+      background: rgba(2, 6, 23, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 9999px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+      line-height: 1.2;
+    }
+
+    .mode-btn:hover {
+      color: #f8fafc;
+    }
+
+    .mode-btn.active {
+      background: #0891b2;
+      color: #ffffff;
+      box-shadow: 0 1px 4px rgba(6, 182, 212, 0.3);
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #f8fafc;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .frame-container {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: calc(100% - 40px);
+      background-color: #020617;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      background-color: #020617;
+    }
+
+    .loading-spinner {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background-color: #020617;
+      color: #94a3b8;
+      font-size: 12px;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid rgba(6, 182, 212, 0.2);
+      border-top-color: #06b6d4;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">
+      <span>✈ AMT Toolkit</span>
+      <span class="badge">PANEL</span>
+    </div>
+
+    <!-- Mode Toggle Slider -->
+    <div class="mode-toggle" id="mode-toggle" title="Toggle Compact / Standard View">
+      <button type="button" class="mode-btn" id="btn-compact">Compact</button>
+      <button type="button" class="mode-btn" id="btn-standard">Standard</button>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn-icon" id="btn-refresh" title="Reload Calculator">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+      </button>
+      <a href="https://jaym3.github.io/AMT-Toolkit/" target="_blank" rel="noopener noreferrer" class="btn-icon" title="Open Full Screen in New Tab">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <line x1="10" y1="14" x2="21" y2="3"></line>
+        </svg>
+      </a>
+    </div>
+  </div>
+
+  <div class="frame-container">
+    <div class="loading-spinner" id="spinner">
+      <div class="spinner"></div>
+      <span>Loading AMT Toolkit...</span>
+    </div>
+    <iframe id="amt-frame" src="https://jaym3.github.io/AMT-Toolkit/" allow="clipboard-read; clipboard-write"></iframe>
+  </div>
+
+  <script>
+    const frame = document.getElementById('amt-frame');
+    const spinner = document.getElementById('spinner');
+    const btnRefresh = document.getElementById('btn-refresh');
+    const btnCompact = document.getElementById('btn-compact');
+    const btnStandard = document.getElementById('btn-standard');
+    const STORAGE_KEY_MODE = 'amt_ui_mode';
+    let currentMode = localStorage.getItem(STORAGE_KEY_MODE) || 'compact';
+
+    function sendModeToIframe(mode) {
+      try {
+        if (frame && frame.contentWindow) {
+          frame.contentWindow.postMessage({ type: 'AMT_SET_MODE', mode: mode }, '*');
+        }
+      } catch (e) {}
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      localStorage.setItem(STORAGE_KEY_MODE, mode);
+      btnCompact.className = `mode-btn ${mode === 'compact' ? 'active' : ''}`;
+      btnStandard.className = `mode-btn ${mode === 'standard' ? 'active' : ''}`;
+      sendModeToIframe(mode);
+    }
+
+    btnCompact.addEventListener('click', () => setMode('compact'));
+    btnStandard.addEventListener('click', () => setMode('standard'));
+
+    // Initialize mode
+    setMode(currentMode);
+
+    frame.addEventListener('load', () => {
+      if (spinner) {
+        spinner.style.opacity = '0';
+        setTimeout(() => { spinner.style.display = 'none'; }, 300);
+      }
+      setTimeout(() => sendModeToIframe(currentMode), 250);
+    });
+
+    btnRefresh.addEventListener('click', () => {
+      if (spinner) {
+        spinner.style.display = 'flex';
+        spinner.style.opacity = '1';
+      }
+      frame.src = 'https://jaym3.github.io/AMT-Toolkit/';
+    });
+  </script>
+</body>
+</html>

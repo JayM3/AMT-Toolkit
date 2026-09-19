@@ -258,6 +258,176 @@
     <!-- Zero-Out Price Calculator View -->
     <div id="view_zero_out" class="space-y-6 hidden">
 
+    <!-- ========================================================================= -->
+    <!-- COMPACT MODE: PROTOTYPE B (MATRIX GRID FOR EXTENSION SIDEBAR)             -->
+    <!-- ========================================================================= -->
+    <div id="zero_out_compact_container" class="space-y-3">
+      
+      <!-- Compact Header & Mini KPI Toolbar -->
+      <div class="glass-panel rounded-xl px-3.5 py-2.5 border border-slate-800 flex items-center justify-between gap-2 shadow-md">
+        <div class="flex items-center gap-2">
+          <h2 class="text-xs font-bold text-white tracking-tight flex items-center gap-1.5">
+            <span>Zero-Out Price</span>
+          </h2>
+          <span id="compact_route_badge" class="hidden text-[10px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono font-bold"></span>
+          <div class="h-3 w-px bg-slate-800 mx-0.5"></div>
+          <div class="flex items-center gap-1 text-[11px] font-mono-num">
+            <span class="text-slate-500 uppercase text-[9px] font-semibold">Gain:</span>
+            <span id="compact_daily_gain" class="text-emerald-400 font-bold">+$0/day</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Cargo Toggle -->
+          <label class="flex items-center gap-1 text-[11px] text-slate-300 cursor-pointer select-none">
+            <input type="checkbox" id="compact_toggle_cargo" checked onchange="toggleCargo(this.checked)" class="w-3.5 h-3.5 rounded text-purple-600 focus:ring-purple-500 bg-slate-700 border-slate-600">
+            <span>Cargo</span>
+          </label>
+          <div class="h-3 w-px bg-slate-800"></div>
+          <!-- Copy All Button -->
+          <button type="button" onclick="copyAllCompactTargetPrices()" id="btn_compact_copy_all" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-cyan-600 text-slate-300 hover:text-white text-[10px] font-semibold transition" title="Copy all target prices">
+            Copy All
+          </button>
+          <!-- Clear Table Button -->
+          <button type="button" onclick="clearAllInputs()" class="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 transition" title="Clear all inputs">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Prototype B: Matrix Table Grid -->
+      <div class="glass-panel rounded-xl overflow-hidden border border-slate-800 shadow-md">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="border-b border-slate-800 bg-slate-900/80 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+              <th class="py-2 px-2.5">Class</th>
+              <th class="py-2 px-1 text-center">Audit $</th>
+              <th class="py-2 px-1 text-center">Demand</th>
+              <th class="py-2 px-1 text-center text-cyan-400">Remain</th>
+              <th class="py-2 px-2 text-right">Target</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60 font-mono-num text-[11px]">
+            
+            <!-- Row: Economy -->
+            <tr id="compact_row_eco" class="hover:bg-slate-800/30 transition">
+              <td class="py-2 px-2.5 font-sans">
+                <div class="flex items-center gap-1.5">
+                  <span>💺</span>
+                  <span class="font-bold text-white text-xs">Y</span>
+                </div>
+              </td>
+              <td class="py-1 px-1">
+                <input type="number" id="compact_eco_paudit" placeholder="Audit" class="amt-micro-input text-center text-[10px] w-16" oninput="onCompactInput('eco', 'paudit', this.value)">
+              </td>
+              <td class="py-1 px-1">
+                <input type="number" id="compact_eco_dsim" placeholder="Demand" class="amt-micro-input text-center text-[10px] w-16" oninput="onCompactInput('eco', 'dsim', this.value)">
+              </td>
+              <td class="py-1 px-1">
+                <input type="number" id="compact_eco_r" placeholder="Remain" class="amt-micro-input text-center text-[10px] w-16 border-cyan-900/60 text-cyan-300" oninput="onCompactInput('eco', 'r', this.value)">
+              </td>
+              <td class="py-1 px-2 text-right font-sans">
+                <div class="flex items-center justify-end gap-1">
+                  <span class="font-bold font-mono-num text-cyan-300 text-xs" id="compact_eco_target">$—</span>
+                  <button id="compact_copy_btn_eco" onclick="copyTargetPrice('eco')" type="button" class="w-5 h-5 rounded bg-slate-800 hover:bg-cyan-600 text-slate-400 hover:text-white flex items-center justify-center transition" title="Copy Target Price">
+                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row: Business -->
+            <tr id="compact_row_bus" class="hover:bg-slate-800/30 transition">
+              <td class="py-2 px-2.5 font-sans">
+                <div class="flex items-center gap-1.5">
+                  <span>💼</span>
+                  <span class="font-bold text-white text-xs">J</span>
+                </div>
+              </td>
+              <td class="py-1 px-1">
+                <input type="number" id="compact_bus_paudit" placeholder="Audit" class="amt-micro-input text-center text-[10px] w-16" oninput="onCompactInput('bus', 'paudit', this.value)">
+              </td>
+              <td class="py-1 px-1">
+                <input type="number" id="compact_bus_dsim" placeholder="Demand" class="amt-micro-input text-center text-[10px] w-16" oninput="onCompactInput('bus', 'dsim', this.value)">
+              </td>
+              <td class="py-1 px-1">
+                <input type="number" id="compact_bus_r" placeholder="Remain" class="amt-micro-input text-center text-[10px] w-16 border-blue-900/60 text-blue-300" oninput="onCompactInput('bus', 'r', this.value)">
+              </td>
+              <td class="py-1 px-2 text-right font-sans">
+                <div class="flex items-center justify-end gap-1">
+                  <span class="font-bold font-mono-num text-blue-300 text-xs" id="compact_bus_target">$—</span>
+                  <button id="compact_copy_btn_bus" onclick="copyTargetPrice('bus')" type="button" class="w-5 h-5 rounded bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white flex items-center justify-center transition" title="Copy Target Price">
+                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row: First Class -->
+            <tr id="compact_row_first" class="hover:bg-slate-800/30 transition">
+              <td class="py-2 px-2.5 font-sans">
+                <div class="flex items-center gap-1.5">
+                  <span>👑</span>
+                  <span class="font-bold text-white text-xs">F</span>
+                </div>
+              </td>
+              <td class="py-1 px-1">
+                <input type="number" id="compact_first_paudit" placeholder="Audit" class="amt-micro-input text-center text-[10px] w-16" oninput="onCompactInput('first', 'paudit', this.value)">
+              </td>
+              <td class="py-1 px-1">
+                <input type="number" id="compact_first_dsim" placeholder="Demand" class="amt-micro-input text-center text-[10px] w-16" oninput="onCompactInput('first', 'dsim', this.value)">
+              </td>
+              <td class="py-1 px-1">
+                <input type="number" id="compact_first_r" placeholder="Remain" class="amt-micro-input text-center text-[10px] w-16 border-amber-900/60 text-amber-300" oninput="onCompactInput('first', 'r', this.value)">
+              </td>
+              <td class="py-1 px-2 text-right font-sans">
+                <div class="flex items-center justify-end gap-1">
+                  <span class="font-bold font-mono-num text-amber-300 text-xs" id="compact_first_target">$—</span>
+                  <button id="compact_copy_btn_first" onclick="copyTargetPrice('first')" type="button" class="w-5 h-5 rounded bg-slate-800 hover:bg-amber-600 text-slate-400 hover:text-white flex items-center justify-center transition" title="Copy Target Price">
+                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row: Cargo -->
+            <tr id="compact_row_cargo" class="hover:bg-slate-800/30 transition">
+              <td class="py-2 px-2.5 font-sans">
+                <div class="flex items-center gap-1.5">
+                  <span>📦</span>
+                  <span class="font-bold text-white text-xs">C</span>
+                </div>
+              </td>
+              <td class="py-1 px-1">
+                <input type="number" id="compact_cargo_paudit" placeholder="Audit" class="amt-micro-input text-center text-[10px] w-16" oninput="onCompactInput('cargo', 'paudit', this.value)">
+              </td>
+              <td class="py-1 px-1">
+                <input type="number" id="compact_cargo_dsim" placeholder="Demand" class="amt-micro-input text-center text-[10px] w-16" oninput="onCompactInput('cargo', 'dsim', this.value)">
+              </td>
+              <td class="py-1 px-1">
+                <input type="number" id="compact_cargo_r" placeholder="Remain" class="amt-micro-input text-center text-[10px] w-16 border-purple-900/60 text-purple-300" oninput="onCompactInput('cargo', 'r', this.value)">
+              </td>
+              <td class="py-1 px-2 text-right font-sans">
+                <div class="flex items-center justify-end gap-1">
+                  <span class="font-bold font-mono-num text-purple-300 text-xs" id="compact_cargo_target">$—</span>
+                  <button id="compact_copy_btn_cargo" onclick="copyTargetPrice('cargo')" type="button" class="w-5 h-5 rounded bg-slate-800 hover:bg-purple-600 text-slate-400 hover:text-white flex items-center justify-center transition" title="Copy Target Price">
+                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- STANDARD MODE: ORIGINAL EXPANDED ZERO-OUT PRICE VIEW                      -->
+    <!-- ========================================================================= -->
+    <div id="zero_out_standard_container" class="space-y-6">
+
     <!-- Unified Tool Control & Summary Stats Box -->
     <section class="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-xl space-y-4">
       
@@ -752,6 +922,7 @@
 
     </aside>
 
+    </div><!-- End of #zero_out_standard_container -->
     </div><!-- End of #view_zero_out -->
 
     <!-- Seat Configurator View -->

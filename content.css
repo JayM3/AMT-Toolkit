@@ -1,0 +1,251 @@
+/* ==========================================================================
+   AMT Toolkit - In-Page Docked Sidebar Styles for Airlines Manager
+   ========================================================================== */
+
+/* Toggle Tab on the right edge */
+#amt-toggle-tab {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 999998;
+  background: linear-gradient(135deg, #0891b2, #1d4ed8);
+  color: #ffffff;
+  padding: 10px 8px 10px 10px;
+  border-radius: 8px 0 0 8px;
+  box-shadow: -2px 4px 16px rgba(0, 0, 0, 0.45), 0 0 8px rgba(6, 182, 212, 0.3);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  user-select: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-right: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#amt-toggle-tab:hover {
+  background: linear-gradient(135deg, #06b6d4, #2563eb);
+  padding-left: 14px;
+  box-shadow: -4px 6px 20px rgba(6, 182, 212, 0.5);
+}
+
+#amt-toggle-tab .amt-tab-icon {
+  font-size: 16px;
+  line-height: 1;
+  display: inline-block;
+  transform: rotate(-45deg);
+}
+
+#amt-toggle-tab .amt-tab-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  text-transform: uppercase;
+}
+
+/* Sidebar Container */
+#amt-sidebar-container {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999999;
+  background-color: #090d16;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+#amt-sidebar-container.amt-closed {
+  transform: translateX(100%);
+  pointer-events: none;
+}
+
+#amt-sidebar-container.amt-open {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+/* Drag Resizer on Left Edge */
+#amt-sidebar-resizer {
+  position: absolute;
+  left: -5px;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  cursor: ew-resize;
+  z-index: 10;
+  user-select: none;
+}
+
+#amt-sidebar-resizer:hover::after,
+#amt-sidebar-resizer.amt-resizing::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #06b6d4;
+  box-shadow: 0 0 8px #06b6d4;
+}
+
+/* Sidebar Header Bar */
+.amt-sidebar-header {
+  height: 42px;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  user-select: none;
+  flex-shrink: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.amt-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #f8fafc;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.amt-header-title .amt-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: rgba(6, 182, 212, 0.15);
+  color: #22d3ee;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  font-weight: 600;
+}
+
+/* Mode Toggle Segmented Slider in Header */
+.amt-mode-toggle {
+  display: flex;
+  align-items: center;
+  background: rgba(2, 6, 23, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  padding: 2px;
+  gap: 2px;
+  margin: 0 8px;
+}
+
+.amt-mode-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  line-height: 1.2;
+}
+
+.amt-mode-btn:hover {
+  color: #f8fafc;
+}
+
+.amt-mode-btn.active {
+  background: #0891b2;
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(6, 182, 212, 0.3);
+}
+
+.amt-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.amt-btn-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.amt-btn-icon:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.amt-btn-close:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Sidebar Iframe & Loading State */
+.amt-sidebar-body {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: calc(100% - 42px);
+  background-color: #020617;
+  overflow: hidden;
+}
+
+#amt-sidebar-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background-color: #020617;
+  display: block;
+}
+
+.amt-loading-spinner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background-color: #020617;
+  color: #94a3b8;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 12px;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.amt-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(6, 182, 212, 0.2);
+  border-top-color: #06b6d4;
+  border-radius: 50%;
+  animation: amt-spin 0.8s linear infinite;
+}
+
+@keyframes amt-spin {
+  to { transform: rotate(360deg); }
+}

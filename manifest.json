@@ -1,0 +1,61 @@
+{
+  "manifest_version": 3,
+  "name": "AMT Toolkit - Airlines Manager Tycoon",
+  "version": "1.0.0",
+  "description": "Side-by-side toolkit for Airlines Manager: Tycoon with zero-out price calculator, seat optimizer, and route tools.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Open AMT Toolkit Side Panel",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "permissions": [
+    "sidePanel",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*.airlines-manager.com/*",
+    "http://*.airlines-manager.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.airlines-manager.com/*",
+        "http://*.airlines-manager.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/icon16.png",
+        "icons/icon48.png",
+        "icons/icon128.png",
+        "sidepanel.html"
+      ],
+      "matches": [
+        "https://*.airlines-manager.com/*",
+        "http://*.airlines-manager.com/*"
+      ]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; frame-src https://jaym3.github.io http://localhost:* http://127.0.0.1:*;"
+  }
+}
