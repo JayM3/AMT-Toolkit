@@ -510,6 +510,26 @@ window.clearTable = function() {
 };
 window.clearAllInputs = window.clearTable;
 
+/**
+ * Detect if the app is running in extension sidebar / docked sidepanel / iframe mode
+ */
+window.isSidebarMode = function() {
+  try {
+    if (window.self !== window.top) return true;
+  } catch (e) {
+    return true;
+  }
+  if (typeof document !== 'undefined') {
+    if (document.documentElement && document.documentElement.classList.contains('amt-extension')) return true;
+    if (document.body && document.body.classList.contains('amt-extension')) return true;
+  }
+  if (typeof window !== 'undefined' && window.location) {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('sidebar') || params.get('mode') === 'sidebar') return true;
+  }
+  return false;
+};
+
 // UI Mode Toggle (Compact vs Standard)
 window.setUIMode = function(mode) {
   const isCompact = mode === 'compact';
@@ -547,7 +567,7 @@ window.setUIMode = function(mode) {
   // Hide brand logo in extension/addon
   const brandLogo = document.getElementById('header_brand_logo');
   if (brandLogo) {
-    const isExtension = document.body.classList.contains('amt-extension') || (window.self !== window.top);
+    const isExtension = (window.isSidebarMode && window.isSidebarMode()) || document.body.classList.contains('amt-extension') || (window.self !== window.top);
     if (isExtension || isCompact) {
       brandLogo.style.setProperty('display', 'none', 'important');
     } else {
@@ -1074,9 +1094,9 @@ window.addEventListener('message', (e) => {
 
 // Initialize UI mode
 (function initUIMode() {
-  const isInsideIframe = window.self !== window.top;
+  const isSidebar = window.isSidebarMode && window.isSidebarMode();
   const brandLogo = document.getElementById('header_brand_logo');
-  if (!isInsideIframe) {
+  if (!isSidebar) {
     // On the main website, always stay in standard mode
     document.body.classList.remove('amt-extension');
     if (brandLogo) brandLogo.style.setProperty('display', 'flex', 'important');
@@ -1715,6 +1735,11 @@ window.updateGlobeHubDisplay = updateGlobeHubDisplay;
  * Switch top navigation tabs
  */
 function switchTab(tabId) {
+  const isSidebar = window.isSidebarMode && window.isSidebarMode();
+  if (isSidebar && tabId === 'home') {
+    tabId = 'zero-out';
+  }
+
   const navHome = document.getElementById('nav_home');
   const navZeroOut = document.getElementById('nav_zero_out');
   const navSeatConfig = document.getElementById('nav_seat_config');
@@ -1736,7 +1761,11 @@ function switchTab(tabId) {
 
   if (typeof localStorage !== 'undefined') {
     try {
-      localStorage.setItem('am_active_tab', tabId);
+      if (isSidebar) {
+        localStorage.setItem('am_sidebar_active_tab', tabId);
+      } else {
+        localStorage.setItem('am_active_tab', tabId);
+      }
     } catch (e) {}
   }
 
@@ -1774,6 +1803,10 @@ function switchTab(tabId) {
   }
 
   if (tabId === 'home') {
+    if (isSidebar) {
+      switchTab('zero-out');
+      return;
+    }
     if (navHome) {
       navHome.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tab-btn-active border transition shadow-sm';
       if (pulseHome) pulseHome.classList.remove('hidden');
@@ -1916,21 +1949,40 @@ document.addEventListener('DOMContentLoaded', () => {
     updateAuditsBadges();
   }
 
-  const savedTab = (typeof localStorage !== 'undefined') ? localStorage.getItem('am_active_tab') : null;
+  const isSidebar = window.isSidebarMode && window.isSidebarMode();
+  const savedTab = (typeof localStorage !== 'undefined')
+    ? (isSidebar ? localStorage.getItem('am_sidebar_active_tab') : localStorage.getItem('am_active_tab'))
+    : null;
   const hash = window.location.hash;
-  const initialTab = hash === '#circuit-finder'
-    ? 'circuit-finder'
-    : (hash === '#route-finder'
-      ? 'route-finder'
-      : (hash === '#seat-config'
-        ? 'seat-config'
-        : (hash === '#zero-out'
-          ? 'zero-out'
-          : (hash === '#home' ? 'home' : (savedTab || 'home')))));
+
+  let initialTab;
+  if (isSidebar) {
+    // For sidebar only: homepage is forbidden, default is Zero-Out price
+    if (hash === '#circuit-finder') initialTab = 'circuit-finder';
+    else if (hash === '#route-finder') initialTab = 'route-finder';
+    else if (hash === '#seat-config') initialTab = 'seat-config';
+    else if (hash === '#zero-out') initialTab = 'zero-out';
+    else if (savedTab && savedTab !== 'home') initialTab = savedTab;
+    else initialTab = 'zero-out';
+  } else {
+    initialTab = hash === '#circuit-finder'
+      ? 'circuit-finder'
+      : (hash === '#route-finder'
+        ? 'route-finder'
+        : (hash === '#seat-config'
+          ? 'seat-config'
+          : (hash === '#zero-out'
+            ? 'zero-out'
+            : (hash === '#home' ? 'home' : (savedTab || 'home')))));
+  }
   switchTab(initialTab);
 
   window.addEventListener('hashchange', () => {
     const rawHash = (window.location.hash || '').replace('#', '');
+    if (window.isSidebarMode && window.isSidebarMode() && rawHash === 'home') {
+      switchTab('zero-out');
+      return;
+    }
     if (['home', 'zero-out', 'seat-config', 'route-finder', 'circuit-finder'].includes(rawHash)) {
       switchTab(rawHash);
     }
@@ -7503,3 +7555,269 @@ function renderSeatConfigComparator() {
   `;
 }
 window.renderSeatConfigComparator = renderSeatConfigComparator;
+
+/* ========================================================================== */
+/* AMT DATA SYNC & BACKUP MODULE (1-Click Clipboard & JSON File Sync)         */
+/* ========================================================================== */
+
+const AMT_SYNC_KEYS = [
+  'am_route_audits_v1',
+  'am_saved_circuits_v1',
+  'am_cf_owned_hubs_v1',
+  'am_zero_out_state',
+  'am_circuit_state',
+  'am_cf_state_v1',
+  'am_route_finder_state_v1',
+  'amt_ui_mode'
+];
+
+function openSyncModal() {
+  const modal = document.getElementById('amt_sync_modal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  updateSyncModalStats();
+}
+window.openSyncModal = openSyncModal;
+
+function closeSyncModal() {
+  const modal = document.getElementById('amt_sync_modal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  const manualBox = document.getElementById('sync_manual_paste_container');
+  if (manualBox) manualBox.classList.add('hidden');
+}
+window.closeSyncModal = closeSyncModal;
+
+function handleSyncModalBackdropClick(event) {
+  if (event.target && event.target.id === 'amt_sync_modal') {
+    closeSyncModal();
+  }
+}
+window.handleSyncModalBackdropClick = handleSyncModalBackdropClick;
+
+function updateSyncModalStats() {
+  const auditsEl = document.getElementById('sync_stat_audits');
+  const circuitsEl = document.getElementById('sync_stat_circuits');
+  const hubsEl = document.getElementById('sync_stat_hubs');
+
+  let auditsCount = 0;
+  let circuitsCount = 0;
+  let hubsCount = 0;
+
+  try {
+    const rawAudits = localStorage.getItem('am_route_audits_v1');
+    if (rawAudits) auditsCount = JSON.parse(rawAudits).length || 0;
+  } catch (e) {}
+
+  try {
+    const rawCircuits = localStorage.getItem('am_saved_circuits_v1');
+    if (rawCircuits) circuitsCount = JSON.parse(rawCircuits).length || 0;
+  } catch (e) {}
+
+  try {
+    const rawHubs = localStorage.getItem('am_cf_owned_hubs_v1');
+    if (rawHubs) hubsCount = JSON.parse(rawHubs).length || 0;
+  } catch (e) {}
+
+  if (auditsEl) auditsEl.textContent = auditsCount;
+  if (circuitsEl) circuitsEl.textContent = circuitsCount;
+  if (hubsEl) hubsEl.textContent = hubsCount;
+}
+window.updateSyncModalStats = updateSyncModalStats;
+
+function exportSyncPayload() {
+  const payloadData = {};
+  AMT_SYNC_KEYS.forEach(key => {
+    try {
+      const val = localStorage.getItem(key);
+      if (val !== null) {
+        payloadData[key] = JSON.parse(val);
+      }
+    } catch (e) {
+      payloadData[key] = localStorage.getItem(key);
+    }
+  });
+
+  return {
+    app: 'AMT-Toolkit',
+    version: '1.0.0',
+    exportedAt: new Date().toISOString(),
+    summary: {
+      audits: Array.isArray(payloadData['am_route_audits_v1']) ? payloadData['am_route_audits_v1'].length : 0,
+      circuits: Array.isArray(payloadData['am_saved_circuits_v1']) ? payloadData['am_saved_circuits_v1'].length : 0,
+      hubs: Array.isArray(payloadData['am_cf_owned_hubs_v1']) ? payloadData['am_cf_owned_hubs_v1'].length : 0
+    },
+    data: payloadData
+  };
+}
+window.exportSyncPayload = exportSyncPayload;
+
+function copySyncToClipboard() {
+  const payload = exportSyncPayload();
+  const jsonStr = JSON.stringify(payload);
+
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    navigator.clipboard.writeText(jsonStr).then(() => {
+      if (typeof showToast === 'function') {
+        showToast('✓ Sync data copied to clipboard! Paste it in your other window.', 'success');
+      } else {
+        alert('Sync data copied to clipboard!');
+      }
+    }).catch(err => {
+      fallbackCopyToClipboard(jsonStr);
+    });
+  } else {
+    fallbackCopyToClipboard(jsonStr);
+  }
+}
+window.copySyncToClipboard = copySyncToClipboard;
+
+function fallbackCopyToClipboard(text) {
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    if (successful) {
+      if (typeof showToast === 'function') {
+        showToast('✓ Sync data copied to clipboard! Paste it in your other window.', 'success');
+      } else {
+        alert('Sync data copied to clipboard!');
+      }
+    } else {
+      throw new Error('execCommand failed');
+    }
+  } catch (e) {
+    prompt('Copy this sync data manually:', text);
+  }
+}
+
+function pasteSyncFromClipboard() {
+  if (navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
+    navigator.clipboard.readText().then(text => {
+      if (!text || !text.trim()) {
+        if (typeof showToast === 'function') {
+          showToast('Clipboard is empty. Copy sync data first.', 'warning');
+        } else {
+          alert('Clipboard is empty.');
+        }
+        return;
+      }
+      applySyncString(text.trim());
+    }).catch(err => {
+      showManualPasteBox();
+    });
+  } else {
+    showManualPasteBox();
+  }
+}
+window.pasteSyncFromClipboard = pasteSyncFromClipboard;
+
+function showManualPasteBox() {
+  const manualBox = document.getElementById('sync_manual_paste_container');
+  const manualInput = document.getElementById('sync_manual_paste_input');
+  if (manualBox) manualBox.classList.remove('hidden');
+  if (manualInput) {
+    manualInput.focus();
+    manualInput.select();
+  }
+  if (typeof showToast === 'function') {
+    showToast('Clipboard access blocked. Please paste data in the box below.', 'info');
+  }
+}
+
+function applyManualPastedData() {
+  const manualInput = document.getElementById('sync_manual_paste_input');
+  if (!manualInput || !manualInput.value.trim()) {
+    if (typeof showToast === 'function') {
+      showToast('Please paste valid sync data first.', 'warning');
+    }
+    return;
+  }
+  applySyncString(manualInput.value.trim());
+}
+window.applyManualPastedData = applyManualPastedData;
+
+function applySyncString(jsonStr) {
+  try {
+    const parsed = JSON.parse(jsonStr);
+    let dataToRestore = null;
+
+    if (parsed && parsed.app === 'AMT-Toolkit' && parsed.data) {
+      dataToRestore = parsed.data;
+    } else if (parsed && typeof parsed === 'object') {
+      dataToRestore = parsed;
+    }
+
+    if (!dataToRestore || typeof dataToRestore !== 'object') {
+      throw new Error('Unrecognized or invalid AMT sync format.');
+    }
+
+    let restoredCount = 0;
+    AMT_SYNC_KEYS.forEach(key => {
+      if (dataToRestore[key] !== undefined) {
+        const val = typeof dataToRestore[key] === 'string' ? dataToRestore[key] : JSON.stringify(dataToRestore[key]);
+        localStorage.setItem(key, val);
+        restoredCount++;
+      }
+    });
+
+    if (restoredCount === 0) {
+      throw new Error('No compatible AMT Toolkit data found in payload.');
+    }
+
+    if (typeof showToast === 'function') {
+      showToast(`✓ Synced ${restoredCount} datasets! Updating application...`, 'success');
+    }
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 700);
+
+  } catch (err) {
+    if (typeof showToast === 'function') {
+      showToast('Sync failed: ' + err.message, 'error');
+    } else {
+      alert('Sync failed: ' + err.message);
+    }
+  }
+}
+window.applySyncString = applySyncString;
+
+function downloadFullBackupFile() {
+  const payload = exportSyncPayload();
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
+  const downloadAnchor = document.createElement('a');
+  downloadAnchor.setAttribute("href", dataStr);
+  downloadAnchor.setAttribute("download", `amt_toolkit_full_backup_${new Date().toISOString().slice(0,10)}.json`);
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  downloadAnchor.remove();
+
+  if (typeof showToast === 'function') {
+    showToast('✓ Full backup file downloaded.', 'success');
+  }
+}
+window.downloadFullBackupFile = downloadFullBackupFile;
+
+function handleFullBackupImport(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      applySyncString(e.target.result);
+    } catch (err) {
+      alert('Error reading backup file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+window.handleFullBackupImport = handleFullBackupImport;
+

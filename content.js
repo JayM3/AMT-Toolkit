@@ -15,6 +15,7 @@
   const STORAGE_KEY_WIDTH = 'amt_sidebar_width';
   const STORAGE_KEY_MODE = 'amt_ui_mode';
   const APP_URL = 'https://jaym3.github.io/AMT-Toolkit/';
+  const APP_IFRAME_URL = 'https://jaym3.github.io/AMT-Toolkit/?sidebar=true';
 
   // Load saved state
   let isOpen = localStorage.getItem(STORAGE_KEY_OPEN) !== 'false'; // default to open
@@ -80,7 +81,7 @@
         <div class="amt-spinner"></div>
         <span>Loading AMT Toolkit...</span>
       </div>
-      <iframe id="amt-sidebar-iframe" src="${APP_URL}" allow="clipboard-read; clipboard-write"></iframe>
+      <iframe id="amt-sidebar-iframe" src="${APP_IFRAME_URL}" allow="clipboard-read; clipboard-write"></iframe>
     </div>
   `;
 
@@ -161,7 +162,7 @@
       spinner.style.display = 'flex';
       spinner.style.opacity = '1';
     }
-    iframe.src = APP_URL;
+    iframe.src = APP_IFRAME_URL;
   });
 
   // Keyboard shortcut: Alt + A

@@ -9,6 +9,22 @@
   <link rel="icon" type="image/png" sizes="16x16" href="icons/icon16.png">
   <link rel="apple-touch-icon" sizes="128x128" href="icons/icon128.png">
   
+  <!-- Early Sidebar Detection (prevents flash of Home tab/view in sidebar) -->
+  <script>
+    (function() {
+      try {
+        var isSidebar = (window.self !== window.top) ||
+          (new URLSearchParams(window.location.search).has('sidebar')) ||
+          (new URLSearchParams(window.location.search).get('mode') === 'sidebar');
+        if (isSidebar) {
+          document.documentElement.classList.add('amt-extension');
+        }
+      } catch (e) {
+        document.documentElement.classList.add('amt-extension');
+      }
+    })();
+  </script>
+
   <!-- Tailwind CSS CDN (v3) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -42,12 +58,22 @@
     body.amt-compact-mode #zo_compact_fab { display: block !important; }
     body:not(.amt-compact-mode) #zo_compact_fab { display: none !important; }
 
-    /* Hide logo/title in the extension/addon to save vertical space */
+    /* Hide logo/title, Home nav button, homepage view, and install link in extension/sidebar */
+    html.amt-extension #header_brand_logo,
     body.amt-extension #header_brand_logo,
-    body.amt-compact-mode #header_brand_logo {
+    body.amt-compact-mode #header_brand_logo,
+    html.amt-extension #nav_home,
+    body.amt-extension #nav_home,
+    html.amt-extension #view_home,
+    body.amt-extension #view_home,
+    html.amt-extension #header_get_addon,
+    body.amt-extension #header_get_addon,
+    html.amt-extension a[href="#install-guide"],
+    body.amt-extension a[href="#install-guide"] {
       display: none !important;
     }
 
+    html.amt-extension header > div,
     body.amt-extension header > div,
     body.amt-compact-mode header > div {
       padding-top: 0.5rem !important;
@@ -150,8 +176,15 @@
       </nav>
       
       <!-- Right Header Actions -->
-      <div class="hidden sm:flex items-center gap-2.5">
-        <a href="#install-guide" onclick="switchTab('home'); setTimeout(() => { const el = document.getElementById('install-guide'); if(el) el.scrollIntoView({behavior:'smooth'}); }, 100); return false;" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white transition shadow-sm shadow-cyan-600/20">
+      <div class="flex items-center gap-2">
+        <button id="btn_open_sync_modal" onclick="openSyncModal()" type="button" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/90 hover:bg-slate-800 text-cyan-300 hover:text-cyan-200 border border-slate-700/80 hover:border-cyan-500/50 transition shadow-sm" title="Sync data between tabs or backup">
+          <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          <span class="hidden md:inline">Sync & Backup</span>
+          <span class="md:hidden">Sync</span>
+        </button>
+        <a href="#install-guide" id="header_get_addon" onclick="switchTab('home'); setTimeout(() => { const el = document.getElementById('install-guide'); if(el) el.scrollIntoView({behavior:'smooth'}); }, 100); return false;" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white transition shadow-sm shadow-cyan-600/20">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
           </svg>
@@ -1419,6 +1452,14 @@
             </svg>
             <span>Route Audits</span>
             <span class="floating_audits_badge ml-auto px-1.5 py-0.2 rounded-full bg-cyan-500 text-slate-950 text-[10px] font-bold">0</span>
+          </button>
+
+          <!-- Sync & Backup -->
+          <button type="button" onclick="openSyncModal()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-cyan-300 hover:text-cyan-200 border border-slate-700/80 hover:border-cyan-500/50 text-xs font-semibold transition text-left w-full cursor-pointer" title="Sync & Backup Data">
+            <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span>Sync & Backup</span>
           </button>
 
           <!-- Clear Table -->
@@ -3931,6 +3972,133 @@
           </button>
         </div>
         <button onclick="closeSavedAuditsModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold transition">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: DATA SYNC & BACKUP                                                 -->
+  <!-- ========================================================================= -->
+  <div id="amt_sync_modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 modal-backdrop" onclick="handleSyncModalBackdropClick(event)">
+    <div class="glass-panel max-w-xl w-full rounded-2xl border border-slate-700/80 shadow-2xl p-5 space-y-4 max-h-[92vh] flex flex-col" onclick="event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-cyan-950/80 border border-cyan-700/60 flex items-center justify-center text-cyan-400 shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <span>Data Sync & Backup</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">1-CLICK</span>
+            </h3>
+            <p class="text-xs text-slate-400">Transfer data between the sidebar and website tab, or save offline backups.</p>
+          </div>
+        </div>
+        <button onclick="closeSyncModal()" class="text-slate-400 hover:text-white text-lg transition p-1">&times;</button>
+      </div>
+
+      <!-- Current Storage Summary -->
+      <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2 shrink-0">
+        <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Current Data in this Window</div>
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+            <div class="text-base font-bold text-white font-mono-num" id="sync_stat_audits">0</div>
+            <div class="text-[10px] text-slate-400">Route Audits</div>
+          </div>
+          <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+            <div class="text-base font-bold text-cyan-300 font-mono-num" id="sync_stat_circuits">0</div>
+            <div class="text-[10px] text-slate-400">Saved Circuits</div>
+          </div>
+          <div class="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+            <div class="text-base font-bold text-emerald-400 font-mono-num" id="sync_stat_hubs">0</div>
+            <div class="text-[10px] text-slate-400">Owned Hubs</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 1: Quick Clipboard Sync -->
+      <div class="p-4 rounded-xl bg-cyan-950/20 border border-cyan-900/50 space-y-3 shrink-0">
+        <div class="flex items-center justify-between">
+          <div class="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            <span>Quick Sync (Sidebar ⇄ Website)</span>
+          </div>
+          <span class="text-[10px] text-cyan-400/80 font-mono">Clipboard</span>
+        </div>
+        <p class="text-[11px] text-slate-300 leading-relaxed">
+          Open your sidebar and website side-by-side. Click <strong>Copy Sync Data</strong> on one, then click <strong>Paste & Sync</strong> on the other to synchronize everything instantly.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <button type="button" onclick="copySyncToClipboard()" class="w-full py-2 px-3 rounded-lg bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-cyan-600/20">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+            </svg>
+            <span>Copy Sync Data</span>
+          </button>
+          <button type="button" onclick="pasteSyncFromClipboard()" class="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+            </svg>
+            <span>Paste & Sync</span>
+          </button>
+        </div>
+
+        <!-- Manual Paste Box (Hidden by default, shown if clipboard API is blocked) -->
+        <div id="sync_manual_paste_container" class="hidden space-y-2 pt-2 border-t border-cyan-900/40">
+          <div class="text-[11px] text-amber-300 flex items-center gap-1">
+            <span>⚠️ Clipboard read permission unavailable. Paste data below:</span>
+          </div>
+          <textarea id="sync_manual_paste_input" rows="2" placeholder="Paste (Ctrl+V) copied sync data here..." class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none font-mono"></textarea>
+          <button type="button" onclick="applyManualPastedData()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition">
+            Apply Pasted Data
+          </button>
+        </div>
+      </div>
+
+      <!-- Section 2: File Backup & Restore -->
+      <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3 shrink-0">
+        <div class="flex items-center justify-between">
+          <div class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+            </svg>
+            <span>File Backup & Restore</span>
+          </div>
+          <span class="text-[10px] text-slate-500 font-mono">.JSON FILE</span>
+        </div>
+        <p class="text-[11px] text-slate-400 leading-relaxed">
+          Download a full backup file containing all your data to keep safe on your computer or transfer to another device.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <button type="button" onclick="downloadFullBackupFile()" class="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 hover:text-white font-semibold text-xs border border-slate-700 transition flex items-center justify-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            <span>Export Backup (.json)</span>
+          </button>
+          <label class="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 hover:text-white font-semibold text-xs border border-slate-700 transition flex items-center justify-center gap-1.5 cursor-pointer text-center">
+            <input type="file" accept=".json" class="hidden" onchange="handleFullBackupImport(event)">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+            </svg>
+            <span>Import Backup</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs shrink-0">
+        <span class="text-[11px] text-slate-500">100% Client-side • No data leaves your browser</span>
+        <button onclick="closeSyncModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold transition">
           Close
         </button>
       </div>
