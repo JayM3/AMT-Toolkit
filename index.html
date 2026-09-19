@@ -27,8 +27,8 @@
       }
     }
   </script>
-  <link rel="stylesheet" href="styles.css?v=3.3">
-  <link rel="stylesheet" href="homepage.css?v=3.3">
+  <link rel="stylesheet" href="styles.css?v=3.4">
+  <link rel="stylesheet" href="homepage.css?v=3.4">
   <style>
     body.amt-compact-mode #zero_out_standard_container { display: none !important; }
     body.amt-compact-mode #zero_out_compact_container { display: block !important; }
@@ -551,12 +551,12 @@
 
       <!-- Inline Action Bar: Perform Audit & Simulation, Import & Export Values with Airlines Manager -->
       <div class="glass-panel rounded-xl p-2 border border-slate-800 flex flex-col gap-2 shadow-md">
-        <!-- Perform Audit and Simulation Button (On top of Import and Export) -->
-        <button type="button" onclick="performAuditAndSimulation()" id="btn_audit_and_simulate" class="w-full px-3 py-2 rounded-lg bg-purple-950/90 hover:bg-purple-900 border border-purple-600/80 text-purple-200 hover:text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95" title="Click Internal audit, copy audit prices to Change Your Prices, and click Perform a simulation">
-          <svg class="w-3.5 h-3.5 text-purple-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+        <!-- Copy Audit Price to Change Price Button (On top of Import and Export) -->
+        <button type="button" onclick="copyAuditPriceToChangePrice()" id="btn_copy_audit_to_change" class="w-full px-3 py-2 rounded-lg bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-600/80 text-indigo-200 hover:text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95" title="Copy the last reliable audit prices into 'Change Your Prices' on Airlines Manager">
+          <svg class="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
           </svg>
-          <span id="btn_audit_sim_text">Perform Audit &amp; Simulation</span>
+          <span id="btn_copy_audit_text">Copy Audit Price to Change Price</span>
         </button>
 
         <div class="flex items-center justify-between gap-2">
@@ -1112,12 +1112,12 @@
             <span class="floating_audits_badge ml-auto px-1.5 py-0.2 rounded-full bg-cyan-500 text-slate-950 text-[10px] font-bold">0</span>
           </button>
 
-          <!-- Perform Audit & Simulation in Game -->
-          <button type="button" onclick="performAuditAndSimulation()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-purple-950/90 hover:bg-purple-900 border border-purple-600/70 text-purple-200 hover:text-white text-xs font-semibold transition active:scale-95 text-left w-full" title="Perform Audit & Simulation in Game">
-            <svg class="w-3.5 h-3.5 text-purple-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+          <!-- Copy Audit Price to Change Price -->
+          <button type="button" onclick="copyAuditPriceToChangePrice()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-600/70 text-indigo-200 hover:text-white text-xs font-semibold transition active:scale-95 text-left w-full" title="Copy Reliable Audit Prices to Change Your Prices">
+            <svg class="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
             </svg>
-            <span>Audit &amp; Simulate</span>
+            <span>Copy Audit to Change Price</span>
           </button>
 
           <!-- Import Values from Game -->
@@ -3850,7 +3850,7 @@
   <!-- JavaScript Datasets & Logic -->
   <script src="data/aircraft.js?v=2.3"></script>
   <script src="data/airports.js?v=2.3"></script>
-  <script src="app.js?v=3.3"></script>
+  <script src="app.js?v=3.4"></script>
   <script src="route_finder.js?v=2.3"></script>
   <script src="circuit_finder.js?v=2.3"></script>
 </body>

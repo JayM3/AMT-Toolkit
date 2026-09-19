@@ -840,45 +840,45 @@ function resetImportBtn() {
   }
 }
 
-let auditSimTimeoutId = null;
+let copyAuditTimeoutId = null;
 
-window.performAuditAndSimulation = function() {
+window.copyAuditPriceToChangePrice = function() {
   const isInsideIframe = window.self !== window.top;
   if (!isInsideIframe) {
-    showToast('Audit & Simulation automation is available when docked inside Airlines Manager.', 'warning');
+    showToast('Copying audit price is available when docked inside Airlines Manager.', 'warning');
     return;
   }
 
-  const btn = document.getElementById('btn_audit_and_simulate');
-  const btnText = document.getElementById('btn_audit_sim_text');
-  if (btnText) btnText.textContent = 'Auditing & Simulating...';
+  const btn = document.getElementById('btn_copy_audit_to_change');
+  const btnText = document.getElementById('btn_copy_audit_text');
+  if (btnText) btnText.textContent = 'Copying...';
   if (btn) btn.classList.add('opacity-70', 'pointer-events-none');
 
-  if (auditSimTimeoutId) clearTimeout(auditSimTimeoutId);
-  auditSimTimeoutId = setTimeout(() => {
-    resetAuditSimBtn();
-    showToast('Audit & simulation timed out. Please check the game page or reload.', 'warning');
-  }, 12000);
+  if (copyAuditTimeoutId) clearTimeout(copyAuditTimeoutId);
+  copyAuditTimeoutId = setTimeout(() => {
+    resetCopyAuditBtn();
+    showToast('Copy audit prices timed out. Please reload the extension and refresh the page.', 'warning');
+  }, 4500);
 
   try {
     window.parent.postMessage({
-      type: 'AMT_AUDIT_AND_SIMULATE_REQUEST'
+      type: 'AMT_COPY_AUDIT_TO_CHANGE_REQUEST'
     }, '*');
   } catch (err) {
-    console.error('[AMT App] Error posting AMT_AUDIT_AND_SIMULATE_REQUEST:', err);
-    resetAuditSimBtn();
-    if (auditSimTimeoutId) clearTimeout(auditSimTimeoutId);
+    console.error('[AMT App] Error posting AMT_COPY_AUDIT_TO_CHANGE_REQUEST:', err);
+    resetCopyAuditBtn();
+    if (copyAuditTimeoutId) clearTimeout(copyAuditTimeoutId);
   }
 };
 
-function resetAuditSimBtn() {
-  if (auditSimTimeoutId) {
-    clearTimeout(auditSimTimeoutId);
-    auditSimTimeoutId = null;
+function resetCopyAuditBtn() {
+  if (copyAuditTimeoutId) {
+    clearTimeout(copyAuditTimeoutId);
+    copyAuditTimeoutId = null;
   }
-  const btn = document.getElementById('btn_audit_and_simulate');
-  const btnText = document.getElementById('btn_audit_sim_text');
-  if (btnText) btnText.textContent = 'Perform Audit & Simulation';
+  const btn = document.getElementById('btn_copy_audit_to_change');
+  const btnText = document.getElementById('btn_copy_audit_text');
+  if (btnText) btnText.textContent = 'Copy Audit Price to Change Price';
   if (btn) {
     btn.classList.remove('opacity-70', 'pointer-events-none');
   }
@@ -1046,18 +1046,21 @@ window.addEventListener('message', (e) => {
     showToast(e.data.message || 'Failed to export prices to game.', 'warning');
   }
 
-  // Handle audit & simulation status updates
-  if (e.data.type === 'AMT_AUDIT_SIM_STATUS') {
-    if (e.data.status === 'success') {
-      resetAuditSimBtn();
-      showToast(e.data.message || 'Audit & simulation completed! Importing values...', 'success');
-    } else if (e.data.status === 'working') {
-      const btnText = document.getElementById('btn_audit_sim_text');
-      if (btnText && e.data.message) btnText.textContent = e.data.message;
-    } else if (e.data.status === 'error') {
-      resetAuditSimBtn();
-      showToast(e.data.message || 'Audit & simulation failed.', 'warning');
-    }
+  // Handle copy audit to change prices status updates
+  if (e.data.type === 'AMT_COPY_AUDIT_SUCCESS') {
+    resetCopyAuditBtn();
+    const p = e.data.prices || {};
+    const summary = [];
+    if (p.eco) summary.push(`Eco: $${Number(p.eco).toLocaleString()}`);
+    if (p.bus) summary.push(`Bus: $${Number(p.bus).toLocaleString()}`);
+    if (p.first) summary.push(`First: $${Number(p.first).toLocaleString()}`);
+    if (p.cargo) summary.push(`Cargo: $${Number(p.cargo).toLocaleString()}`);
+    showToast(`Audit prices copied to "Change your prices"! (${summary.join(', ')})`, 'success');
+  }
+
+  if (e.data.type === 'AMT_COPY_AUDIT_ERROR') {
+    resetCopyAuditBtn();
+    showToast(e.data.message || 'Failed to copy audit prices.', 'warning');
   }
 });
 

@@ -511,16 +511,15 @@
     }
   }
 
-  // 3. Perform Audit & Simulation Automation
-  async function handleAuditAndSimulate() {
-    console.log('[AMT Extension] handleAuditAndSimulate triggered');
+  // 3. Copy Audit Price to Change Price
+  function handleCopyAuditToChange() {
+    console.log('[AMT Extension] handleCopyAuditToChange triggered');
     const pathname = window.location.pathname;
     const pricingMatch = pathname.match(/\/marketing\/pricing\/(\d+)/);
     if (!pricingMatch) {
       sendToIframe({
-        type: 'AMT_AUDIT_SIM_STATUS',
-        status: 'error',
-        message: 'Please navigate to a Route Pricing page (marketing/pricing/...) to perform audit and simulation.'
+        type: 'AMT_COPY_AUDIT_ERROR',
+        message: 'Please navigate to a Route Pricing page (marketing/pricing/...) to copy audit prices.'
       });
       return;
     }
@@ -530,99 +529,35 @@
       const auditSplit = pageText.split(/INFORMATION ABOUT THE ROUTE|INFORMATIONS SUR LA LIGNE/i);
       const auditText = auditSplit[0] || '';
 
+      // Check Audit Reliability: must be "Reliable" / "Fiable"
       const relMatch = auditText.match(/(?:Reliability|Fiabilité)\s*:\s*([^\n\r]+)/i);
-      const relStatus = relMatch ? relMatch[1].trim() : '';
+      const relStatus = relMatch ? relMatch[1].trim() : 'Unknown';
       const isReliable = /^(?:Reliable|Fiable)$/i.test(relStatus);
-
-      // Helper: find Internal Audit button
-      const findInternalAuditBtn = () => {
-        const candidates = Array.from(document.querySelectorAll('a, button, input[type="button"], input[type="submit"], .btn'));
-        for (const el of candidates) {
-          const text = (el.textContent || el.value || '').trim();
-          if (/^(?:Internal audit|Audit interne)$/i.test(text) || text.includes('Internal audit') || text.includes('Audit interne')) {
-            return el;
-          }
-        }
-        return document.querySelector('a[href*="/audit/"], a[href*="internalAudit"], a[href*="audit"]');
-      };
-
-      // If audit is NOT reliable, click "Internal audit" button first
       if (!isReliable) {
-        const auditBtn = findInternalAuditBtn();
-        if (!auditBtn) {
-          sendToIframe({
-            type: 'AMT_AUDIT_SIM_STATUS',
-            status: 'error',
-            message: 'Could not find "Internal audit" button on this page.'
-          });
-          return;
-        }
-
         sendToIframe({
-          type: 'AMT_AUDIT_SIM_STATUS',
-          status: 'working',
-          message: 'Running Internal Audit...'
+          type: 'AMT_COPY_AUDIT_ERROR',
+          message: `Last audit is not Reliable (found: "${relStatus}"). Please perform an internal audit first.`
         });
-
-        // Set session flag so if clicking triggers page reload, we resume automatically
-        sessionStorage.setItem('amt_auto_audit_sim', JSON.stringify({
-          action: 'fill_and_sim',
-          timestamp: Date.now()
-        }));
-
-        auditBtn.click();
-
-        // Wait to see if page reloads. If not (AJAX), continue after delay
-        await new Promise(r => setTimeout(r, 2200));
-        executeFillAndSimulate();
         return;
       }
 
-      // If already reliable, proceed directly to fill prices and simulate!
-      executeFillAndSimulate();
-
-    } catch (err) {
-      console.error('[AMT Extension] Error in handleAuditAndSimulate:', err);
-      sendToIframe({
-        type: 'AMT_AUDIT_SIM_STATUS',
-        status: 'error',
-        message: 'Audit & simulation failed: ' + err.message
-      });
-    }
-  }
-
-  async function executeFillAndSimulate() {
-    console.log('[AMT Extension] executeFillAndSimulate started');
-    try {
-      const pageText = document.body.innerText || document.body.textContent || '';
-      const auditSplit = pageText.split(/INFORMATION ABOUT THE ROUTE|INFORMATIONS SUR LA LIGNE/i);
-      const auditText = auditSplit[0] || '';
-
-      // 1. Extract Audit Prices: Eco, Bus, First, Cargo
+      // Extract Audit Prices: Eco, Bus, First, Cargo
       const auditPriceMatches = Array.from(auditText.matchAll(/(?:Ideal ticket price|Ideal price\/Tonne|Prix idéal|Prix idéal\/Tonne)\s*:\s*\$?(-?[0-9\s,]+)/gi));
       const pAudit = auditPriceMatches.map(m => parseNumber(m[1]));
 
       if (pAudit.length < 4 || pAudit.some(p => p === null || isNaN(p) || p <= 0)) {
         sendToIframe({
-          type: 'AMT_AUDIT_SIM_STATUS',
-          status: 'error',
+          type: 'AMT_COPY_AUDIT_ERROR',
           message: 'Could not find 4 valid ideal ticket prices from the audit.'
         });
         return;
       }
 
-      sendToIframe({
-        type: 'AMT_AUDIT_SIM_STATUS',
-        status: 'working',
-        message: 'Filling audit prices...'
-      });
-
-      // 2. Find inputs under "CHANGE YOUR PRICES"
+      // Find inputs under "CHANGE YOUR PRICES"
       let inputs = [];
-      const changeHeader = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, div, legend, th, td')).find(el => {
-        const t = (el.textContent || '').trim();
-        return /CHANGE YOUR PRICES|MODIFIER VOS PRIX/i.test(t);
-      });
+      const changeHeader = Array.from(document.querySelectorAll('h1, h2, h3, h4, div, legend, th, td')).find(el => 
+        /CHANGE YOUR PRICES|MODIFIER VOS PRIX/i.test(el.textContent || '')
+      );
       if (changeHeader) {
         const container = changeHeader.closest('.box, form, section, div');
         if (container) {
@@ -641,8 +576,7 @@
 
       if (inputs.length < 4) {
         sendToIframe({
-          type: 'AMT_AUDIT_SIM_STATUS',
-          status: 'error',
+          type: 'AMT_COPY_AUDIT_ERROR',
           message: 'Could not find price inputs under "CHANGE YOUR PRICES".'
         });
         return;
@@ -654,111 +588,37 @@
         input.dispatchEvent(new Event('input', { bubbles: true }));
         input.dispatchEvent(new Event('change', { bubbles: true }));
         
-        // Highlight in purple
+        // Highlight in indigo
+        const origTransition = input.style.transition;
+        const origBorder = input.style.border;
+        const origBoxShadow = input.style.boxShadow;
         input.style.transition = 'all 0.2s ease';
-        input.style.border = '2px solid #a855f7';
-        input.style.boxShadow = '0 0 12px rgba(168, 85, 247, 0.7)';
+        input.style.border = '2px solid #6366f1';
+        input.style.boxShadow = '0 0 12px rgba(99, 102, 241, 0.7)';
         setTimeout(() => {
-          input.style.border = '';
-          input.style.boxShadow = '';
-        }, 2500);
+          input.style.border = origBorder;
+          input.style.boxShadow = origBoxShadow;
+          input.style.transition = origTransition;
+        }, 2200);
       });
 
       sendToIframe({
-        type: 'AMT_AUDIT_SIM_STATUS',
-        status: 'working',
-        message: 'Simulating demand...'
+        type: 'AMT_COPY_AUDIT_SUCCESS',
+        prices: {
+          eco: pAudit[0],
+          bus: pAudit[1],
+          first: pAudit[2],
+          cargo: pAudit[3]
+        }
       });
-
-      // 3. Find "Perform a simulation" button
-      const findSimulateBtn = () => {
-        const candidates = Array.from(document.querySelectorAll('input[type="button"], input[type="submit"], button, a, .btn'));
-        for (const el of candidates) {
-          const text = (el.textContent || el.value || '').trim();
-          if (/^(?:Perform a simulation|Effectuer une simulation)$/i.test(text) ||
-              text.includes('Perform a simulation') ||
-              text.includes('Effectuer une simulation')) {
-            return el;
-          }
-        }
-        return null;
-      };
-
-      const simBtn = findSimulateBtn();
-      if (!simBtn) {
-        sendToIframe({
-          type: 'AMT_AUDIT_SIM_STATUS',
-          status: 'error',
-          message: 'Filled audit prices, but could not find the "Perform a simulation" button.'
-        });
-        return;
-      }
-
-      // Click "Perform a simulation"
-      simBtn.click();
-
-      // Clean up sessionStorage flag
-      sessionStorage.removeItem('amt_auto_audit_sim');
-
-      // 4. Poll for simulation results to appear in SIMULATE DEMAND section, then auto-import
-      let attempts = 0;
-      const checkSimInterval = setInterval(() => {
-        attempts++;
-        const currentText = document.body.innerText || document.body.textContent || '';
-        const simSplit = currentText.split(/(?:SIMULATE DEMAND|SIMULER LA DEMANDE)/i);
-        if (simSplit.length >= 2) {
-          const simSection = simSplit[1].split(/(?:The SUPER Simulation|La SUPER Simulation|Perform a SUPER Simulation|Effectuer une SUPER Simulation|CHANGE YOUR PRICES|MODIFIER VOS PRIX|$)/i)[0];
-          const remDemandMatches = Array.from(simSection.matchAll(/(?:Remaining demand|Demande restante)\s*:\s*(-?[0-9\s,]+)\s*(?:Pax|T)/gi));
-          if (remDemandMatches.length >= 4) {
-            clearInterval(checkSimInterval);
-            sendToIframe({
-              type: 'AMT_AUDIT_SIM_STATUS',
-              status: 'success',
-              message: 'Audit & simulation completed! Importing values...'
-            });
-            // Auto-trigger import values!
-            handleImportRequest();
-            return;
-          }
-        }
-
-        if (attempts >= 16) { // 8 seconds
-          clearInterval(checkSimInterval);
-          sendToIframe({
-            type: 'AMT_AUDIT_SIM_STATUS',
-            status: 'success',
-            message: 'Simulation triggered! Click "Import Values" to load results.'
-          });
-        }
-      }, 500);
 
     } catch (err) {
-      console.error('[AMT Extension] Error in executeFillAndSimulate:', err);
+      console.error('[AMT Extension] Error in handleCopyAuditToChange:', err);
       sendToIframe({
-        type: 'AMT_AUDIT_SIM_STATUS',
-        status: 'error',
-        message: 'Error during simulation: ' + err.message
+        type: 'AMT_COPY_AUDIT_ERROR',
+        message: 'Failed to copy audit prices: ' + err.message
       });
     }
-  }
-
-  // Check if there was a pending auto audit & simulation action from before a page reload
-  try {
-    const pending = sessionStorage.getItem('amt_auto_audit_sim');
-    if (pending) {
-      const parsed = JSON.parse(pending);
-      if (parsed.action === 'fill_and_sim' && (Date.now() - parsed.timestamp < 60000)) {
-        sessionStorage.removeItem('amt_auto_audit_sim');
-        console.log('[AMT Extension] Resuming pending auto audit & simulation after page reload...');
-        setTimeout(() => {
-          executeFillAndSimulate();
-        }, 1000);
-      } else {
-        sessionStorage.removeItem('amt_auto_audit_sim');
-      }
-    }
-  } catch (e) {
-    sessionStorage.removeItem('amt_auto_audit_sim');
   }
 
   // Listen for messages from iframe
@@ -768,8 +628,8 @@
       handleImportRequest();
     } else if (e.data.type === 'AMT_EXPORT_PRICES_REQUEST') {
       handleExportPrices(e.data.prices);
-    } else if (e.data.type === 'AMT_AUDIT_AND_SIMULATE_REQUEST') {
-      handleAuditAndSimulate();
+    } else if (e.data.type === 'AMT_COPY_AUDIT_TO_CHANGE_REQUEST') {
+      handleCopyAuditToChange();
     }
   });
 
