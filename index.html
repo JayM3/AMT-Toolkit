@@ -27,8 +27,8 @@
       }
     }
   </script>
-  <link rel="stylesheet" href="styles.css?v=2.5">
-  <link rel="stylesheet" href="homepage.css?v=2.5">
+  <link rel="stylesheet" href="styles.css?v=2.6">
+  <link rel="stylesheet" href="homepage.css?v=2.6">
   <style>
     body.amt-compact-mode #zero_out_standard_container { display: none !important; }
     body.amt-compact-mode #zero_out_compact_container { display: block !important; }
@@ -38,6 +38,20 @@
     body.amt-compact-mode #zo_floating_actions { display: none !important; }
     body.amt-compact-mode #zo_compact_fab { display: block !important; }
     body:not(.amt-compact-mode) #zo_compact_fab { display: none !important; }
+
+    /* Hide logo/title in the extension/addon to save vertical space */
+    body.amt-extension #header_brand_logo,
+    body.amt-compact-mode #header_brand_logo {
+      display: none !important;
+    }
+
+    body.amt-extension header > div,
+    body.amt-compact-mode header > div {
+      padding-top: 0.5rem !important;
+      padding-bottom: 0.5rem !important;
+      justify-content: center !important;
+      gap: 0.5rem !important;
+    }
 
     .fab-menu {
       transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
@@ -82,7 +96,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
       
       <!-- Brand & Title (Clickable to Homepage) -->
-      <a href="#home" onclick="switchTab('home'); return false;" class="flex items-center space-x-3 cursor-pointer group select-none" aria-label="AMT Toolkit Home">
+      <a href="#home" id="header_brand_logo" onclick="switchTab('home'); return false;" class="flex items-center space-x-3 cursor-pointer group select-none" aria-label="AMT Toolkit Home">
         <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/10 ring-1 ring-white/15 group-hover:ring-cyan-400/50 group-hover:scale-105 transition-all">
           <svg class="w-4 h-4 text-white transform -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
@@ -3787,7 +3801,7 @@
   <!-- JavaScript Datasets & Logic -->
   <script src="data/aircraft.js?v=2.3"></script>
   <script src="data/airports.js?v=2.3"></script>
-  <script src="app.js?v=2.5"></script>
+  <script src="app.js?v=2.6"></script>
   <script src="route_finder.js?v=2.3"></script>
   <script src="circuit_finder.js?v=2.3"></script>
 </body>

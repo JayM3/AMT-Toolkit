@@ -543,6 +543,17 @@ window.setUIMode = function(mode) {
     }
   }
 
+  // Hide brand logo in extension/addon
+  const brandLogo = document.getElementById('header_brand_logo');
+  if (brandLogo) {
+    const isExtension = document.body.classList.contains('amt-extension') || (window.self !== window.top);
+    if (isExtension || isCompact) {
+      brandLogo.style.setProperty('display', 'none', 'important');
+    } else {
+      brandLogo.style.setProperty('display', 'flex', 'important');
+    }
+  }
+
   try {
     localStorage.setItem('amt_ui_mode', mode);
   } catch (e) {}
@@ -789,11 +800,16 @@ window.addEventListener('message', (e) => {
 // Initialize UI mode
 (function initUIMode() {
   const isInsideIframe = window.self !== window.top;
+  const brandLogo = document.getElementById('header_brand_logo');
   if (!isInsideIframe) {
     // On the main website, always stay in standard mode
+    document.body.classList.remove('amt-extension');
+    if (brandLogo) brandLogo.style.setProperty('display', 'flex', 'important');
     window.setUIMode('standard');
   } else {
     // Inside the extension sidebar, use saved preference or default to compact
+    document.body.classList.add('amt-extension');
+    if (brandLogo) brandLogo.style.setProperty('display', 'none', 'important');
     const savedMode = localStorage.getItem('amt_ui_mode') || 'compact';
     window.setUIMode(savedMode);
   }

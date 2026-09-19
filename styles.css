@@ -330,5 +330,20 @@ body:not(.amt-compact-mode) #zo_compact_fab { display: none !important; }
   box-shadow: 0 0 20px rgba(6, 182, 212, 0.7);
 }
 
+/* Hide logo/title in the extension/addon to save vertical space */
+body.amt-extension #header_brand_logo,
+body.amt-compact-mode #header_brand_logo {
+  display: none !important;
+}
+
+body.amt-extension header > div,
+body.amt-compact-mode header > div {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+}
+
+
 
 
