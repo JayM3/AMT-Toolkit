@@ -227,6 +227,17 @@
   toggleTab.addEventListener('click', openSidebar);
   btnClose.addEventListener('click', closeSidebar);
 
+  // Sync state on bfcache restore
+  window.addEventListener('pageshow', () => {
+    try {
+      const savedOpen = localStorage.getItem(STORAGE_KEY_OPEN) !== 'false';
+      if (savedOpen !== isOpen) {
+        if (savedOpen) openSidebar();
+        else closeSidebar();
+      }
+    } catch (e) {}
+  });
+
   // Reload iframe
   btnRefresh.addEventListener('click', () => {
     if (spinner) {

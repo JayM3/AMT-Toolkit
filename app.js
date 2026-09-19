@@ -1959,12 +1959,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let initialTab;
   if (isSidebar) {
-    // For sidebar only: homepage is forbidden, default is Zero-Out price
-    if (hash === '#circuit-finder') initialTab = 'circuit-finder';
+    // For sidebar only: homepage is forbidden, saved preference takes priority over historical hash
+    if (savedTab && savedTab !== 'home' && ['zero-out', 'seat-config', 'route-finder', 'circuit-finder'].includes(savedTab)) {
+      initialTab = savedTab;
+    } else if (hash === '#circuit-finder') initialTab = 'circuit-finder';
     else if (hash === '#route-finder') initialTab = 'route-finder';
     else if (hash === '#seat-config') initialTab = 'seat-config';
     else if (hash === '#zero-out') initialTab = 'zero-out';
-    else if (savedTab && savedTab !== 'home') initialTab = savedTab;
     else initialTab = 'zero-out';
   } else {
     initialTab = hash === '#circuit-finder'
@@ -1984,6 +1985,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const rawHash = (window.location.hash || '').replace('#', '');
     if (['home', 'zero-out', 'seat-config', 'route-finder', 'circuit-finder'].includes(rawHash)) {
       switchTab(rawHash);
+    }
+  });
+
+  // Handle Back-Forward Cache (bfcache) restore when navigating browser back/forward
+  window.addEventListener('pageshow', () => {
+    if (window.isSidebarMode && window.isSidebarMode()) {
+      try {
+        const latestTab = localStorage.getItem('am_sidebar_active_tab');
+        if (latestTab && latestTab !== 'home' && ['zero-out', 'seat-config', 'route-finder', 'circuit-finder'].includes(latestTab)) {
+          switchTab(latestTab);
+        }
+      } catch (e) {}
+    }
+  });
+
+  // Keep tabs in sync across tabs or when changed in another window/page
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'am_sidebar_active_tab' && e.newValue) {
+      if (window.isSidebarMode && window.isSidebarMode()) {
+        if (['zero-out', 'seat-config', 'route-finder', 'circuit-finder'].includes(e.newValue)) {
+          switchTab(e.newValue);
+        }
+      }
     }
   });
 });
