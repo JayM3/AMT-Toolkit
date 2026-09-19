@@ -1812,9 +1812,6 @@ function switchTab(tabId) {
       if (pulseHome) pulseHome.classList.remove('hidden');
     }
     if (viewHome) viewHome.classList.remove('hidden');
-    if (window.location && window.location.hash !== '#home') {
-      window.location.hash = '#home';
-    }
     updateGlobeHubDisplay();
   } else if (tabId === 'circuit-finder') {
     if (navCircuitFinder) {
@@ -1822,9 +1819,6 @@ function switchTab(tabId) {
       if (pulseCircuit) pulseCircuit.classList.remove('hidden');
     }
     if (viewCircuitFinder) viewCircuitFinder.classList.remove('hidden');
-    if (window.location && window.location.hash !== '#circuit-finder') {
-      window.location.hash = '#circuit-finder';
-    }
     if (typeof window.initCircuitFinder === 'function') {
       window.initCircuitFinder();
     }
@@ -1834,9 +1828,6 @@ function switchTab(tabId) {
       if (pulseRoute) pulseRoute.classList.remove('hidden');
     }
     if (viewRouteFinder) viewRouteFinder.classList.remove('hidden');
-    if (window.location && window.location.hash !== '#route-finder') {
-      window.location.hash = '#route-finder';
-    }
     if (typeof window.initRouteFinder === 'function') {
       window.initRouteFinder();
     }
@@ -1844,19 +1835,23 @@ function switchTab(tabId) {
     navSeatConfig.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tab-btn-active border transition shadow-sm';
     if (pulseSeat) pulseSeat.classList.remove('hidden');
     viewSeatConfig.classList.remove('hidden');
-    if (window.location && window.location.hash !== '#seat-config') {
-      window.location.hash = '#seat-config';
-    }
     renderCircuitAll();
   } else {
     navZeroOut.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tab-btn-active border transition shadow-sm';
     if (pulseZero) pulseZero.classList.remove('hidden');
     viewZeroOut.classList.remove('hidden');
-    if (window.location && window.location.hash !== '#zero-out') {
-      window.location.hash = '#zero-out';
-    }
     if (typeof updateAllCalculations === 'function') {
       updateAllCalculations();
+    }
+  }
+
+  // Update URL hash only when NOT running inside an iframe/sidebar to prevent trapping browser history
+  if (!isSidebar && window.location) {
+    const targetHash = '#' + (tabId === 'home' || tabId === 'circuit-finder' || tabId === 'route-finder' || tabId === 'seat-config' ? tabId : 'zero-out');
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, '', targetHash);
+    } else if (window.location.hash !== targetHash) {
+      window.location.hash = targetHash;
     }
   }
 
@@ -1985,11 +1980,8 @@ document.addEventListener('DOMContentLoaded', () => {
   switchTab(initialTab);
 
   window.addEventListener('hashchange', () => {
+    if (window.isSidebarMode && window.isSidebarMode()) return;
     const rawHash = (window.location.hash || '').replace('#', '');
-    if (window.isSidebarMode && window.isSidebarMode() && rawHash === 'home') {
-      switchTab('zero-out');
-      return;
-    }
     if (['home', 'zero-out', 'seat-config', 'route-finder', 'circuit-finder'].includes(rawHash)) {
       switchTab(rawHash);
     }
