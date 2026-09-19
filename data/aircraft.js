@@ -458,15 +458,15 @@ const AIRCRAFT_DATABASE = [
     "name": "Jetstream-41",
     "manufacturer": "Bae Systems",
     "type": "Short-Haul",
-    "category": 3,
-    "seats": 118,
-    "payload_ton": 11.8,
-    "range_km": 2461,
+    "category": 1,
+    "seats": 38,
+    "payload_ton": 3.5,
+    "range_km": 1433,
     "speed_kmh": 547,
     "price": 10500000,
-    "fuel_consumption": "1433",
-    "wear_rate": "2.4",
-    "rd_unlock": "Yes"
+    "fuel_consumption": "5.38",
+    "wear_rate": "2.6",
+    "rd_unlock": ""
   },
   {
     "id": "rj-85",
