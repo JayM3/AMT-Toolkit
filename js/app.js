@@ -1016,8 +1016,28 @@ window.addEventListener('message', (e) => {
         if (cPAudit) cPAudit.value = classData.pAudit ?? '';
         if (cDSim) cDSim.value = classData.dSim ?? '';
         if (cR) cR.value = classData.r ?? '';
+      } else if (cls.isCargo) {
+        // Cargo not present in imported data - clear any previous values
+        const stdPAudit = document.getElementById('cargo_paudit');
+        const stdDSim = document.getElementById('cargo_dsim');
+        const stdR = document.getElementById('cargo_r');
+        if (stdPAudit) stdPAudit.value = '';
+        if (stdDSim) stdDSim.value = '';
+        if (stdR) stdR.value = '';
+
+        const cPAudit = document.getElementById('compact_cargo_paudit');
+        const cDSim = document.getElementById('compact_cargo_dsim');
+        const cR = document.getElementById('compact_cargo_r');
+        if (cPAudit) cPAudit.value = '';
+        if (cDSim) cDSim.value = '';
+        if (cR) cR.value = '';
       }
     });
+
+    // Automatically sync cargo enabled state if provided
+    if (data.hasCargo !== undefined) {
+      toggleCargo(data.hasCargo);
+    }
 
     // Update Route Badges if route name exists
     if (data.routeName) {
@@ -1131,9 +1151,23 @@ window.loadPreset = function(presetKey = 'jfk') {
 };
 
 // Toggle Cargo visibility & calculation
-function toggleCargo() {
+function toggleCargo(checked) {
   const cargoCheckbox = document.getElementById('toggle_cargo');
-  state.cargoEnabled = cargoCheckbox ? cargoCheckbox.checked : true;
+  const compCargoCheckbox = document.getElementById('compact_toggle_cargo');
+  let isEnabled;
+  if (typeof checked === 'boolean') {
+    isEnabled = checked;
+  } else if (compCargoCheckbox && compCargoCheckbox.offsetParent !== null) {
+    isEnabled = compCargoCheckbox.checked;
+  } else if (cargoCheckbox && cargoCheckbox.offsetParent !== null) {
+    isEnabled = cargoCheckbox.checked;
+  } else {
+    isEnabled = cargoCheckbox ? cargoCheckbox.checked : (compCargoCheckbox ? compCargoCheckbox.checked : true);
+  }
+
+  if (cargoCheckbox) cargoCheckbox.checked = isEnabled;
+  if (compCargoCheckbox) compCargoCheckbox.checked = isEnabled;
+  state.cargoEnabled = isEnabled;
   updateAllCalculations();
 }
 window.toggleCargo = toggleCargo;

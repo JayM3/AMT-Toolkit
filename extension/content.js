@@ -14,14 +14,52 @@
   const STORAGE_KEY_OPEN = 'amt_sidebar_open';
   const STORAGE_KEY_WIDTH = 'amt_sidebar_width';
   const STORAGE_KEY_MODE = 'amt_ui_mode';
+  const STORAGE_KEY_ACTIVE_TAB = 'amt_sidebar_active_tab';
+  const STORAGE_KEY_TAB_WIDTHS = 'amt_sidebar_tab_widths';
   const APP_URL = 'https://jaym3.github.io/AMT-Toolkit/';
   const APP_IFRAME_URL = 'https://jaym3.github.io/AMT-Toolkit/?sidebar=true';
 
+  const EXPANDED_TABS = ['seat-config', 'route-finder', 'circuit-finder'];
+
+  function getExpandedWidth() {
+    const computed = Math.round(window.innerWidth * 0.58);
+    const minExpanded = 860;
+    const maxAllowed = Math.floor(window.innerWidth * 0.75);
+    return Math.min(Math.max(computed, minExpanded), maxAllowed);
+  }
+
+  function getSavedTabWidths() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY_TAB_WIDTHS) || '{}');
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function getWidthForTab(tabId) {
+    const tabWidths = getSavedTabWidths();
+    const maxAllowed = Math.floor(window.innerWidth * 0.75);
+    const key = (tabId === 'home') ? 'zero-out' : tabId;
+    if (tabWidths && typeof tabWidths[key] === 'number' && !isNaN(tabWidths[key])) {
+      return Math.max(MIN_WIDTH, Math.min(tabWidths[key], maxAllowed));
+    }
+    // First time opening this tab / no custom size assigned yet:
+    if (EXPANDED_TABS.includes(tabId)) {
+      return getExpandedWidth();
+    }
+    // zero-out / home / default
+    const savedZeroOut = parseInt(localStorage.getItem(STORAGE_KEY_WIDTH), 10);
+    return Math.max(MIN_WIDTH, Math.min(savedZeroOut || DEFAULT_WIDTH, maxAllowed));
+  }
+
   // Load saved state
   let isOpen = localStorage.getItem(STORAGE_KEY_OPEN) !== 'false'; // default to open
-  let currentWidth = parseInt(localStorage.getItem(STORAGE_KEY_WIDTH), 10) || DEFAULT_WIDTH;
-  let currentMode = localStorage.getItem(STORAGE_KEY_MODE) || 'compact';
-  currentWidth = Math.max(MIN_WIDTH, Math.min(currentWidth, window.innerWidth - 200));
+  let currentTab = localStorage.getItem(STORAGE_KEY_ACTIVE_TAB) || 'zero-out';
+  let isAutoExpanded = EXPANDED_TABS.includes(currentTab);
+  let currentWidth = getWidthForTab(currentTab);
+  let currentMode = isAutoExpanded ? 'standard' : (localStorage.getItem(STORAGE_KEY_MODE) || 'compact');
+  let savedModeBeforeAutoExpand = localStorage.getItem(STORAGE_KEY_MODE) || 'compact';
+  let lastZeroOutWidth = getWidthForTab('zero-out');
 
   // 1. Create Toggle Tab (visible when sidebar is closed)
   const toggleTab = document.createElement('div');
@@ -119,36 +157,42 @@
   btnCompact.addEventListener('click', () => setMode('compact'));
   btnStandard.addEventListener('click', () => setMode('standard'));
 
-  const EXPANDED_TABS = ['seat-config', 'route-finder', 'circuit-finder'];
-  let lastZeroOutWidth = currentWidth;
-  let savedModeBeforeAutoExpand = currentMode;
-  let isAutoExpanded = false;
-
-  function getExpandedWidth() {
-    const computed = Math.round(window.innerWidth * 0.58);
-    const minExpanded = 860;
-    const maxAllowed = Math.floor(window.innerWidth * 0.75);
-    return Math.min(Math.max(computed, minExpanded), maxAllowed);
+  // If initial tab is an expanded tab, disable mode toggle right away
+  if (isAutoExpanded) {
+    const modeToggle = document.getElementById('amt-mode-toggle');
+    if (modeToggle) {
+      modeToggle.classList.add('amt-mode-toggle-disabled');
+      modeToggle.title = 'Coming soon';
+    }
+    btnCompact.disabled = true;
+    btnStandard.disabled = true;
+    btnCompact.title = 'Coming soon';
+    btnStandard.title = 'Coming soon';
   }
 
   function handleTabChange(tabId) {
+    if (!tabId) return;
+    currentTab = tabId;
+    localStorage.setItem(STORAGE_KEY_ACTIVE_TAB, tabId);
+
     const modeToggle = document.getElementById('amt-mode-toggle');
+    const targetWidth = getWidthForTab(tabId);
 
     if (EXPANDED_TABS.includes(tabId)) {
       if (!isAutoExpanded) {
-        lastZeroOutWidth = currentWidth;
         savedModeBeforeAutoExpand = currentMode;
         isAutoExpanded = true;
       }
 
-      // Drag/expand sidebar out smoothly to ~58% width
-      const targetWidth = getExpandedWidth();
-      sidebarContainer.style.transition = 'width 0.35s cubic-bezier(0.16, 1, 0.3, 1)';
-      sidebarContainer.style.width = `${targetWidth}px`;
-      currentWidth = targetWidth;
-      setTimeout(() => {
-        sidebarContainer.style.transition = '';
-      }, 380);
+      // Drag/expand sidebar out smoothly to target width
+      if (currentWidth !== targetWidth) {
+        sidebarContainer.style.transition = 'width 0.35s cubic-bezier(0.16, 1, 0.3, 1)';
+        sidebarContainer.style.width = `${targetWidth}px`;
+        currentWidth = targetWidth;
+        setTimeout(() => {
+          sidebarContainer.style.transition = '';
+        }, 380);
+      }
 
       // Force standard mode and disable mode toggle with "Coming soon"
       setMode('standard');
@@ -165,15 +209,15 @@
       if (isAutoExpanded) {
         isAutoExpanded = false;
 
-        // Revert sidebar back to original zero-out width
-        const revertWidth = Math.max(MIN_WIDTH, lastZeroOutWidth || DEFAULT_WIDTH);
-        sidebarContainer.style.transition = 'width 0.35s cubic-bezier(0.16, 1, 0.3, 1)';
-        sidebarContainer.style.width = `${revertWidth}px`;
-        currentWidth = revertWidth;
-        localStorage.setItem(STORAGE_KEY_WIDTH, revertWidth.toString());
-        setTimeout(() => {
-          sidebarContainer.style.transition = '';
-        }, 380);
+        // Revert sidebar back to saved zero-out width
+        if (currentWidth !== targetWidth) {
+          sidebarContainer.style.transition = 'width 0.35s cubic-bezier(0.16, 1, 0.3, 1)';
+          sidebarContainer.style.width = `${targetWidth}px`;
+          currentWidth = targetWidth;
+          setTimeout(() => {
+            sidebarContainer.style.transition = '';
+          }, 380);
+        }
 
         // Re-enable mode toggle and restore previous mode
         if (modeToggle) {
@@ -186,6 +230,13 @@
         btnStandard.title = '';
 
         setMode(savedModeBeforeAutoExpand || 'compact');
+      } else if (currentWidth !== targetWidth) {
+        sidebarContainer.style.transition = 'width 0.35s cubic-bezier(0.16, 1, 0.3, 1)';
+        sidebarContainer.style.width = `${targetWidth}px`;
+        currentWidth = targetWidth;
+        setTimeout(() => {
+          sidebarContainer.style.transition = '';
+        }, 380);
       }
     }
   }
@@ -281,7 +332,14 @@
       resizer.classList.remove('amt-resizing');
       document.body.style.userSelect = '';
       iframe.style.pointerEvents = 'auto';
-      if (!isAutoExpanded) {
+
+      // Save sizing for the current active page/tab
+      const tabWidths = getSavedTabWidths();
+      const key = (currentTab === 'home') ? 'zero-out' : currentTab;
+      tabWidths[key] = currentWidth;
+      localStorage.setItem(STORAGE_KEY_TAB_WIDTHS, JSON.stringify(tabWidths));
+
+      if (!EXPANDED_TABS.includes(currentTab)) {
         lastZeroOutWidth = currentWidth;
         localStorage.setItem(STORAGE_KEY_WIDTH, currentWidth.toString());
       }
@@ -389,21 +447,23 @@
         return;
       }
 
-      // Extract Audit Prices: Eco, Bus, First, Cargo
+      // Extract Audit Prices: Eco, Bus, First, Cargo (if unlocked)
       const auditPriceMatches = Array.from(auditText.matchAll(/(?:Ideal ticket price|Ideal price\/Tonne|Prix idéal|Prix idéal\/Tonne)\s*:\s*\$?(-?[0-9\s,]+)/gi));
       const pAudit = auditPriceMatches.map(m => parseNumber(m[1]));
 
-      // Extract Audit Demands: Eco, Bus, First, Cargo
+      // Extract Audit Demands: Eco, Bus, First, Cargo (if unlocked)
       const auditDemandMatches = Array.from(auditText.matchAll(/(?:^|[^\w])Demand\s*:\s*(-?[0-9\s,]+)\s*(?:Pax|T)/gi));
       const dAudit = auditDemandMatches.map(m => parseNumber(m[1]));
 
-      if (pAudit.length < 4 || dAudit.length < 4) {
+      if (pAudit.length < 3 || dAudit.length < 3 || pAudit.slice(0, 3).some(p => p === null || isNaN(p) || p <= 0) || dAudit.slice(0, 3).some(d => d === null || isNaN(d))) {
         sendToIframe({
           type: 'AMT_IMPORT_ERROR',
-          message: 'Could not locate Last Audit values. Please make sure an internal audit has been performed on this route.'
+          message: 'Could not locate Last Audit values (at least Economy, Business, and First class required). Please make sure an internal audit has been performed on this route.'
         });
         return;
       }
+
+      const hasCargoAudit = pAudit.length >= 4 && dAudit.length >= 4 && pAudit[3] !== null && !isNaN(pAudit[3]) && pAudit[3] > 0;
 
       // Extract Remaining Demands specifically from the SIMULATE DEMAND section (NOT from INFORMATION ABOUT THE ROUTE)
       const simSplit = pageText.split(/(?:SIMULATE DEMAND|SIMULER LA DEMANDE)/i);
@@ -419,39 +479,46 @@
       const remDemandMatches = Array.from(simSection.matchAll(/(?:Remaining demand|Demande restante)\s*:\s*(-?[0-9\s,]+)\s*(?:Pax|T)/gi));
       const rDemand = remDemandMatches.map(m => parseNumber(m[1]));
 
-      if (rDemand.length < 4 || rDemand.some(r => r === null || isNaN(r))) {
+      if (rDemand.length < 3 || rDemand.slice(0, 3).some(r => r === null || isNaN(r))) {
         sendToIframe({
           type: 'AMT_IMPORT_ERROR',
-          message: 'No simulation results found. Please click "Perform a simulation" on this route page before importing.'
+          message: 'No simulation results found for passenger classes. Please click "Perform a simulation" on this route page before importing.'
         });
         return;
       }
 
+      const hasCargoSim = hasCargoAudit && rDemand.length >= 4 && rDemand[3] !== null && !isNaN(rDemand[3]);
+      const hasCargo = Boolean(hasCargoAudit && hasCargoSim);
+
       // Check if "Change your price" fields match the last audit "Ideal ticket price" fields
       let simPriceMismatch = false;
 
-      const changeHeader = Array.from(document.querySelectorAll('h1, h2, h3, h4, div, legend, th, td')).find(el => 
-        /CHANGE YOUR PRICES|MODIFIER VOS PRIX/i.test(el.textContent || '')
-      );
+      const namedEco = document.querySelector('input[name*="priceEco"], input[name*="PriceEco"], input[id*="priceEco"]');
+      const namedBus = document.querySelector('input[name*="priceBus"], input[name*="PriceBus"], input[id*="priceBus"]');
+      const namedFirst = document.querySelector('input[name*="priceFirst"], input[name*="PriceFirst"], input[id*="priceFirst"]');
+      const namedCargo = document.querySelector('input[name*="priceCargo"], input[name*="PriceCargo"], input[id*="priceCargo"]');
       let changeInputs = [];
-      if (changeHeader) {
-        const container = changeHeader.closest('.box, form, section, div');
-        if (container) {
-          changeInputs = Array.from(container.querySelectorAll('input[type="text"], input[type="number"]'));
+
+      if (namedEco && namedBus && namedFirst) {
+        changeInputs = [namedEco, namedBus, namedFirst];
+        if (hasCargo && namedCargo) {
+          changeInputs.push(namedCargo);
         }
-      }
-      if (changeInputs.length < 4) {
-        const namedEco = document.querySelector('input[name*="priceEco"], input[name*="PriceEco"], input[id*="priceEco"]');
-        const namedBus = document.querySelector('input[name*="priceBus"], input[name*="PriceBus"], input[id*="priceBus"]');
-        const namedFirst = document.querySelector('input[name*="priceFirst"], input[name*="PriceFirst"], input[id*="priceFirst"]');
-        const namedCargo = document.querySelector('input[name*="priceCargo"], input[name*="PriceCargo"], input[id*="priceCargo"]');
-        if (namedEco && namedBus && namedFirst && namedCargo) {
-          changeInputs = [namedEco, namedBus, namedFirst, namedCargo];
+      } else {
+        const changeHeader = Array.from(document.querySelectorAll('h1, h2, h3, h4, div, legend, th, td')).find(el => 
+          /CHANGE YOUR PRICES|MODIFIER VOS PRIX/i.test(el.textContent || '')
+        );
+        if (changeHeader) {
+          const container = changeHeader.closest('.box, form, section, div');
+          if (container) {
+            changeInputs = Array.from(container.querySelectorAll('input[type="text"], input[type="number"]'));
+          }
         }
       }
 
-      if (changeInputs.length >= 4) {
-        for (let i = 0; i < 4; i++) {
+      const checkCount = Math.min(pAudit.length, changeInputs.length, hasCargo ? 4 : 3);
+      if (checkCount >= 3) {
+        for (let i = 0; i < checkCount; i++) {
           const val = parseNumber(changeInputs[i].value);
           if (val && pAudit[i] && Math.abs(val - pAudit[i]) > 0.01) {
             simPriceMismatch = true;
@@ -465,8 +532,9 @@
         const turnovers = Array.from(simSection.matchAll(/(?:Turnover|Chiffre d'affaires)\s*:\s*([0-9\s,]+)\s*\$/gi))
           .map(m => parseNumber(m[1]));
 
-        if (simDemands.length >= 4 && turnovers.length >= 4) {
-          for (let i = 0; i < 4; i++) {
+        const fallbackCount = Math.min(simDemands.length, turnovers.length, pAudit.length, hasCargo ? 4 : 3);
+        if (fallbackCount >= 3) {
+          for (let i = 0; i < fallbackCount; i++) {
             if (simDemands[i] > 0 && turnovers[i] > 0 && pAudit[i] > 0) {
               const derivedPrice = Math.round(turnovers[i] / simDemands[i]);
               if (Math.abs(derivedPrice - pAudit[i]) > 1) {
@@ -486,6 +554,7 @@
         routeName: routeName || (hub && dst ? `${hub} / ${dst}` : `Route #${lineId}`),
         hasRemainingDemand: true,
         simPriceMismatch: Boolean(simPriceMismatch),
+        hasCargo: Boolean(hasCargo),
         eco: {
           pAudit: pAudit[0],
           dSim: dAudit[0],
@@ -501,11 +570,11 @@
           dSim: dAudit[2],
           r: rDemand[2]
         },
-        cargo: {
+        cargo: hasCargo ? {
           pAudit: pAudit[3],
           dSim: dAudit[3],
           r: rDemand[3]
-        }
+        } : null
       };
 
       console.log('[AMT Extension] Sending imported data to iframe:', importedData);
@@ -535,33 +604,39 @@
       );
 
       let inputs = [];
-      if (changeHeader) {
+      const namedEco = document.querySelector('input[name*="priceEco"], input[name*="PriceEco"], input[id*="priceEco"]');
+      const namedBus = document.querySelector('input[name*="priceBus"], input[name*="PriceBus"], input[id*="priceBus"]');
+      const namedFirst = document.querySelector('input[name*="priceFirst"], input[name*="PriceFirst"], input[id*="priceFirst"]');
+      const namedCargo = document.querySelector('input[name*="priceCargo"], input[name*="PriceCargo"], input[id*="priceCargo"]');
+
+      if (namedEco && namedBus && namedFirst) {
+        inputs = [namedEco, namedBus, namedFirst];
+        if (namedCargo) inputs.push(namedCargo);
+      } else if (changeHeader) {
         const container = changeHeader.closest('.box, form, section, div');
         if (container) {
           inputs = Array.from(container.querySelectorAll('input[type="text"], input[type="number"]'));
         }
       }
 
-      if (inputs.length < 4) {
-        const namedEco = document.querySelector('input[name*="priceEco"], input[name*="PriceEco"], input[id*="priceEco"]');
-        const namedBus = document.querySelector('input[name*="priceBus"], input[name*="PriceBus"], input[id*="priceBus"]');
-        const namedFirst = document.querySelector('input[name*="priceFirst"], input[name*="PriceFirst"], input[id*="priceFirst"]');
-        const namedCargo = document.querySelector('input[name*="priceCargo"], input[name*="PriceCargo"], input[id*="priceCargo"]');
-        if (namedEco && namedBus && namedFirst && namedCargo) {
-          inputs = [namedEco, namedBus, namedFirst, namedCargo];
-        }
-      }
-
-      if (inputs.length < 4) {
+      if (inputs.length < 3) {
+        const pageText = document.body.innerText || document.body.textContent || '';
+        const isCooldown = /A period of 24 hours is required|Un délai de 24 heures/i.test(pageText);
         sendToIframe({
           type: 'AMT_EXPORT_ERROR',
-          message: 'Could not find the price input fields on this page. Make sure "CHANGE YOUR PRICES" is visible.'
+          message: isCooldown
+            ? 'Price modification is currently on 24h cooldown in Airlines Manager. Please wait for the cooldown to expire.'
+            : 'Could not find the price input fields on this page. Make sure "CHANGE YOUR PRICES" is visible.'
         });
         return;
       }
 
-      const priceList = [prices.eco, prices.bus, prices.first, prices.cargo];
-      inputs.slice(0, 4).forEach((input, idx) => {
+      const priceList = [prices.eco, prices.bus, prices.first];
+      if (inputs.length >= 4 && prices.cargo !== null && prices.cargo !== undefined) {
+        priceList.push(prices.cargo);
+      }
+
+      inputs.slice(0, priceList.length).forEach((input, idx) => {
         const p = priceList[idx];
         if (p !== null && p !== undefined && !isNaN(p)) {
           input.value = p;
@@ -627,49 +702,62 @@
         return;
       }
 
-      // Extract Audit Prices: Eco, Bus, First, Cargo
+      // Extract Audit Prices: Eco, Bus, First, Cargo (if unlocked)
       const auditPriceMatches = Array.from(auditText.matchAll(/(?:Ideal ticket price|Ideal price\/Tonne|Prix idéal|Prix idéal\/Tonne)\s*:\s*\$?(-?[0-9\s,]+)/gi));
       const pAudit = auditPriceMatches.map(m => parseNumber(m[1]));
 
-      if (pAudit.length < 4 || pAudit.some(p => p === null || isNaN(p) || p <= 0)) {
+      // Require at least 3 valid passenger prices (Economy, Business, First). Cargo is optional.
+      if (pAudit.length < 3 || pAudit.slice(0, 3).some(p => p === null || isNaN(p) || p <= 0)) {
         sendToIframe({
           type: 'AMT_COPY_AUDIT_ERROR',
-          message: 'Could not find 4 valid ideal ticket prices from the audit.'
+          message: 'Could not find valid ideal ticket prices from the audit (at least Economy, Business, and First class required).'
         });
         return;
       }
+
+      const hasCargoAudit = pAudit.length >= 4 && pAudit[3] !== null && !isNaN(pAudit[3]) && pAudit[3] > 0;
 
       // Find inputs under "CHANGE YOUR PRICES"
       let inputs = [];
-      const changeHeader = Array.from(document.querySelectorAll('h1, h2, h3, h4, div, legend, th, td')).find(el => 
-        /CHANGE YOUR PRICES|MODIFIER VOS PRIX/i.test(el.textContent || '')
-      );
-      if (changeHeader) {
-        const container = changeHeader.closest('.box, form, section, div');
-        if (container) {
-          inputs = Array.from(container.querySelectorAll('input[type="text"], input[type="number"]'));
+      const namedEco = document.querySelector('input[name*="priceEco"], input[name*="PriceEco"], input[id*="priceEco"]');
+      const namedBus = document.querySelector('input[name*="priceBus"], input[name*="PriceBus"], input[id*="priceBus"]');
+      const namedFirst = document.querySelector('input[name*="priceFirst"], input[name*="PriceFirst"], input[id*="priceFirst"]');
+      const namedCargo = document.querySelector('input[name*="priceCargo"], input[name*="PriceCargo"], input[id*="priceCargo"]');
+
+      if (namedEco && namedBus && namedFirst) {
+        inputs = [namedEco, namedBus, namedFirst];
+        if (hasCargoAudit && namedCargo) {
+          inputs.push(namedCargo);
         }
-      }
-      if (inputs.length < 4) {
-        const namedEco = document.querySelector('input[name*="priceEco"], input[name*="PriceEco"], input[id*="priceEco"]');
-        const namedBus = document.querySelector('input[name*="priceBus"], input[name*="PriceBus"], input[id*="priceBus"]');
-        const namedFirst = document.querySelector('input[name*="priceFirst"], input[name*="PriceFirst"], input[id*="priceFirst"]');
-        const namedCargo = document.querySelector('input[name*="priceCargo"], input[name*="PriceCargo"], input[id*="priceCargo"]');
-        if (namedEco && namedBus && namedFirst && namedCargo) {
-          inputs = [namedEco, namedBus, namedFirst, namedCargo];
+      } else {
+        const changeHeader = Array.from(document.querySelectorAll('h1, h2, h3, h4, div, legend, th, td')).find(el => 
+          /CHANGE YOUR PRICES|MODIFIER VOS PRIX/i.test(el.textContent || '')
+        );
+        if (changeHeader) {
+          const container = changeHeader.closest('.box, form, section, div');
+          if (container) {
+            inputs = Array.from(container.querySelectorAll('input[type="text"], input[type="number"]'));
+          }
         }
       }
 
-      if (inputs.length < 4) {
+      if (inputs.length < 3) {
+        const isCooldown = /A period of 24 hours is required|Un délai de 24 heures/i.test(pageText);
         sendToIframe({
           type: 'AMT_COPY_AUDIT_ERROR',
-          message: 'Could not find price inputs under "CHANGE YOUR PRICES".'
+          message: isCooldown
+            ? 'Price modification is currently on 24h cooldown in Airlines Manager. Please wait for the cooldown to expire.'
+            : 'Could not find price inputs under "CHANGE YOUR PRICES".'
         });
         return;
       }
 
+      // Determine how many classes to fill: 4 if both audit and inputs have cargo, otherwise 3
+      const canFillCargo = hasCargoAudit && inputs.length >= 4;
+      const countToFill = canFillCargo ? 4 : 3;
+
       // Fill inputs with pAudit
-      inputs.slice(0, 4).forEach((input, idx) => {
+      inputs.slice(0, countToFill).forEach((input, idx) => {
         input.value = pAudit[idx];
         input.dispatchEvent(new Event('input', { bubbles: true }));
         input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -694,7 +782,7 @@
           eco: pAudit[0],
           bus: pAudit[1],
           first: pAudit[2],
-          cargo: pAudit[3]
+          cargo: canFillCargo ? pAudit[3] : null
         }
       });
 
