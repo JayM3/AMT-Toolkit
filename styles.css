@@ -356,6 +356,9 @@ html.amt-extension #view_home,
 body.amt-extension #view_home,
 html.amt-extension #header_get_addon,
 body.amt-extension #header_get_addon,
+html.amt-extension #btn_open_sync_modal,
+body.amt-extension #btn_open_sync_modal,
+body.amt-compact-mode #btn_open_sync_modal,
 html.amt-extension a[href="#install-guide"],
 body.amt-extension a[href="#install-guide"] {
   display: none !important;
