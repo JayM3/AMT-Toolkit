@@ -27,8 +27,8 @@
       }
     }
   </script>
-  <link rel="stylesheet" href="styles.css?v=3.4">
-  <link rel="stylesheet" href="homepage.css?v=3.4">
+  <link rel="stylesheet" href="styles.css?v=3.5">
+  <link rel="stylesheet" href="homepage.css?v=3.5">
   <style>
     body.amt-compact-mode #zero_out_standard_container { display: none !important; }
     body.amt-compact-mode #zero_out_compact_container { display: block !important; }
@@ -53,18 +53,34 @@
       gap: 0.5rem !important;
     }
 
+    #zo_compact_fab {
+      pointer-events: none !important;
+      width: max-content;
+      height: max-content;
+    }
+    #zo_fab_container {
+      pointer-events: none !important;
+    }
+    #zo_fab_trigger {
+      pointer-events: auto !important;
+    }
+
     .fab-menu {
+      position: absolute;
       transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
       transform-origin: bottom right;
+      z-index: 60;
     }
     .fab-menu.closed {
-      opacity: 0;
-      pointer-events: none;
+      display: none !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
       transform: scale(0.85) translateY(6px);
     }
     .fab-menu.open {
-      opacity: 1;
-      pointer-events: auto;
+      display: flex !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
       transform: scale(1) translateY(0);
     }
     #zo_compact_fab.is-dragging {
@@ -550,18 +566,18 @@
       </div>
 
       <!-- Inline Action Bar: Perform Audit & Simulation, Import & Export Values with Airlines Manager -->
-      <div class="glass-panel rounded-xl p-2 border border-slate-800 flex flex-col gap-2 shadow-md">
+      <div class="glass-panel rounded-xl p-2 border border-slate-800 flex flex-col gap-2 shadow-md relative z-10 pointer-events-auto">
         <!-- Copy Audit Price to Change Price Button (On top of Import and Export) -->
-        <button type="button" onclick="copyAuditPriceToChangePrice()" id="btn_copy_audit_to_change" class="w-full px-3 py-2 rounded-lg bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-600/80 text-indigo-200 hover:text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95" title="Copy the last reliable audit prices into 'Change Your Prices' on Airlines Manager">
+        <button type="button" onclick="copyAuditPriceToChangePrice()" id="btn_copy_audit_to_change" class="w-full px-3 py-2 rounded-lg bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-600/80 text-indigo-200 hover:text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer relative z-10 pointer-events-auto" title="Copy the last reliable audit prices into 'Change Your Prices' on Airlines Manager">
           <svg class="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
           </svg>
           <span id="btn_copy_audit_text">Copy Audit Price to Change Price</span>
         </button>
 
-        <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center justify-between gap-2 relative z-10 pointer-events-auto">
           <!-- Import Values Button -->
-          <button type="button" onclick="importValuesFromGame()" id="btn_import_game_values" class="flex-1 px-3 py-2 rounded-lg bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-700/80 text-cyan-300 hover:text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95" title="Auto-import audit prices, demand, and scheduled offer from Airlines Manager">
+          <button type="button" onclick="importValuesFromGame()" id="btn_import_game_values" class="flex-1 px-3 py-2 rounded-lg bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-700/80 text-cyan-300 hover:text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer relative z-10 pointer-events-auto" title="Auto-import audit prices, demand, and scheduled offer from Airlines Manager">
             <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
             </svg>
@@ -569,7 +585,7 @@
           </button>
 
           <!-- Export Values Button -->
-          <button type="button" onclick="exportValuesToGame()" id="btn_export_game_values" class="flex-1 px-3 py-2 rounded-lg bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-700/80 text-emerald-300 hover:text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95" title="Write calculated target prices into 'Change Your Prices' on Airlines Manager">
+          <button type="button" onclick="exportValuesToGame()" id="btn_export_game_values" class="flex-1 px-3 py-2 rounded-lg bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-700/80 text-emerald-300 hover:text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer relative z-10 pointer-events-auto" title="Write calculated target prices into 'Change Your Prices' on Airlines Manager">
             <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
             </svg>
@@ -1082,13 +1098,13 @@
     </aside>
 
     <!-- Zero-Out Price Compact Draggable FAB (Visible only in compact mode) -->
-    <aside id="zo_compact_fab" aria-label="Zero-Out Compact Actions" class="fixed z-50 select-none hidden" style="bottom: 20px; right: 20px; touch-action: none;">
-      <div id="zo_fab_container" class="relative flex flex-col items-end gap-2">
+    <aside id="zo_compact_fab" aria-label="Zero-Out Compact Actions" class="fixed z-50 select-none hidden pointer-events-none" style="bottom: 20px; right: 20px; touch-action: none;">
+      <div id="zo_fab_container" class="relative pointer-events-none">
         
         <!-- Speed Dial Menu (Expands upwards or downwards based on drag position) -->
         <div id="zo_fab_menu" class="fab-menu closed flex flex-col gap-1.5 p-1.5 bg-slate-900/95 border border-slate-700/80 rounded-2xl shadow-2xl backdrop-blur-xl transition-all duration-200" style="min-width: 145px;">
           <!-- Copy All Prices -->
-          <button type="button" onclick="copyAllPrices()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition active:scale-95 text-left w-full" title="Copy All Prices">
+          <button type="button" onclick="copyAllPrices()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition active:scale-95 text-left w-full cursor-pointer" title="Copy All Prices">
             <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
             </svg>
@@ -1096,7 +1112,7 @@
           </button>
 
           <!-- Save as Audit -->
-          <button type="button" onclick="saveZeroOutToAudit()" id="btn_zero_out_save_audit_fab" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-950/90 hover:bg-emerald-900 active:scale-95 text-emerald-300 hover:text-emerald-200 border border-emerald-700/70 text-xs font-semibold transition text-left w-full" title="Save as Audit">
+          <button type="button" onclick="saveZeroOutToAudit()" id="btn_zero_out_save_audit_fab" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-950/90 hover:bg-emerald-900 active:scale-95 text-emerald-300 hover:text-emerald-200 border border-emerald-700/70 text-xs font-semibold transition text-left w-full cursor-pointer" title="Save as Audit">
             <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
             </svg>
@@ -1104,7 +1120,7 @@
           </button>
 
           <!-- Route Audits Library -->
-          <button type="button" onclick="openSavedAuditsModal()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-cyan-950/90 hover:bg-cyan-900 active:scale-95 text-cyan-300 hover:text-cyan-200 border border-cyan-700/70 text-xs font-semibold transition relative text-left w-full" title="Route Audits">
+          <button type="button" onclick="openSavedAuditsModal()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-cyan-950/90 hover:bg-cyan-900 active:scale-95 text-cyan-300 hover:text-cyan-200 border border-cyan-700/70 text-xs font-semibold transition relative text-left w-full cursor-pointer" title="Route Audits">
             <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
             </svg>
@@ -1113,7 +1129,7 @@
           </button>
 
           <!-- Copy Audit Price to Change Price -->
-          <button type="button" onclick="copyAuditPriceToChangePrice()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-600/70 text-indigo-200 hover:text-white text-xs font-semibold transition active:scale-95 text-left w-full" title="Copy Reliable Audit Prices to Change Your Prices">
+          <button type="button" onclick="copyAuditPriceToChangePrice()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-600/70 text-indigo-200 hover:text-white text-xs font-semibold transition active:scale-95 text-left w-full cursor-pointer" title="Copy Reliable Audit Prices to Change Your Prices">
             <svg class="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
             </svg>
@@ -1121,7 +1137,7 @@
           </button>
 
           <!-- Import Values from Game -->
-          <button type="button" onclick="importValuesFromGame()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-700/70 text-cyan-300 hover:text-white text-xs font-semibold transition active:scale-95 text-left w-full" title="Import Values from Game">
+          <button type="button" onclick="importValuesFromGame()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-700/70 text-cyan-300 hover:text-white text-xs font-semibold transition active:scale-95 text-left w-full cursor-pointer" title="Import Values from Game">
             <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
             </svg>
@@ -1129,7 +1145,7 @@
           </button>
 
           <!-- Export Values to Game -->
-          <button type="button" onclick="exportValuesToGame()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-700/70 text-emerald-300 hover:text-white text-xs font-semibold transition active:scale-95 text-left w-full" title="Export Target Prices to Game">
+          <button type="button" onclick="exportValuesToGame()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-700/70 text-emerald-300 hover:text-white text-xs font-semibold transition active:scale-95 text-left w-full cursor-pointer" title="Export Target Prices to Game">
             <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
             </svg>
@@ -1137,7 +1153,7 @@
           </button>
 
           <!-- Clear Table -->
-          <button type="button" onclick="clearTable()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-rose-950/90 hover:bg-rose-900 active:scale-95 text-rose-300 hover:text-rose-200 border border-rose-800/70 text-xs font-semibold transition text-left w-full" title="Clear Table">
+          <button type="button" onclick="clearTable()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-rose-950/90 hover:bg-rose-900 active:scale-95 text-rose-300 hover:text-rose-200 border border-rose-800/70 text-xs font-semibold transition text-left w-full cursor-pointer" title="Clear Table">
             <svg class="w-3.5 h-3.5 text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
             </svg>
@@ -1146,7 +1162,7 @@
         </div>
 
         <!-- Trigger Button (36px, Draggable, Repositionable) -->
-        <button type="button" id="zo_fab_trigger" class="w-9 h-9 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white flex items-center justify-center shadow-lg shadow-cyan-600/40 border border-cyan-400/50 cursor-grab active:cursor-grabbing transition-transform select-none relative" title="Drag to reposition • Click to toggle actions">
+        <button type="button" id="zo_fab_trigger" class="w-9 h-9 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white flex items-center justify-center shadow-lg shadow-cyan-600/40 border border-cyan-400/50 cursor-grab active:cursor-grabbing transition-transform select-none relative pointer-events-auto" title="Drag to reposition • Click to toggle actions">
           <span id="zo_fab_icon" class="text-sm font-bold transition-transform">⚡</span>
           <span class="floating_audits_badge absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-cyan-400 text-slate-950 rounded-full font-bold text-[9px] flex items-center justify-center ring-2 ring-slate-950 shadow-sm">0</span>
         </button>
@@ -3850,7 +3866,7 @@
   <!-- JavaScript Datasets & Logic -->
   <script src="data/aircraft.js?v=2.3"></script>
   <script src="data/airports.js?v=2.3"></script>
-  <script src="app.js?v=3.4"></script>
+  <script src="app.js?v=3.5"></script>
   <script src="route_finder.js?v=2.3"></script>
   <script src="circuit_finder.js?v=2.3"></script>
 </body>

@@ -306,18 +306,34 @@ body.amt-compact-mode #zo_floating_actions { display: none !important; }
 body.amt-compact-mode #zo_compact_fab { display: block !important; }
 body:not(.amt-compact-mode) #zo_compact_fab { display: none !important; }
 
+#zo_compact_fab {
+  pointer-events: none !important;
+  width: max-content;
+  height: max-content;
+}
+#zo_fab_container {
+  pointer-events: none !important;
+}
+#zo_fab_trigger {
+  pointer-events: auto !important;
+}
+
 .fab-menu {
+  position: absolute;
   transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: bottom right;
+  z-index: 60;
 }
 .fab-menu.closed {
-  opacity: 0;
-  pointer-events: none;
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
   transform: scale(0.85) translateY(6px);
 }
 .fab-menu.open {
-  opacity: 1;
-  pointer-events: auto;
+  display: flex !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
   transform: scale(1) translateY(0);
 }
 #zo_compact_fab.is-dragging {

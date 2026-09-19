@@ -639,10 +639,12 @@ window.initDraggableFab = function() {
       const newLeft = e.clientX - offsetX;
       const newTop = e.clientY - offsetY;
 
+      const triggerWidth = (trigger && trigger.offsetWidth) || 36;
+      const triggerHeight = (trigger && trigger.offsetHeight) || 36;
       const minX = 8;
-      const maxX = Math.max(minX, window.innerWidth - (fab.offsetWidth || 40) - 8);
+      const maxX = Math.max(minX, window.innerWidth - triggerWidth - 8);
       const minY = 8;
-      const maxY = Math.max(minY, window.innerHeight - (fab.offsetHeight || 40) - 8);
+      const maxY = Math.max(minY, window.innerHeight - triggerHeight - 8);
 
       const clampedX = Math.max(minX, Math.min(maxX, newLeft));
       const clampedY = Math.max(minY, Math.min(maxY, newTop));
@@ -669,7 +671,8 @@ window.initDraggableFab = function() {
       try {
         localStorage.setItem('amt_fab_pos', JSON.stringify({
           left: fab.offsetLeft,
-          top: fab.offsetTop
+          top: fab.offsetTop,
+          v: 2
         }));
       } catch (_) {}
     } else {
@@ -703,6 +706,7 @@ window.initDraggableFab = function() {
 
 function restoreFabPosition() {
   const fab = document.getElementById('zo_compact_fab');
+  const trigger = document.getElementById('zo_fab_trigger');
   if (!fab) return;
 
   let pos = null;
@@ -711,12 +715,12 @@ function restoreFabPosition() {
     if (raw) pos = JSON.parse(raw);
   } catch (_) {}
 
-  const fabWidth = fab.offsetWidth || 40;
-  const fabHeight = fab.offsetHeight || 40;
+  const triggerWidth = (trigger && trigger.offsetWidth) || 36;
+  const triggerHeight = (trigger && trigger.offsetHeight) || 36;
   const minX = 8;
-  const maxX = Math.max(minX, window.innerWidth - fabWidth - 8);
+  const maxX = Math.max(minX, window.innerWidth - triggerWidth - 8);
   const minY = 8;
-  const maxY = Math.max(minY, window.innerHeight - fabHeight - 8);
+  const maxY = Math.max(minY, window.innerHeight - triggerHeight - 8);
 
   let targetX = maxX;
   let targetY = maxY;
@@ -739,25 +743,29 @@ function updateFabOrientation(left, top) {
   const menu = document.getElementById('zo_fab_menu');
   if (!container || !menu) return;
 
-  const isNearTop = top < 220;
-  const isNearLeft = left < 160;
+  const isNearTop = top < 260;
+  const isNearLeft = left < 180;
 
   if (isNearTop) {
-    container.classList.remove('flex-col');
-    container.classList.add('flex-col-reverse');
+    menu.style.top = '100%';
+    menu.style.bottom = 'auto';
+    menu.style.marginTop = '8px';
+    menu.style.marginBottom = '0';
     menu.style.transformOrigin = isNearLeft ? 'top left' : 'top right';
   } else {
-    container.classList.remove('flex-col-reverse');
-    container.classList.add('flex-col');
+    menu.style.bottom = '100%';
+    menu.style.top = 'auto';
+    menu.style.marginBottom = '8px';
+    menu.style.marginTop = '0';
     menu.style.transformOrigin = isNearLeft ? 'bottom left' : 'bottom right';
   }
 
   if (isNearLeft) {
-    container.classList.remove('items-end');
-    container.classList.add('items-start');
+    menu.style.left = '0';
+    menu.style.right = 'auto';
   } else {
-    container.classList.remove('items-start');
-    container.classList.add('items-end');
+    menu.style.right = '0';
+    menu.style.left = 'auto';
   }
 }
 
