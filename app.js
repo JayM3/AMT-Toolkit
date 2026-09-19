@@ -840,6 +840,50 @@ function resetImportBtn() {
   }
 }
 
+let auditSimTimeoutId = null;
+
+window.performAuditAndSimulation = function() {
+  const isInsideIframe = window.self !== window.top;
+  if (!isInsideIframe) {
+    showToast('Audit & Simulation automation is available when docked inside Airlines Manager.', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btn_audit_and_simulate');
+  const btnText = document.getElementById('btn_audit_sim_text');
+  if (btnText) btnText.textContent = 'Auditing & Simulating...';
+  if (btn) btn.classList.add('opacity-70', 'pointer-events-none');
+
+  if (auditSimTimeoutId) clearTimeout(auditSimTimeoutId);
+  auditSimTimeoutId = setTimeout(() => {
+    resetAuditSimBtn();
+    showToast('Audit & simulation timed out. Please check the game page or reload.', 'warning');
+  }, 12000);
+
+  try {
+    window.parent.postMessage({
+      type: 'AMT_AUDIT_AND_SIMULATE_REQUEST'
+    }, '*');
+  } catch (err) {
+    console.error('[AMT App] Error posting AMT_AUDIT_AND_SIMULATE_REQUEST:', err);
+    resetAuditSimBtn();
+    if (auditSimTimeoutId) clearTimeout(auditSimTimeoutId);
+  }
+};
+
+function resetAuditSimBtn() {
+  if (auditSimTimeoutId) {
+    clearTimeout(auditSimTimeoutId);
+    auditSimTimeoutId = null;
+  }
+  const btn = document.getElementById('btn_audit_and_simulate');
+  const btnText = document.getElementById('btn_audit_sim_text');
+  if (btnText) btnText.textContent = 'Perform Audit & Simulation';
+  if (btn) {
+    btn.classList.remove('opacity-70', 'pointer-events-none');
+  }
+}
+
 window.exportValuesToGame = function() {
   const isInsideIframe = window.self !== window.top;
   if (!isInsideIframe) {
@@ -998,6 +1042,20 @@ window.addEventListener('message', (e) => {
   if (e.data.type === 'AMT_EXPORT_ERROR') {
     resetExportBtn();
     showToast(e.data.message || 'Failed to export prices to game.', 'warning');
+  }
+
+  // Handle audit & simulation status updates
+  if (e.data.type === 'AMT_AUDIT_SIM_STATUS') {
+    if (e.data.status === 'success') {
+      resetAuditSimBtn();
+      showToast(e.data.message || 'Audit & simulation completed! Importing values...', 'success');
+    } else if (e.data.status === 'working') {
+      const btnText = document.getElementById('btn_audit_sim_text');
+      if (btnText && e.data.message) btnText.textContent = e.data.message;
+    } else if (e.data.status === 'error') {
+      resetAuditSimBtn();
+      showToast(e.data.message || 'Audit & simulation failed.', 'warning');
+    }
   }
 });
 
