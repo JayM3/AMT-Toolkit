@@ -341,43 +341,51 @@
         return;
       }
 
-      // Check if simulated demand prices match last audit prices
+      // Check if "Change your price" fields match the last audit "Ideal ticket price" fields
       let simPriceMismatch = false;
 
-      // Check derived prices from Turnover / Simulated Demand in simSection
-      const simDemands = Array.from(simSection.matchAll(/(?:Simulated demand|Demande simulée)\s*:\s*([0-9\s,]+)\s*(?:Pax|T)/gi))
-        .map(m => parseNumber(m[1]));
-      const turnovers = Array.from(simSection.matchAll(/(?:Turnover|Chiffre d'affaires)\s*:\s*([0-9\s,]+)\s*\$/gi))
-        .map(m => parseNumber(m[1]));
-
-      if (simDemands.length >= 4 && turnovers.length >= 4) {
-        for (let i = 0; i < 4; i++) {
-          if (simDemands[i] > 0 && turnovers[i] > 0 && pAudit[i] > 0) {
-            const derivedPrice = Math.round(turnovers[i] / simDemands[i]);
-            if (Math.abs(derivedPrice - pAudit[i]) > 1) {
-              simPriceMismatch = true;
-              break;
-            }
-          }
+      const changeHeader = Array.from(document.querySelectorAll('h1, h2, h3, h4, div, legend, th, td')).find(el => 
+        /CHANGE YOUR PRICES|MODIFIER VOS PRIX/i.test(el.textContent || '')
+      );
+      let changeInputs = [];
+      if (changeHeader) {
+        const container = changeHeader.closest('.box, form, section, div');
+        if (container) {
+          changeInputs = Array.from(container.querySelectorAll('input[type="text"], input[type="number"]'));
+        }
+      }
+      if (changeInputs.length < 4) {
+        const namedEco = document.querySelector('input[name*="priceEco"], input[name*="PriceEco"], input[id*="priceEco"]');
+        const namedBus = document.querySelector('input[name*="priceBus"], input[name*="PriceBus"], input[id*="priceBus"]');
+        const namedFirst = document.querySelector('input[name*="priceFirst"], input[name*="PriceFirst"], input[id*="priceFirst"]');
+        const namedCargo = document.querySelector('input[name*="priceCargo"], input[name*="PriceCargo"], input[id*="priceCargo"]');
+        if (namedEco && namedBus && namedFirst && namedCargo) {
+          changeInputs = [namedEco, namedBus, namedFirst, namedCargo];
         }
       }
 
-      // Also check inputs currently entered under "CHANGE YOUR PRICES"
-      if (!simPriceMismatch) {
-        const changeHeader = Array.from(document.querySelectorAll('h1, h2, h3, h4, div, legend')).find(el => 
-          /CHANGE YOUR PRICES|MODIFIER VOS PRIX/i.test(el.textContent || '')
-        );
-        if (changeHeader) {
-          const container = changeHeader.closest('.box, form, section, div');
-          if (container) {
-            const changeInputs = Array.from(container.querySelectorAll('input[type="text"], input[type="number"]'));
-            if (changeInputs.length >= 4) {
-              for (let i = 0; i < 4; i++) {
-                const val = parseNumber(changeInputs[i].value);
-                if (val && pAudit[i] && Math.abs(val - pAudit[i]) > 1) {
-                  simPriceMismatch = true;
-                  break;
-                }
+      if (changeInputs.length >= 4) {
+        for (let i = 0; i < 4; i++) {
+          const val = parseNumber(changeInputs[i].value);
+          if (val && pAudit[i] && Math.abs(val - pAudit[i]) > 0.01) {
+            simPriceMismatch = true;
+            break;
+          }
+        }
+      } else {
+        // Fallback: Check derived prices from Turnover / Simulated Demand in simSection
+        const simDemands = Array.from(simSection.matchAll(/(?:Simulated demand|Demande simulée)\s*:\s*([0-9\s,]+)\s*(?:Pax|T)/gi))
+          .map(m => parseNumber(m[1]));
+        const turnovers = Array.from(simSection.matchAll(/(?:Turnover|Chiffre d'affaires)\s*:\s*([0-9\s,]+)\s*\$/gi))
+          .map(m => parseNumber(m[1]));
+
+        if (simDemands.length >= 4 && turnovers.length >= 4) {
+          for (let i = 0; i < 4; i++) {
+            if (simDemands[i] > 0 && turnovers[i] > 0 && pAudit[i] > 0) {
+              const derivedPrice = Math.round(turnovers[i] / simDemands[i]);
+              if (Math.abs(derivedPrice - pAudit[i]) > 1) {
+                simPriceMismatch = true;
+                break;
               }
             }
           }
