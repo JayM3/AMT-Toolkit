@@ -36,7 +36,7 @@ The app runs entirely in the browser with no build step or dependencies.
 
 - **Online**: Visit [https://jaym3.github.io/AMT-Toolkit/](https://jaym3.github.io/AMT-Toolkit/)
 - **Chrome / Brave Extension**:
-  1. Open `chrome://extensions` (or `brave://extensions`) in your browser.
+  1. Open `chrome://extensions` (or `brave://extensions`) in your browser (WIP).
   2. Toggle **Developer mode** on (top-right corner).
   3. Click **Load unpacked** and select this directory (`AMT-Toolkit`).
   4. Visit [Airlines Manager](https://www.airlines-manager.com/) to see the docked sidebar, or click the extension icon to open the native side panel!
