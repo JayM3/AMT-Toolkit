@@ -32,10 +32,10 @@ const PRESETS = {
 // Global state
 let state = {
   cargoEnabled: true,
-  eco: { dSim: '', r: '', pAudit: '' },
-  bus: { dSim: '', r: '', pAudit: '' },
-  first: { dSim: '', r: '', pAudit: '' },
-  cargo: { dSim: '', r: '', pAudit: '' }
+  eco: { dSim: '', r: '', pAudit: '', c: '' },
+  bus: { dSim: '', r: '', pAudit: '', c: '' },
+  first: { dSim: '', r: '', pAudit: '', c: '' },
+  cargo: { dSim: '', r: '', pAudit: '', c: '' }
 };
 
 // Format numbers with commas
@@ -466,10 +466,52 @@ window.onCompactInput = function(classId, field, value) {
   if (stdInput) {
     stdInput.value = value;
   }
-  const stateField = field === 'paudit' ? 'pAudit' : (field === 'dsim' ? 'dSim' : 'r');
+  const stateField = field === 'paudit' ? 'pAudit' : (field === 'dsim' ? 'dSim' : (field === 'c' ? 'c' : 'r'));
   if (state[classId]) {
     state[classId][stateField] = value;
   }
+
+  // Bidirectional reactive calculations between Demand, Offer, and Remain
+  if (field === 'c') {
+    const dSimVal = parseFloat(document.getElementById(`compact_${classId}_dsim`)?.value);
+    const offerVal = parseFloat(value);
+    if (!isNaN(dSimVal) && !isNaN(offerVal)) {
+      const rVal = dSimVal - offerVal;
+      const rInput = document.getElementById(`compact_${classId}_r`);
+      const stdRInput = document.getElementById(`${classId}_r`);
+      if (rInput) rInput.value = rVal;
+      if (stdRInput) stdRInput.value = rVal;
+      if (state[classId]) state[classId].r = rVal;
+    }
+  } else if (field === 'r') {
+    const dSimVal = parseFloat(document.getElementById(`compact_${classId}_dsim`)?.value);
+    const rVal = parseFloat(value);
+    if (!isNaN(dSimVal) && !isNaN(rVal)) {
+      const offerVal = dSimVal - rVal;
+      const cInput = document.getElementById(`compact_${classId}_c`);
+      if (cInput) cInput.value = offerVal;
+      if (state[classId]) state[classId].c = offerVal;
+    }
+  } else if (field === 'dsim') {
+    const dSimVal = parseFloat(value);
+    const cInput = document.getElementById(`compact_${classId}_c`);
+    const rInput = document.getElementById(`compact_${classId}_r`);
+    const offerVal = cInput && cInput.value.trim() !== '' ? parseFloat(cInput.value) : null;
+    const rVal = rInput && rInput.value.trim() !== '' ? parseFloat(rInput.value) : null;
+
+    if (!isNaN(dSimVal) && offerVal !== null && !isNaN(offerVal)) {
+      const newR = dSimVal - offerVal;
+      if (rInput) rInput.value = newR;
+      const stdRInput = document.getElementById(`${classId}_r`);
+      if (stdRInput) stdRInput.value = newR;
+      if (state[classId]) state[classId].r = newR;
+    } else if (!isNaN(dSimVal) && rVal !== null && !isNaN(rVal)) {
+      const newOffer = dSimVal - rVal;
+      if (cInput) cInput.value = newOffer;
+      if (state[classId]) state[classId].c = newOffer;
+    }
+  }
+
   updateAllCalculations();
 };
 
@@ -489,9 +531,18 @@ window.clearTable = function() {
     const cDSim = document.getElementById(`compact_${cls.id}_dsim`);
     const cR = document.getElementById(`compact_${cls.id}_r`);
     const cPAudit = document.getElementById(`compact_${cls.id}_paudit`);
+    const cC = document.getElementById(`compact_${cls.id}_c`);
     if (cDSim) cDSim.value = '';
     if (cR) cR.value = '';
     if (cPAudit) cPAudit.value = '';
+    if (cC) cC.value = '';
+
+    if (state[cls.id]) {
+      state[cls.id].dSim = '';
+      state[cls.id].r = '';
+      state[cls.id].pAudit = '';
+      state[cls.id].c = '';
+    }
   });
 
   window.LAST_ZERO_OUT_DST = null;
@@ -588,9 +639,13 @@ window.setUIMode = function(mode) {
       const cPAudit = document.getElementById(`compact_${cls.id}_paudit`);
       const cDSim = document.getElementById(`compact_${cls.id}_dsim`);
       const cR = document.getElementById(`compact_${cls.id}_r`);
+      const cC = document.getElementById(`compact_${cls.id}_c`);
       if (stdPAudit && cPAudit && stdPAudit.value) cPAudit.value = stdPAudit.value;
       if (stdDSim && cDSim && stdDSim.value) cDSim.value = stdDSim.value;
       if (stdR && cR && stdR.value) cR.value = stdR.value;
+      if (cC && stdDSim && stdR && stdDSim.value && stdR.value && !cC.value) {
+        cC.value = parseFloat(stdDSim.value) - parseFloat(stdR.value);
+      }
     });
   }
 
@@ -868,6 +923,50 @@ function resetImportBtn() {
   }
 }
 
+let importOfferTimeoutId = null;
+
+window.importOfferFromGame = function() {
+  const isInsideIframe = window.self !== window.top;
+  if (!isInsideIframe) {
+    showToast('Auto-import offer is available when docked inside Airlines Manager.', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btn_import_offer_values');
+  const btnText = document.getElementById('btn_import_offer_text');
+  if (btnText) btnText.textContent = 'Importing...';
+  if (btn) {
+    btn.classList.add('opacity-70', 'pointer-events-none');
+  }
+
+  if (importOfferTimeoutId) clearTimeout(importOfferTimeoutId);
+  importOfferTimeoutId = setTimeout(() => {
+    resetImportOfferBtn();
+    showToast('Import offer timed out. Please reload the extension in chrome://extensions and refresh the Airlines Manager page.', 'warning');
+  }, 4500);
+
+  try {
+    window.parent.postMessage({ type: 'AMT_IMPORT_OFFER_REQUEST' }, '*');
+  } catch (err) {
+    console.error('[AMT App] Error posting AMT_IMPORT_OFFER_REQUEST:', err);
+    resetImportOfferBtn();
+    if (importOfferTimeoutId) clearTimeout(importOfferTimeoutId);
+  }
+};
+
+function resetImportOfferBtn() {
+  if (importOfferTimeoutId) {
+    clearTimeout(importOfferTimeoutId);
+    importOfferTimeoutId = null;
+  }
+  const btn = document.getElementById('btn_import_offer_values');
+  const btnText = document.getElementById('btn_import_offer_text');
+  if (btnText) btnText.textContent = 'Import Offer';
+  if (btn) {
+    btn.classList.remove('opacity-70', 'pointer-events-none');
+  }
+}
+
 let copyAuditTimeoutId = null;
 
 window.copyAuditPriceToChangePrice = function() {
@@ -980,6 +1079,17 @@ function resetExportBtn() {
   }
 }
 
+function isTableFullyPopulated() {
+  const classesToCheck = CLASSES.filter(cls => !cls.isCargo || state.cargoEnabled);
+  return classesToCheck.every(cls => {
+    const p = document.getElementById(`compact_${cls.id}_paudit`)?.value?.trim();
+    const d = document.getElementById(`compact_${cls.id}_dsim`)?.value?.trim();
+    const c = document.getElementById(`compact_${cls.id}_c`)?.value?.trim();
+    const r = document.getElementById(`compact_${cls.id}_r`)?.value?.trim();
+    return p && d && c && r;
+  });
+}
+
 // Listen for messages from extension parent window
 window.addEventListener('message', (e) => {
   if (!e.data) return;
@@ -995,6 +1105,18 @@ window.addEventListener('message', (e) => {
     const data = e.data.data;
     if (!data) return;
 
+    const hasRemaining = Boolean(data.hasRemainingDemand);
+
+    // If remaining offer/demand is detected on the audit page and table is already fully populated,
+    // prompt the user whether to clear and replace values.
+    if (hasRemaining && isTableFullyPopulated()) {
+      const shouldReplace = confirm('The pricing table is currently fully populated with values. Do you want to replace them with the newly imported audit and remaining demand values?');
+      if (!shouldReplace) {
+        showToast('Import cancelled. Existing values retained.', 'info');
+        return;
+      }
+    }
+
     window.LAST_ZERO_OUT_HUB = data.hub || '';
     window.LAST_ZERO_OUT_DST = data.dst || '';
 
@@ -1007,15 +1129,49 @@ window.addEventListener('message', (e) => {
         const stdR = document.getElementById(`${cls.id}_r`);
         if (stdPAudit) stdPAudit.value = classData.pAudit ?? '';
         if (stdDSim) stdDSim.value = classData.dSim ?? '';
-        if (stdR) stdR.value = classData.r ?? '';
 
         // Compact inputs
         const cPAudit = document.getElementById(`compact_${cls.id}_paudit`);
         const cDSim = document.getElementById(`compact_${cls.id}_dsim`);
         const cR = document.getElementById(`compact_${cls.id}_r`);
+        const cC = document.getElementById(`compact_${cls.id}_c`);
         if (cPAudit) cPAudit.value = classData.pAudit ?? '';
         if (cDSim) cDSim.value = classData.dSim ?? '';
-        if (cR) cR.value = classData.r ?? '';
+
+        if (state[cls.id]) {
+          state[cls.id].pAudit = classData.pAudit ?? '';
+          state[cls.id].dSim = classData.dSim ?? '';
+        }
+
+        if (hasRemaining) {
+          // Remaining demand detected on audit page
+          if (stdR) stdR.value = classData.r ?? '';
+          if (cR) cR.value = classData.r ?? '';
+          if (state[cls.id]) state[cls.id].r = classData.r ?? '';
+
+          // If offer was empty, calculate offer from dSim - r
+          if (cC && cC.value.trim() === '') {
+            if (classData.dSim !== null && classData.r !== null && !isNaN(classData.dSim) && !isNaN(classData.r)) {
+              cC.value = classData.dSim - classData.r;
+              if (state[cls.id]) state[cls.id].c = cC.value;
+            }
+          }
+        } else {
+          // Remaining offer/demand NOT detected on audit page:
+          // Do NOT replace the values of offer!
+          // Calculate Remain by taking audited demand and subtracting offer
+          const currentOffer = cC && cC.value.trim() !== '' ? parseFloat(cC.value) : null;
+          if (currentOffer !== null && !isNaN(currentOffer) && classData.dSim !== null && !isNaN(classData.dSim)) {
+            const calculatedR = classData.dSim - currentOffer;
+            if (stdR) stdR.value = calculatedR;
+            if (cR) cR.value = calculatedR;
+            if (state[cls.id]) state[cls.id].r = calculatedR;
+          } else {
+            if (stdR) stdR.value = '';
+            if (cR) cR.value = '';
+            if (state[cls.id]) state[cls.id].r = '';
+          }
+        }
       } else if (cls.isCargo) {
         // Cargo not present in imported data - clear any previous values
         const stdPAudit = document.getElementById('cargo_paudit');
@@ -1028,9 +1184,18 @@ window.addEventListener('message', (e) => {
         const cPAudit = document.getElementById('compact_cargo_paudit');
         const cDSim = document.getElementById('compact_cargo_dsim');
         const cR = document.getElementById('compact_cargo_r');
+        const cC = document.getElementById('compact_cargo_c');
         if (cPAudit) cPAudit.value = '';
         if (cDSim) cDSim.value = '';
         if (cR) cR.value = '';
+        if (cC) cC.value = '';
+
+        if (state.cargo) {
+          state.cargo.pAudit = '';
+          state.cargo.dSim = '';
+          state.cargo.r = '';
+          state.cargo.c = '';
+        }
       }
     });
 
@@ -1059,10 +1224,10 @@ window.addEventListener('message', (e) => {
     const name = data.routeName || `Route #${data.lineId || ''}`;
     if (data.simPriceMismatch) {
       showToast(`Warning: Simulated demand price does not match last audit! Values were imported for ${name}.`, 'warning', 6000);
-    } else if (data.hasRemainingDemand) {
+    } else if (hasRemaining) {
       showToast(`Successfully imported audit and remaining demand for ${name}!`, 'success');
     } else {
-      showToast(`Remaining demand not found on route page, but Audit $ and Audit Demand were imported for ${name}!`, 'warning');
+      showToast(`Audit imported for ${name}! Please check if your Offer values are up-to-date.`, 'warning', 7000);
     }
   }
 
@@ -1070,6 +1235,67 @@ window.addEventListener('message', (e) => {
   if (e.data.type === 'AMT_IMPORT_ERROR') {
     resetImportBtn();
     showToast(e.data.message || 'Failed to import values from game.', 'warning');
+  }
+
+  // Handle successful import of offer from Airlines Manager (network/showline)
+  if (e.data.type === 'AMT_IMPORT_OFFER_SUCCESS') {
+    resetImportOfferBtn();
+    const data = e.data.data;
+    if (!data) return;
+
+    if (data.hub) window.LAST_ZERO_OUT_HUB = data.hub;
+    if (data.dst) window.LAST_ZERO_OUT_DST = data.dst;
+
+    CLASSES.forEach(cls => {
+      const offerVal = data[cls.id];
+      const cInput = document.getElementById(`compact_${cls.id}_c`);
+      if (cInput) {
+        cInput.value = (offerVal !== null && offerVal !== undefined) ? offerVal : '';
+      }
+      if (state[cls.id]) {
+        state[cls.id].c = (offerVal !== null && offerVal !== undefined) ? offerVal : '';
+      }
+
+      // If Demand is already filled, calculate Remain = Demand - Offer
+      const dSimEl = document.getElementById(`compact_${cls.id}_dsim`) || document.getElementById(`${cls.id}_dsim`);
+      const dSimVal = dSimEl && dSimEl.value.trim() !== '' ? parseFloat(dSimEl.value) : null;
+      if (dSimVal !== null && !isNaN(dSimVal) && offerVal !== null && !isNaN(offerVal)) {
+        const rVal = dSimVal - offerVal;
+        const rEl = document.getElementById(`compact_${cls.id}_r`);
+        const stdREl = document.getElementById(`${cls.id}_r`);
+        if (rEl) rEl.value = rVal;
+        if (stdREl) stdREl.value = rVal;
+        if (state[cls.id]) state[cls.id].r = rVal;
+      }
+    });
+
+    if (data.hasCargo !== undefined) {
+      toggleCargo(data.hasCargo);
+    }
+
+    if (data.routeName) {
+      const activeRouteBadge = document.getElementById('zero_out_active_route_badge');
+      const compactRouteBadge = document.getElementById('compact_route_badge');
+      if (activeRouteBadge) {
+        activeRouteBadge.textContent = data.routeName;
+        activeRouteBadge.classList.remove('hidden');
+      }
+      if (compactRouteBadge) {
+        compactRouteBadge.textContent = data.routeName;
+        compactRouteBadge.classList.remove('hidden');
+      }
+    }
+
+    updateAllCalculations();
+
+    const name = data.routeName || `Route #${data.lineId || ''}`;
+    showToast(`Successfully imported scheduled offer for ${name}!`, 'success');
+  }
+
+  // Handle import offer error
+  if (e.data.type === 'AMT_IMPORT_OFFER_ERROR') {
+    resetImportOfferBtn();
+    showToast(e.data.message || 'Failed to import offer from game.', 'warning');
   }
 
   // Handle successful export to game
@@ -1143,6 +1369,22 @@ window.loadPreset = function(presetKey = 'jfk') {
       if (dSim) dSim.value = data.dSim;
       if (r) r.value = data.r;
       if (pAudit) pAudit.value = data.pAudit;
+
+      const cDSim = document.getElementById(`compact_${cls.id}_dsim`);
+      const cR = document.getElementById(`compact_${cls.id}_r`);
+      const cPAudit = document.getElementById(`compact_${cls.id}_paudit`);
+      const cC = document.getElementById(`compact_${cls.id}_c`);
+      if (cDSim) cDSim.value = data.dSim;
+      if (cR) cR.value = data.r;
+      if (cPAudit) cPAudit.value = data.pAudit;
+      if (cC) cC.value = data.dSim - data.r;
+
+      if (state[cls.id]) {
+        state[cls.id].dSim = data.dSim;
+        state[cls.id].r = data.r;
+        state[cls.id].pAudit = data.pAudit;
+        state[cls.id].c = data.dSim - data.r;
+      }
     }
   });
 
@@ -1209,22 +1451,26 @@ function saveToLocalStorage() {
     eco: {
       dSim: document.getElementById('eco_dsim')?.value || document.getElementById('compact_eco_dsim')?.value || '',
       r: document.getElementById('eco_r')?.value || document.getElementById('compact_eco_r')?.value || '',
-      pAudit: document.getElementById('eco_paudit')?.value || document.getElementById('compact_eco_paudit')?.value || ''
+      pAudit: document.getElementById('eco_paudit')?.value || document.getElementById('compact_eco_paudit')?.value || '',
+      c: document.getElementById('compact_eco_c')?.value || ''
     },
     bus: {
       dSim: document.getElementById('bus_dsim')?.value || document.getElementById('compact_bus_dsim')?.value || '',
       r: document.getElementById('bus_r')?.value || document.getElementById('compact_bus_r')?.value || '',
-      pAudit: document.getElementById('bus_paudit')?.value || document.getElementById('compact_bus_paudit')?.value || ''
+      pAudit: document.getElementById('bus_paudit')?.value || document.getElementById('compact_bus_paudit')?.value || '',
+      c: document.getElementById('compact_bus_c')?.value || ''
     },
     first: {
       dSim: document.getElementById('first_dsim')?.value || document.getElementById('compact_first_dsim')?.value || '',
       r: document.getElementById('first_r')?.value || document.getElementById('compact_first_r')?.value || '',
-      pAudit: document.getElementById('first_paudit')?.value || document.getElementById('compact_first_paudit')?.value || ''
+      pAudit: document.getElementById('first_paudit')?.value || document.getElementById('compact_first_paudit')?.value || '',
+      c: document.getElementById('compact_first_c')?.value || ''
     },
     cargo: {
       dSim: document.getElementById('cargo_dsim')?.value || document.getElementById('compact_cargo_dsim')?.value || '',
       r: document.getElementById('cargo_r')?.value || document.getElementById('compact_cargo_r')?.value || '',
-      pAudit: document.getElementById('cargo_paudit')?.value || document.getElementById('compact_cargo_paudit')?.value || ''
+      pAudit: document.getElementById('cargo_paudit')?.value || document.getElementById('compact_cargo_paudit')?.value || '',
+      c: document.getElementById('compact_cargo_c')?.value || ''
     }
   };
 
@@ -1232,7 +1478,8 @@ function saveToLocalStorage() {
     const d = data[cls.id]?.dSim;
     const r = data[cls.id]?.r;
     const p = data[cls.id]?.pAudit;
-    return (d && String(d).trim() !== '') || (r && String(r).trim() !== '') || (p && String(p).trim() !== '');
+    const c = data[cls.id]?.c;
+    return (d && String(d).trim() !== '') || (r && String(r).trim() !== '') || (p && String(p).trim() !== '') || (c && String(c).trim() !== '');
   });
 
   if (!hasData) {
@@ -1272,14 +1519,23 @@ function restoreFromLocalStorage() {
         const cDSim = document.getElementById(`compact_${cls.id}_dsim`);
         const cR = document.getElementById(`compact_${cls.id}_r`);
         const cPAudit = document.getElementById(`compact_${cls.id}_paudit`);
+        const cC = document.getElementById(`compact_${cls.id}_c`);
         if (cDSim && data[cls.id].dSim !== undefined) cDSim.value = data[cls.id].dSim;
         if (cR && data[cls.id].r !== undefined) cR.value = data[cls.id].r;
         if (cPAudit && data[cls.id].pAudit !== undefined) cPAudit.value = data[cls.id].pAudit;
+        if (cC) {
+          if (data[cls.id].c !== undefined && data[cls.id].c !== '') {
+            cC.value = data[cls.id].c;
+          } else if (data[cls.id].dSim && data[cls.id].r) {
+            cC.value = data[cls.id].dSim - data[cls.id].r;
+          }
+        }
 
         if (state[cls.id]) {
           if (data[cls.id].dSim !== undefined) state[cls.id].dSim = data[cls.id].dSim;
           if (data[cls.id].r !== undefined) state[cls.id].r = data[cls.id].r;
           if (data[cls.id].pAudit !== undefined) state[cls.id].pAudit = data[cls.id].pAudit;
+          if (data[cls.id].c !== undefined) state[cls.id].c = data[cls.id].c;
         }
       }
     });

@@ -374,9 +374,12 @@
     const pricingMatch = pathname.match(/\/marketing\/pricing\/(\d+)/);
 
     if (!pricingMatch) {
+      const isShowline = pathname.includes('/network/showline/');
       sendToIframe({
         type: 'AMT_IMPORT_ERROR',
-        message: 'Please navigate to a Route Pricing page (marketing/pricing/...) to import values.'
+        message: isShowline 
+          ? 'You are on the Route Details page. Use "Import Offer" here, or navigate to Route Pricing (marketing/pricing/...) to import audit values.'
+          : 'Please navigate to a Route Pricing page (marketing/pricing/...) to import values.'
       });
       return;
     }
@@ -466,29 +469,22 @@
       const hasCargoAudit = pAudit.length >= 4 && dAudit.length >= 4 && pAudit[3] !== null && !isNaN(pAudit[3]) && pAudit[3] > 0;
 
       // Extract Remaining Demands specifically from the SIMULATE DEMAND section (NOT from INFORMATION ABOUT THE ROUTE)
+      // Note: Simulation requires gold membership or manual execution; if missing, we import audit values and compute r = Demand - Offer
       const simSplit = pageText.split(/(?:SIMULATE DEMAND|SIMULER LA DEMANDE)/i);
-      if (simSplit.length < 2) {
-        sendToIframe({
-          type: 'AMT_IMPORT_ERROR',
-          message: 'Simulation section not found. Please click "Perform a simulation" on this route page first.'
-        });
-        return;
+      let hasRemainingDemand = false;
+      let rDemand = [];
+
+      if (simSplit.length >= 2) {
+        const simSection = simSplit[1].split(/(?:The SUPER Simulation|La SUPER Simulation|Perform a SUPER Simulation|Effectuer une SUPER Simulation|CHANGE YOUR PRICES|MODIFIER VOS PRIX|$)/i)[0];
+        const remDemandMatches = Array.from(simSection.matchAll(/(?:Remaining demand|Demande restante)\s*:\s*(-?[0-9\s,]+)\s*(?:Pax|T)/gi));
+        rDemand = remDemandMatches.map(m => parseNumber(m[1]));
+        if (rDemand.length >= 3 && !rDemand.slice(0, 3).some(r => r === null || isNaN(r))) {
+          hasRemainingDemand = true;
+        }
       }
 
-      const simSection = simSplit[1].split(/(?:The SUPER Simulation|La SUPER Simulation|Perform a SUPER Simulation|Effectuer une SUPER Simulation|CHANGE YOUR PRICES|MODIFIER VOS PRIX|$)/i)[0];
-      const remDemandMatches = Array.from(simSection.matchAll(/(?:Remaining demand|Demande restante)\s*:\s*(-?[0-9\s,]+)\s*(?:Pax|T)/gi));
-      const rDemand = remDemandMatches.map(m => parseNumber(m[1]));
-
-      if (rDemand.length < 3 || rDemand.slice(0, 3).some(r => r === null || isNaN(r))) {
-        sendToIframe({
-          type: 'AMT_IMPORT_ERROR',
-          message: 'No simulation results found for passenger classes. Please click "Perform a simulation" on this route page before importing.'
-        });
-        return;
-      }
-
-      const hasCargoSim = hasCargoAudit && rDemand.length >= 4 && rDemand[3] !== null && !isNaN(rDemand[3]);
-      const hasCargo = Boolean(hasCargoAudit && hasCargoSim);
+      const hasCargoSim = hasRemainingDemand && hasCargoAudit && rDemand.length >= 4 && rDemand[3] !== null && !isNaN(rDemand[3]);
+      const hasCargo = Boolean(hasCargoAudit && (hasRemainingDemand ? hasCargoSim : true));
 
       // Check if "Change your price" fields match the last audit "Ideal ticket price" fields
       let simPriceMismatch = false;
@@ -552,28 +548,28 @@
         hub,
         dst,
         routeName: routeName || (hub && dst ? `${hub} / ${dst}` : `Route #${lineId}`),
-        hasRemainingDemand: true,
+        hasRemainingDemand: Boolean(hasRemainingDemand),
         simPriceMismatch: Boolean(simPriceMismatch),
         hasCargo: Boolean(hasCargo),
         eco: {
           pAudit: pAudit[0],
           dSim: dAudit[0],
-          r: rDemand[0]
+          r: hasRemainingDemand ? rDemand[0] : null
         },
         bus: {
           pAudit: pAudit[1],
           dSim: dAudit[1],
-          r: rDemand[1]
+          r: hasRemainingDemand ? rDemand[1] : null
         },
         first: {
           pAudit: pAudit[2],
           dSim: dAudit[2],
-          r: rDemand[2]
+          r: hasRemainingDemand ? rDemand[2] : null
         },
         cargo: hasCargo ? {
           pAudit: pAudit[3],
           dSim: dAudit[3],
-          r: rDemand[3]
+          r: hasRemainingDemand ? rDemand[3] : null
         } : null
       };
 
@@ -795,11 +791,142 @@
     }
   }
 
+  // 4. Scrape Route Details Page (/network/showline/{lineId}) for Scheduled Offer
+  function handleImportOfferRequest() {
+    console.log('[AMT Extension] handleImportOfferRequest triggered on:', window.location.href);
+    const pathname = window.location.pathname;
+    const showlineMatch = pathname.match(/\/network\/showline\/(\d+)/);
+
+    if (!showlineMatch) {
+      const isPricing = pathname.includes('/marketing/pricing/');
+      sendToIframe({
+        type: 'AMT_IMPORT_OFFER_ERROR',
+        message: isPricing 
+          ? 'You are on the Route Pricing page. Use "Import Values" here, or navigate to Route Details (network/showline/...) to import offer.'
+          : 'Please navigate to a Route Details page (network/showline/...) to import offer.'
+      });
+      return;
+    }
+
+    const lineId = showlineMatch[1];
+
+    try {
+      const pageText = document.body.innerText || document.body.textContent || '';
+
+      // 1. Extract Route Hub and Destination (e.g. DWC / BUD)
+      let hub = '';
+      let dst = '';
+      let routeName = '';
+
+      const routeLineMatch = pageText.match(/(?:Route|Ligne)\s+([A-Z]{3})[\s\S]*?(?=(?:STATISTICS|STATISTIQUES|Turnover|Chiffre d'affaires|\n\n|$))/i);
+      if (routeLineMatch) {
+        const lineText = routeLineMatch[0];
+        const iataMatches = Array.from(lineText.matchAll(/\b([A-Z]{3})\b/g)).map(m => m[1]);
+        if (iataMatches.length >= 2) {
+          hub = iataMatches[0];
+          dst = iataMatches[1];
+          routeName = `${hub} / ${dst}`;
+        } else if (iataMatches.length === 1) {
+          hub = iataMatches[0];
+          routeName = hub;
+        }
+      }
+
+      if (!dst) {
+        const titleMatch = document.title.match(/\b([A-Z]{3})\s*[-/]\s*([A-Z]{3})\b/);
+        if (titleMatch) {
+          hub = titleMatch[1];
+          dst = titleMatch[2];
+          routeName = `${hub} / ${dst}`;
+        }
+      }
+
+      // 2. Extract Offer values from the statistics table
+      let offers = [];
+
+      // Method A: DOM inspection of table rows
+      const rows = Array.from(document.querySelectorAll('tr, .row'));
+      const offerRow = rows.find(r => {
+        const text = r.innerText || r.textContent || '';
+        return /^\s*(?:Offer|Offre)\s*:/im.test(text);
+      });
+
+      if (offerRow) {
+        const cells = Array.from(offerRow.querySelectorAll('td, th, div.cell, span'));
+        if (cells.length >= 4) {
+          for (let i = 1; i < cells.length; i++) {
+            const num = parseNumber(cells[i].innerText || cells[i].textContent || '');
+            if (num !== null && !isNaN(num)) {
+              offers.push(num);
+            }
+          }
+        } else {
+          const matches = Array.from(offerRow.innerText.matchAll(/(-?[0-9\s,]+)/g))
+            .map(m => parseNumber(m[1]))
+            .filter(n => n !== null && !isNaN(n));
+          offers = matches;
+        }
+      }
+
+      // Method B: Regex fallback on pageText
+      if (offers.length < 3) {
+        const offerLineMatch = pageText.match(/(?:Offer|Offre)\s*:\s*([^\n\r]+)/i);
+        if (offerLineMatch) {
+          const lineContent = offerLineMatch[1];
+          const numMatches = Array.from(lineContent.matchAll(/(-?[0-9\s,]+)/g))
+            .map(m => parseNumber(m[1]))
+            .filter(n => n !== null && !isNaN(n));
+          if (numMatches.length >= 3) {
+            offers = numMatches;
+          }
+        }
+      }
+
+      if (offers.length < 3) {
+        sendToIframe({
+          type: 'AMT_IMPORT_OFFER_ERROR',
+          message: 'Could not find Offer values in the statistics table. Please ensure the route details statistics are visible.'
+        });
+        return;
+      }
+
+      const hasCargo = offers.length >= 4 && offers[3] !== null && !isNaN(offers[3]);
+
+      const offerData = {
+        lineId,
+        hub,
+        dst,
+        routeName: routeName || (hub && dst ? `${hub} / ${dst}` : `Route #${lineId}`),
+        hasCargo,
+        eco: offers[0],
+        bus: offers[1],
+        first: offers[2],
+        cargo: hasCargo ? offers[3] : null
+      };
+
+      console.log('[AMT Extension] Sending imported offer data to iframe:', offerData);
+
+      sendToIframe({
+        type: 'AMT_IMPORT_OFFER_SUCCESS',
+        data: offerData
+      });
+
+    } catch (err) {
+      console.error('[AMT Extension] Error importing offer:', err);
+      sendToIframe({
+        type: 'AMT_IMPORT_OFFER_ERROR',
+        message: 'Error importing offer: ' + err.message
+      });
+    }
+  }
+
   // Listen for messages from iframe
   window.addEventListener('message', (e) => {
     if (!e.data) return;
     if (e.data.type === 'AMT_IMPORT_REQUEST') {
       handleImportRequest();
+    } else if (e.data.type === 'AMT_IMPORT_OFFER_REQUEST') {
+      handleImportOfferRequest();
     } else if (e.data.type === 'AMT_EXPORT_PRICES_REQUEST') {
       handleExportPrices(e.data.prices);
     } else if (e.data.type === 'AMT_COPY_AUDIT_TO_CHANGE_REQUEST') {
