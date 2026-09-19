@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AMT Toolkit - Airlines Manager Tycoon Toolkit</title>
   <meta name="description" content="Airlines Manager Tycoon Toolkit (AMT Toolkit) - Zero-out route price calculator and airline management tools.">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/icon16.png">
+  <link rel="apple-touch-icon" sizes="128x128" href="icons/icon128.png">
   
   <!-- Tailwind CSS CDN (v3) -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -113,11 +116,7 @@
       
       <!-- Brand & Title (Clickable to Homepage) -->
       <a href="#home" id="header_brand_logo" onclick="switchTab('home'); return false;" class="flex items-center space-x-3 cursor-pointer group select-none" aria-label="AMT Toolkit Home">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/10 ring-1 ring-white/15 group-hover:ring-cyan-400/50 group-hover:scale-105 transition-all">
-          <svg class="w-4 h-4 text-white transform -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-          </svg>
-        </div>
+        <img src="icons/icon48.png" alt="AMT Toolkit Logo" class="w-8 h-8 rounded-lg shadow-md shadow-cyan-500/10 ring-1 ring-white/15 group-hover:ring-cyan-400/50 group-hover:scale-105 transition-all object-contain">
         <div>
           <div class="flex items-center gap-2">
             <span class="text-base font-bold tracking-tight text-white group-hover:text-cyan-300 transition-colors">AMT Toolkit</span>
@@ -150,6 +149,16 @@
         </button>
       </nav>
       
+      <!-- Right Header Actions -->
+      <div class="hidden sm:flex items-center gap-2.5">
+        <a href="#install-guide" onclick="switchTab('home'); setTimeout(() => { const el = document.getElementById('install-guide'); if(el) el.scrollIntoView({behavior:'smooth'}); }, 100); return false;" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white transition shadow-sm shadow-cyan-600/20">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+          </svg>
+          <span>Get Addon</span>
+        </a>
+      </div>
+
     </div>
   </header>
 
@@ -161,82 +170,312 @@
     <!-- ========================================================================= -->
     <div id="view_home" class="space-y-8 animate-in fade-in duration-150">
       
-      <!-- Hero Section with Network Globe Art -->
-      <section class="hero glass-panel" aria-labelledby="hero-title">
-        <div class="hero-copy">
-          <span class="section-kicker"><span class="line"></span> PLAN SMARTER. FLY FURTHER.</span>
-          <h1 id="hero-title">Your next great route<br>starts here<span class="cyan">.</span></h1>
-          <p>Find the right destinations, fine-tune your fleet, and turn every hour in the air into opportunity.</p>
-          <div class="hero-actions">
-            <a class="button primary" href="#route-finder" onclick="switchTab('route-finder'); return false;">Explore routes <svg class="icon"><use href="#arrow"/></svg></a>
-            <a class="button secondary" href="#circuit-finder" onclick="switchTab('circuit-finder'); return false;">Build a circuit</a>
-          </div>
-          <div class="hero-note"><svg class="icon"><use href="#check"/></svg> Four connected tools. One better airline.</div>
-        </div>
+      <!-- HERO BANNER SLIDESHOW: (SLIDE 1: IN-GAME ADDON | SLIDE 2: ROUTE PLANNING) -->
+      <section id="hero_carousel_container" class="hero-carousel glass-panel" aria-label="Featured Showcase Slideshow">
         
-        <div class="network-art" aria-hidden="true">
-          <div class="map-caption"><span class="dot"></span> A WORLD OF POSSIBILITIES</div>
-          <svg class="network-globe" viewBox="0 0 520 330" fill="none">
-            <defs>
-              <radialGradient id="glow">
-                <stop stop-color="#0e7490" stop-opacity=".2"/>
-                <stop offset="1" stop-color="#0e7490" stop-opacity="0"/>
-              </radialGradient>
-              <linearGradient id="route" x1="90" y1="210" x2="430" y2="130" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#0891b2" stop-opacity=".3"/>
-                <stop offset=".5" stop-color="#67e8f9"/>
-                <stop offset="1" stop-color="#22d3ee" stop-opacity=".5"/>
-              </linearGradient>
-            </defs>
-            <circle cx="274" cy="170" r="163" fill="url(#glow)"/>
-            <g stroke="#16445b" stroke-width=".8">
-              <circle cx="274" cy="170" r="137"/>
-              <ellipse cx="274" cy="170" rx="91" ry="137"/>
-              <ellipse cx="274" cy="170" rx="38" ry="137"/>
-              <ellipse cx="274" cy="170" rx="137" ry="48"/>
-              <ellipse cx="274" cy="170" rx="137" ry="98"/>
-              <path d="M137 170h274M274 33v274"/>
-            </g>
-            <g fill="#16465b" fill-opacity=".6" stroke="#287087" stroke-opacity=".5" stroke-width="1">
-              <path d="m164 109 24-25 26 3 12 18-7 14 16 11-11 21-16-7-4 19-13-3-9-26-16-5Z M217 170l19 7 18 26-8 23-12 12-4 23-10-16 2-27-12-27Z M272 101l12-21 19 7 9-7 27 4 17 15 29 6 8 21-14 15-24-6-9 14-18-18-20 5-11-14-12 7-13-10Z M277 144l29-5 21 20-8 31-19 23-11-10-5-30-14-12Z M357 219l27-12 15 16-6 18-25-2Z"/>
-            </g>
-            <circle cx="274" cy="170" r="151" stroke="#16445b" stroke-dasharray="2 7" opacity=".6"/>
-            <g stroke="url(#route)" stroke-width="1.5">
-              <path d="M116 168Q186 25 280 100"/>
-              <path d="M280 100Q375 52 434 160"/>
-              <path d="M280 100Q373 137 394 249"/>
-              <path d="M116 168Q185 235 227 265" stroke-dasharray="4 5"/>
-            </g>
-            <g fill="#67e8f9">
-              <circle cx="116" cy="168" r="4"/>
-              <circle cx="280" cy="100" r="5"/>
-              <circle cx="434" cy="160" r="4"/>
-              <circle cx="394" cy="249" r="4"/>
-              <circle cx="227" cy="265" r="3"/>
-            </g>
-            <circle cx="280" cy="100" r="12" stroke="#22d3ee" opacity=".4"/>
-            <circle cx="280" cy="100" r="20" stroke="#22d3ee" opacity=".15"/>
-            <g fill="#cbd5e1" font-size="10" font-family="monospace" letter-spacing="1">
-              <text x="86" y="191">JFK</text>
-              <text x="269" y="77" id="globe-hub">OSL</text>
-              <text x="442" y="164">HND</text>
-              <text x="404" y="270">SYD</text>
-              <text x="213" y="286">GRU</text>
-            </g>
-            <path d="m195 98 12-15-2 12 6 5-4 2-7-4-4 3Z" fill="#cffafe"/>
-          </svg>
-          <div class="map-footer">
-            <span>CONNECT. OPTIMIZE. EXPAND.</span>
-            <span class="map-coordinates" id="globe_hub_coords">59.91° N &nbsp; 10.75° E</span>
+        <!-- SLIDE 1: COMPACT IN-GAME ADDON MOCKUP & COPY (DEFAULT FIRST SLIDE) -->
+        <div id="slide_1" class="slide active">
+          <div class="grid grid-cols-1 lg:grid-cols-12 min-h-[380px]">
+            
+            <!-- Slide 1 Copy (Left) -->
+            <div class="lg:col-span-5 p-6 sm:p-7 flex flex-col justify-center z-10 space-y-3">
+              <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-800/60 text-[10px] font-semibold text-cyan-300 w-max">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span>IN-GAME BROWSER EXTENSION</span>
+              </div>
+
+              <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-snug">
+                Play inside Airlines Manager with the 
+                <span class="inline-flex items-center gap-2 mt-1">
+                  <span class="cyan">AMT Addon</span>
+                  <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-cyan-950/90 text-cyan-300 border border-cyan-500/40 text-[11px] font-mono font-bold tracking-wider shadow-sm">
+                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+                    <span>BETA</span>
+                  </span>
+                </span>
+              </h2>
+
+              <p class="text-slate-400 text-xs leading-relaxed">
+                No more switching tabs or manually writing down numbers. The AMT Addon embeds a smart, resizable sidebar directly into your game screen with 1-click automatic data scraping and instant price exporting.
+              </p>
+
+              <div class="flex items-center gap-2 pt-1 text-xs">
+                <span class="text-slate-400 text-[11px]">Quick Toggle:</span>
+                <kbd class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-cyan-300 font-mono font-bold text-xs shadow-sm">Alt + A</kbd>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2 pt-2">
+                <a href="#install-guide" onclick="const el = document.getElementById('install-guide'); if(el) el.scrollIntoView({behavior:'smooth'}); return false;" class="px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs shadow-sm shadow-cyan-600/20 transition flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                  <span>Install Extension</span>
+                </a>
+                <button type="button" onclick="switchTab('zero-out')" class="px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-800 text-slate-300 text-xs border border-slate-700 transition">
+                  <span>Use on Web</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Slide 1 Compact Mockup (Right) -->
+            <div class="lg:col-span-7 p-3 sm:p-5 flex items-center justify-center">
+              <div class="w-full bg-slate-950 rounded-xl overflow-hidden border border-slate-800 shadow-xl text-xs">
+                
+                <!-- Mockup Browser Tab Bar -->
+                <div class="bg-slate-900 px-3 py-1.5 border-b border-slate-800 flex items-center justify-between text-[10px]">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-rose-500/80"></span>
+                    <span class="w-2 h-2 rounded-full bg-amber-500/80"></span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-500/80"></span>
+                    <span class="ml-2 font-mono text-slate-400 truncate max-w-[160px] sm:max-w-xs">airlines-manager.com/marketing/pricing/481920</span>
+                  </div>
+                  <div class="flex items-center gap-1 text-[9px]">
+                    <span class="text-slate-400 hidden sm:inline">Addon Mode:</span>
+                    <span class="px-1.5 py-0.2 rounded bg-cyan-900/60 text-cyan-300 font-semibold border border-cyan-800">Docked Sidebar</span>
+                  </div>
+                </div>
+
+                <!-- Mockup Split: Game on Left (60%), Sidebar on Right (40%) -->
+                <div class="grid grid-cols-12 min-h-[220px]">
+                  
+                  <!-- Game Page Left -->
+                  <div class="col-span-7 p-3 border-r border-slate-800/80 space-y-2 bg-slate-900/30">
+                    <div class="flex items-center justify-between text-[10px]">
+                      <span class="font-bold text-white">Route: DWC &rarr; BUD</span>
+                      <span class="text-[9px] px-1 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono">Reliable Audit</span>
+                    </div>
+
+                    <!-- Mini Game Sections -->
+                    <div class="grid grid-cols-2 gap-1.5 text-[9px] font-mono">
+                      <div class="bg-slate-900/90 p-1.5 rounded border border-slate-800/80">
+                        <div class="text-slate-400 font-semibold mb-0.5">LAST AUDIT</div>
+                        <div class="text-slate-300">Eco: <strong class="text-white">$1,420</strong></div>
+                        <div class="text-slate-300">Demand: <strong class="text-white">2,600 Pax</strong></div>
+                      </div>
+                      <div class="bg-slate-900/90 p-1.5 rounded border border-slate-800/80">
+                        <div class="text-amber-400 font-semibold mb-0.5">SIMULATE</div>
+                        <div class="text-slate-300">Remain: <strong class="text-cyan-300">+600 Pax</strong></div>
+                        <div class="text-slate-300">Cargo: <strong class="text-emerald-300">+4.5 T</strong></div>
+                      </div>
+                    </div>
+
+                    <!-- Change Your Prices Form -->
+                    <div id="mock_game_price_box" class="bg-slate-900/90 p-2 rounded-lg border border-slate-800 space-y-1.5 transition-all">
+                      <div class="flex items-center justify-between text-[9px] font-semibold text-slate-300">
+                        <span>CHANGE YOUR PRICES</span>
+                        <span id="mock_export_badge" class="hidden text-[8px] font-mono text-emerald-400 bg-emerald-950 px-1 rounded border border-emerald-800">&check; Injected!</span>
+                      </div>
+                      <div class="grid grid-cols-4 gap-1 text-center font-mono text-[9px]">
+                        <div class="bg-slate-950 p-1 rounded border border-slate-800">
+                          <span class="text-[8px] text-slate-400 block font-sans">Eco</span>
+                          <input type="text" id="mock_input_eco" value="$1,420" readonly class="w-full bg-transparent text-center font-bold text-white outline-none">
+                        </div>
+                        <div class="bg-slate-950 p-1 rounded border border-slate-800">
+                          <span class="text-[8px] text-slate-400 block font-sans">Bus</span>
+                          <input type="text" id="mock_input_bus" value="$2,850" readonly class="w-full bg-transparent text-center font-bold text-white outline-none">
+                        </div>
+                        <div class="bg-slate-950 p-1 rounded border border-slate-800">
+                          <span class="text-[8px] text-slate-400 block font-sans">First</span>
+                          <input type="text" id="mock_input_first" value="$4,920" readonly class="w-full bg-transparent text-center font-bold text-white outline-none">
+                        </div>
+                        <div class="bg-slate-950 p-1 rounded border border-slate-800">
+                          <span class="text-[8px] text-slate-400 block font-sans">Cargo</span>
+                          <input type="text" id="mock_input_cargo" value="$1,850" readonly class="w-full bg-transparent text-center font-bold text-white outline-none">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Test Buttons Bar -->
+                    <div class="flex items-center justify-between pt-0.5 text-[9px]">
+                      <span class="text-slate-400">Try Live Simulation:</span>
+                      <div class="flex items-center gap-1.5">
+                        <button type="button" onclick="testImportSim()" class="px-2 py-0.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">1. Test Import &rarr;</button>
+                        <button type="button" onclick="testExportSim()" class="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition">2. Test Export &larr;</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Addon Sidebar Right -->
+                  <div class="col-span-5 p-2.5 bg-slate-900/90 flex flex-col justify-between space-y-2">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-1 text-[9px]">
+                      <div class="flex items-center gap-1 font-bold text-white">
+                        <span>✈ AMT</span>
+                        <span class="text-[8px] font-mono px-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">SIDEBAR</span>
+                      </div>
+                      <span class="text-[8px] font-mono text-emerald-400 font-bold">+$328k/d</span>
+                    </div>
+
+                    <!-- Compact Matrix Table -->
+                    <div class="bg-slate-950 rounded border border-slate-800 overflow-hidden text-[9px] font-mono-num">
+                      <table class="w-full text-left">
+                        <thead class="bg-slate-900 text-[8px] text-slate-400 uppercase">
+                          <tr>
+                            <th class="py-1 px-1">Cls</th>
+                            <th class="py-1 px-0.5 text-center">Audit</th>
+                            <th class="py-1 px-0.5 text-center text-cyan-400">Rem</th>
+                            <th class="py-1 px-1 text-right">Target</th>
+                          </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60 text-[9px]">
+                          <tr>
+                            <td class="py-0.5 px-1 font-bold text-white">Y</td>
+                            <td class="py-0.5 px-0.5 text-center text-slate-300" id="tb_eco_audit">$1,420</td>
+                            <td class="py-0.5 px-0.5 text-center text-cyan-300 font-bold" id="tb_eco_rem">+600</td>
+                            <td class="py-0.5 px-1 text-right text-emerald-400 font-bold" id="tb_eco_target">$1,529</td>
+                          </tr>
+                          <tr>
+                            <td class="py-0.5 px-1 font-bold text-white">J</td>
+                            <td class="py-0.5 px-0.5 text-center text-slate-300" id="tb_bus_audit">$2,850</td>
+                            <td class="py-0.5 px-0.5 text-center text-blue-300 font-bold" id="tb_bus_rem">+85</td>
+                            <td class="py-0.5 px-1 text-right text-emerald-400 font-bold" id="tb_bus_target">$3,018</td>
+                          </tr>
+                          <tr>
+                            <td class="py-0.5 px-1 font-bold text-white">F</td>
+                            <td class="py-0.5 px-0.5 text-center text-slate-300" id="tb_first_audit">$4,920</td>
+                            <td class="py-0.5 px-0.5 text-center text-amber-300 font-bold" id="tb_first_rem">+18</td>
+                            <td class="py-0.5 px-1 text-right text-emerald-400 font-bold" id="tb_first_target">$5,145</td>
+                          </tr>
+                          <tr>
+                            <td class="py-0.5 px-1 font-bold text-white">C</td>
+                            <td class="py-0.5 px-0.5 text-center text-slate-300" id="tb_cargo_audit">$1,850</td>
+                            <td class="py-0.5 px-0.5 text-center text-purple-300 font-bold" id="tb_cargo_rem">+4.5</td>
+                            <td class="py-0.5 px-1 text-right text-emerald-400 font-bold" id="tb_cargo_target">$1,988</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <!-- Sidebar Export Action -->
+                    <button type="button" onclick="testExportSim()" class="w-full py-1.5 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[9px] shadow-sm flex items-center justify-center gap-1 transition">
+                      <svg class="w-3 3-h" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                      <span>Export Prices into Game</span>
+                    </button>
+
+                    <div class="text-[8px] text-slate-400 text-center">
+                      Alt + A to toggle
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+            </div>
+
           </div>
         </div>
+
+        <!-- SLIDE 2: ROUTE PLANNING & GLOBE ART -->
+        <div id="slide_2" class="slide">
+          <div class="grid grid-cols-1 lg:grid-cols-12 min-h-[380px]">
+            
+            <!-- Slide 2 Copy (Left) -->
+            <div class="lg:col-span-6 p-6 sm:p-8 flex flex-col justify-center z-10">
+              <span class="section-kicker"><span class="line"></span> PLAN SMARTER. FLY FURTHER.</span>
+              <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mt-4 mb-3 leading-tight">
+                Your next great route<br>starts here<span class="cyan">.</span>
+              </h2>
+              <p class="text-slate-400 text-xs sm:text-sm max-w-md leading-relaxed">
+                Find the right destinations, fine-tune your fleet, and turn every hour in the air into opportunity.
+              </p>
+              <div class="hero-actions mt-6 flex flex-wrap gap-2.5">
+                <a class="button primary text-xs" href="#route-finder" onclick="switchTab('route-finder'); return false;">
+                  <span>Explore routes</span>
+                  <svg class="icon"><use href="#arrow"/></svg>
+                </a>
+                <a class="button secondary text-xs" href="#circuit-finder" onclick="switchTab('circuit-finder'); return false;">
+                  <span>Build a circuit</span>
+                </a>
+              </div>
+              <div class="hero-note mt-5 flex items-center gap-1.5 text-xs text-slate-500">
+                <svg class="icon"><use href="#check"/></svg>
+                <span>Four connected tools. One better airline.</span>
+              </div>
+            </div>
+
+            <!-- Slide 2 Art: Network Globe (Right) -->
+            <div class="lg:col-span-6 flex items-center justify-center p-4 sm:p-6" aria-hidden="true">
+              <div class="network-art w-full max-w-lg">
+                <div class="map-caption"><span class="dot"></span> A WORLD OF POSSIBILITIES</div>
+                <svg class="network-globe" viewBox="0 0 520 330" fill="none">
+                  <defs>
+                    <radialGradient id="glow">
+                      <stop stop-color="#0e7490" stop-opacity=".25"/>
+                      <stop offset="1" stop-color="#0e7490" stop-opacity="0"/>
+                    </radialGradient>
+                    <linearGradient id="route" x1="90" y1="210" x2="430" y2="130" gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#0891b2" stop-opacity=".3"/>
+                      <stop offset=".5" stop-color="#67e8f9"/>
+                      <stop offset="1" stop-color="#22d3ee" stop-opacity=".6"/>
+                    </linearGradient>
+                  </defs>
+                  <circle cx="274" cy="170" r="163" fill="url(#glow)"/>
+                  <g stroke="#16445b" stroke-width=".8">
+                    <circle cx="274" cy="170" r="137"/>
+                    <ellipse cx="274" cy="170" rx="91" ry="137"/>
+                    <ellipse cx="274" cy="170" rx="38" ry="137"/>
+                    <ellipse cx="274" cy="170" rx="137" ry="48"/>
+                    <ellipse cx="274" cy="170" rx="137" ry="98"/>
+                    <path d="M137 170h274M274 33v274"/>
+                  </g>
+                  <g fill="#16465b" fill-opacity=".6" stroke="#287087" stroke-opacity=".5" stroke-width="1">
+                    <path d="m164 109 24-25 26 3 12 18-7 14 16 11-11 21-16-7-4 19-13-3-9-26-16-5Z M217 170l19 7 18 26-8 23-12 12-4 23-10-16 2-27-12-27Z M272 101l12-21 19 7 9-7 27 4 17 15 29 6 8 21-14 15-24-6-9 14-18-18-20 5-11-14-12 7-13-10Z M277 144l29-5 21 20-8 31-19 23-11-10-5-30-14-12Z M357 219l27-12 15 16-6 18-25-2Z"/>
+                  </g>
+                  <circle cx="274" cy="170" r="151" stroke="#16445b" stroke-dasharray="2 7" opacity=".6"/>
+                  <g stroke="url(#route)" stroke-width="1.5">
+                    <path d="M116 168Q186 25 280 100"/>
+                    <path d="M280 100Q375 52 434 160"/>
+                    <path d="M280 100Q373 137 394 249"/>
+                    <path d="M116 168Q185 235 227 265" stroke-dasharray="4 5"/>
+                  </g>
+                  <g fill="#67e8f9">
+                    <circle cx="116" cy="168" r="4"/>
+                    <circle cx="280" cy="100" r="5"/>
+                    <circle cx="434" cy="160" r="4"/>
+                    <circle cx="394" cy="249" r="4"/>
+                    <circle cx="227" cy="265" r="3"/>
+                  </g>
+                  <circle cx="280" cy="100" r="12" stroke="#22d3ee" opacity=".4"/>
+                  <circle cx="280" cy="100" r="20" stroke="#22d3ee" opacity=".15"/>
+                  <g fill="#cbd5e1" font-size="10" font-family="monospace" letter-spacing="1">
+                    <text x="86" y="191">JFK</text>
+                    <text x="269" y="77" id="globe-hub">OSL</text>
+                    <text x="442" y="164">HND</text>
+                    <text x="404" y="270">SYD</text>
+                    <text x="213" y="286">GRU</text>
+                  </g>
+                  <path d="m195 98 12-15-2 12 6 5-4 2-7-4-4 3Z" fill="#cffafe"/>
+                </svg>
+                <div class="map-footer mt-2 flex justify-between text-[8px] font-mono text-slate-500">
+                  <span>CONNECT. OPTIMIZE. EXPAND.</span>
+                  <span class="map-coordinates" id="globe_hub_coords">59.91° N &nbsp; 10.75° E</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Slideshow Bottom Navigation Controls -->
+        <div class="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-3 z-20 select-none">
+          <button type="button" onclick="prevSlide()" class="p-1 rounded-full text-slate-400 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 transition" title="Previous Slide">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+
+          <div class="flex items-center gap-2">
+            <div id="dot_0" onclick="goToSlide(0)" class="slide-dot active" title="In-Game Addon (Beta)"></div>
+            <div id="dot_1" onclick="goToSlide(1)" class="slide-dot" title="Route Planning"></div>
+          </div>
+
+          <button type="button" onclick="nextSlide()" class="p-1 rounded-full text-slate-400 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 transition" title="Next Slide">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
       </section>
 
       <!-- Interactive Planning Toolkit Cards Grid -->
       <section aria-labelledby="tools-title" class="tool-section">
         <div class="section-heading">
           <div>
-            <h2 id="tools-title">Your planning toolkit</h2>
+            <h2 id="tools-title">Your complete planning toolkit</h2>
             <p>From the first route to the last available seat.</p>
           </div>
           <span class="subtle">Built for Airlines Manager Tycoon</span>
@@ -314,6 +553,72 @@
               <svg class="icon"><use href="#arrow"/></svg>
             </div>
           </a>
+        </div>
+      </section>
+
+      <!-- ADDON INSTALL METHOD: HOW TO INSTALL THE EXTENSION IN 60 SECONDS -->
+      <section id="install-guide" class="space-y-6 pt-4">
+        <div class="text-center max-w-2xl mx-auto space-y-2">
+          <span class="text-xs font-mono uppercase text-cyan-400 font-bold tracking-wider">FAST &amp; EASY SETUP</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            How to Install the Extension in 60 Seconds
+          </h2>
+          <p class="text-xs sm:text-sm text-slate-400">
+            Works in any Chromium browser (Google Chrome, Brave, Microsoft Edge, Opera). No compile step required.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Step 1 -->
+          <div class="glass-card rounded-2xl p-6 border border-slate-800/90 space-y-3.5 flex flex-col justify-between">
+            <div class="space-y-3">
+              <div class="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-400 font-mono font-bold text-sm">
+                1
+              </div>
+              <h3 class="text-base font-bold text-white">Download or Clone</h3>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Download the repository zip from GitHub or clone the project folder to your computer. Keep all files in their default folder.
+              </p>
+            </div>
+            <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 font-mono text-[11px] text-slate-300 select-all">
+              git clone https://github.com/JayM3/AMT-Toolkit.git
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="glass-card rounded-2xl p-6 border border-slate-800/90 space-y-3.5 flex flex-col justify-between">
+            <div class="space-y-3">
+              <div class="w-8 h-8 rounded-lg bg-blue-950 border border-blue-800 flex items-center justify-center text-blue-400 font-mono font-bold text-sm">
+                2
+              </div>
+              <h3 class="text-base font-bold text-white">Enable Developer Mode</h3>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Open your browser extension manager: <code class="text-cyan-300 font-mono text-xs">chrome://extensions</code> or 
+                <code class="text-cyan-300 font-mono text-xs">brave://extensions</code>. Toggle the <strong>Developer mode</strong> switch in the top-right corner.
+              </p>
+            </div>
+            <div class="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold pt-1">
+              <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span>Developer mode &rarr; ON</span>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="glass-card rounded-2xl p-6 border border-slate-800/90 space-y-3.5 flex flex-col justify-between">
+            <div class="space-y-3">
+              <div class="w-8 h-8 rounded-lg bg-emerald-950 border border-emerald-800 flex items-center justify-center text-emerald-400 font-mono font-bold text-sm">
+                3
+              </div>
+              <h3 class="text-base font-bold text-white">Load Unpacked</h3>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Click the <strong>Load unpacked</strong> button and select the root <code class="text-cyan-300 font-mono text-xs">AMT-Toolkit</code> directory. Visit <a href="https://www.airlines-manager.com/" target="_blank" class="text-cyan-400 underline">airlines-manager.com</a> to see your new sidebar!
+              </p>
+            </div>
+            <div class="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold pt-1">
+              <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span>Ready immediately &bull; Alt + A</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -3826,6 +4131,159 @@
 
   <!-- Toast Notification Container -->
   <div id="toast_container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Homepage Carousel & Addon Simulation Logic -->
+  <script>
+    'use strict';
+    (function initHomepageCarousel() {
+      const SLIDE_DURATION = 6500;
+      const IDLE_DELAY = 5000;
+      let currentSlide = 0;
+      let slideTimer = null;
+      let idleTimer = null;
+      let isUserActive = false;
+
+      const slides = [
+        document.getElementById('slide_1'),
+        document.getElementById('slide_2')
+      ];
+      const dots = [
+        document.getElementById('dot_0'),
+        document.getElementById('dot_1')
+      ];
+      const carouselContainer = document.getElementById('hero_carousel_container');
+
+      if (!carouselContainer || !slides[0] || !slides[1]) return;
+
+      window.showSlide = function(index) {
+        currentSlide = (index + slides.length) % slides.length;
+        slides.forEach((s, idx) => {
+          if (!s) return;
+          if (idx === currentSlide) {
+            s.classList.add('active');
+          } else {
+            s.classList.remove('active');
+          }
+        });
+        dots.forEach((d, idx) => {
+          if (!d) return;
+          if (idx === currentSlide) {
+            d.classList.add('active');
+          } else {
+            d.classList.remove('active');
+          }
+        });
+      };
+
+      window.nextSlide = function() {
+        window.showSlide(currentSlide + 1);
+      };
+
+      window.prevSlide = function() {
+        window.showSlide(currentSlide - 1);
+      };
+
+      window.goToSlide = function(index) {
+        window.showSlide(index);
+        handleUserInteraction();
+      };
+
+      function startAutoSlide() {
+        stopAutoSlide();
+        slideTimer = setInterval(() => {
+          if (!isUserActive) {
+            window.nextSlide();
+          }
+        }, SLIDE_DURATION);
+      }
+
+      function stopAutoSlide() {
+        if (slideTimer) {
+          clearInterval(slideTimer);
+          slideTimer = null;
+        }
+      }
+
+      function handleUserInteraction() {
+        isUserActive = true;
+        stopAutoSlide();
+
+        if (idleTimer) clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+          isUserActive = false;
+          startAutoSlide();
+        }, IDLE_DELAY);
+      }
+
+      carouselContainer.addEventListener('mouseenter', () => {
+        isUserActive = true;
+        stopAutoSlide();
+      });
+
+      carouselContainer.addEventListener('mouseleave', () => {
+        handleUserInteraction();
+      });
+
+      carouselContainer.addEventListener('click', handleUserInteraction);
+      carouselContainer.addEventListener('touchstart', handleUserInteraction, { passive: true });
+
+      // Start initially
+      startAutoSlide();
+
+      // Test simulation functions
+      window.testImportSim = function() {
+        handleUserInteraction();
+        const cells = [
+          document.getElementById('tb_eco_audit'),
+          document.getElementById('tb_eco_rem'),
+          document.getElementById('tb_eco_target'),
+          document.getElementById('tb_bus_audit'),
+          document.getElementById('tb_bus_rem'),
+          document.getElementById('tb_bus_target')
+        ];
+
+        cells.forEach(el => {
+          if (!el) return;
+          el.style.transition = 'all 0.3s ease';
+          el.style.backgroundColor = 'rgba(6, 182, 212, 0.3)';
+          setTimeout(() => { el.style.backgroundColor = 'transparent'; }, 900);
+        });
+      };
+
+      window.testExportSim = function() {
+        handleUserInteraction();
+        const eco = document.getElementById('mock_input_eco');
+        const bus = document.getElementById('mock_input_bus');
+        const first = document.getElementById('mock_input_first');
+        const cargo = document.getElementById('mock_input_cargo');
+        const badge = document.getElementById('mock_export_badge');
+        const box = document.getElementById('mock_game_price_box');
+
+        if (eco) eco.value = '$1,529';
+        if (bus) bus.value = '$3,018';
+        if (first) first.value = '$5,145';
+        if (cargo) cargo.value = '$1,988';
+
+        [eco, bus, first, cargo].forEach(input => {
+          if (!input) return;
+          input.style.transition = 'all 0.25s ease';
+          input.style.color = '#34d399';
+          input.parentElement.style.borderColor = '#10b981';
+          input.parentElement.style.boxShadow = '0 0 10px rgba(16, 185, 129, 0.5)';
+          setTimeout(() => {
+            input.parentElement.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+            input.parentElement.style.boxShadow = 'none';
+          }, 1800);
+        });
+
+        if (badge) badge.classList.remove('hidden');
+        if (box) {
+          box.classList.add('highlight-flash');
+          setTimeout(() => { box.classList.remove('highlight-flash'); }, 1800);
+        }
+      };
+    })();
+  </script>
 
   <!-- JavaScript Datasets & Logic -->
   <script src="data/aircraft.js?v=2.3"></script>

@@ -1,12 +1,29 @@
-# ✈️ AMT Toolkit
+<p align="center">
+  <a href="https://jaym3.github.io/AMT-Toolkit/">
+    <img src="icons/icon128.png" alt="AMT Toolkit Logo" width="128" height="128">
+  </a>
+</p>
 
-A client-side web toolkit for **Airlines Manager: Tycoon**.
+<h1 align="center">AMT Toolkit</h1>
 
-🔗 **Live App**: [https://jaym3.github.io/AMT-Toolkit/](https://jaym3.github.io/AMT-Toolkit/)
+<p align="center">
+  A client-side web toolkit and browser extension for <strong>Airlines Manager: Tycoon</strong>.
+</p>
+
+<p align="center">
+  <a href="https://jaym3.github.io/AMT-Toolkit/"><strong>Explore the Live Web App »</strong></a>
+  <br />
+  <br />
+  <a href="#-tools">Tools</a> •
+  <a href="#-formulas">Formulas</a> •
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-extension-icons">Icons</a> •
+  <a href="#-project-structure">Project Structure</a>
+</p>
 
 ---
 
-## Tools
+## 🛠️ Tools
 
 - **Zero-Out Price Calculator**: Calculates the exact ticket prices needed to capture 100% of remaining passenger and cargo demand after an audit.
 - **Seat Configuration Optimizer**: Configures multi-class cabin layouts (Economy, Business, First, Cargo) to maximize revenue within aircraft space and payload limits.
@@ -15,7 +32,7 @@ A client-side web toolkit for **Airlines Manager: Tycoon**.
 
 ---
 
-## Formulas
+## 📐 Formulas
 
 ### Zero-Out Price
 $$P_{\text{target}} = P_{\text{audit}} \times \left(1 + \frac{R}{3 \times D_{\text{sim}}}\right)$$
@@ -30,16 +47,16 @@ $$\text{Flight Time (Hours)} = \text{round}\left(\frac{\text{Distance (km)}}{\te
 
 ---
 
-## Quick Start
+## ⚡ Quick Start
 
 The app runs entirely in the browser with no build step or dependencies.
 
 - **Online**: Visit [https://jaym3.github.io/AMT-Toolkit/](https://jaym3.github.io/AMT-Toolkit/)
 - **Chrome / Brave Extension**:
-  1. Open `chrome://extensions` (or `brave://extensions`) in your browser (WIP).
+  1. Open `chrome://extensions` (or `brave://extensions`) in your browser.
   2. Toggle **Developer mode** on (top-right corner).
   3. Click **Load unpacked** and select this directory (`AMT-Toolkit`).
-  4. Visit [Airlines Manager](https://www.airlines-manager.com/) to see the docked sidebar, or click the extension icon to open the native side panel!
+  4. Visit [Airlines Manager](https://www.airlines-manager.com/) to see the docked sidebar, or click the extension icon (<img src="icons/icon16.png" alt="AMT Icon" width="16" height="16" style="vertical-align: middle;">) to open the native side panel!
 
 Optional local server:
 ```bash
@@ -50,7 +67,20 @@ npx serve .
 
 ---
 
-## Project Structure
+## 🎨 Extension Icons
+
+The extension assets in [`icons/`](icons/) provide icons across multiple display resolutions:
+
+| Resolution | Preview | Usage |
+| :---: | :---: | :--- |
+| **16 × 16** | <img src="icons/icon16.png" alt="icon16" width="16" height="16"> | Browser action toolbar & favicon |
+| **32 × 32** | <img src="icons/icon32.png" alt="icon32" width="32" height="32"> | High-DPI / Retina toolbar & Windows display |
+| **48 × 48** | <img src="icons/icon48.png" alt="icon48" width="48" height="48"> | Extension management page (`chrome://extensions`) |
+| **128 × 128** | <img src="icons/icon128.png" alt="icon128" width="64" height="64"> | Chrome Web Store showcase & main application icon |
+
+---
+
+## 📂 Project Structure
 
 ```
 AMT-Toolkit/
@@ -59,7 +89,11 @@ AMT-Toolkit/
 ├── content.js          # In-page docked sidebar script for Airlines Manager
 ├── content.css         # Docked sidebar styling and animations
 ├── sidepanel.html      # Native Chrome Side Panel page
-├── icons/              # Extension icons (16px, 48px, 128px)
+├── icons/              # Extension icons
+│   ├── icon16.png      # 16×16 toolbar icon
+│   ├── icon32.png      # 32×32 high-DPI icon
+│   ├── icon48.png      # 48×48 extension management icon
+│   └── icon128.png     # 128×128 main logo & Web Store icon
 ├── index.html          # Main single-page application
 ├── app.js              # Pricing and seat configuration logic
 ├── route_finder.js     # Airport search and route catalog
@@ -74,6 +108,6 @@ AMT-Toolkit/
 
 ---
 
-## License
+## 📄 License
 
 [MIT](LICENSE)
