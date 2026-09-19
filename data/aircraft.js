@@ -459,7 +459,7 @@ const AIRCRAFT_DATABASE = [
     "manufacturer": "Bae Systems",
     "type": "Short-Haul",
     "category": 1,
-    "seats": 38,
+    "seats": 30,
     "payload_ton": 3.5,
     "range_km": 1433,
     "speed_kmh": 547,
