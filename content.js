@@ -290,7 +290,18 @@
       // Split page into sections: LAST AUDIT, INFORMATION ABOUT THE ROUTE, CHANGE YOUR PRICES
       const auditSplit = pageText.split(/INFORMATION ABOUT THE ROUTE|INFORMATIONS SUR LA LIGNE/i);
       const auditText = auditSplit[0] || '';
-      const routeInfoText = (auditSplit[1] || '').split(/CHANGE YOUR PRICES|MODIFIER VOS PRIX/i)[0] || '';
+
+      // Check Audit Reliability: must be "Reliable" / "Fiable"
+      const relMatch = auditText.match(/(?:Reliability|Fiabilité)\s*:\s*([^\n\r]+)/i);
+      const relStatus = relMatch ? relMatch[1].trim() : 'Unknown';
+      const isReliable = /^(?:Reliable|Fiable)$/i.test(relStatus);
+      if (!isReliable) {
+        sendToIframe({
+          type: 'AMT_IMPORT_ERROR',
+          message: `Last audit is not Reliable (found: "${relStatus}"). Please perform an internal audit on this route first.`
+        });
+        return;
+      }
 
       // Extract Audit Prices: Eco, Bus, First, Cargo
       const auditPriceMatches = Array.from(auditText.matchAll(/(?:Ideal ticket price|Ideal price\/Tonne|Prix idéal|Prix idéal\/Tonne)\s*:\s*\$?(-?[0-9\s,]+)/gi));
@@ -308,12 +319,27 @@
         return;
       }
 
-      // Extract Remaining Demands directly from INFORMATION ABOUT THE ROUTE
-      // Handles both positive and negative remaining demands (e.g. -504 Pax)
-      const remDemandMatches = Array.from(routeInfoText.matchAll(/(?:Remaining demand|Demande restante)\s*:\s*(-?[0-9\s,]+)\s*(?:Pax|T)/gi));
+      // Extract Remaining Demands specifically from the SIMULATE DEMAND section (NOT from INFORMATION ABOUT THE ROUTE)
+      const simSplit = pageText.split(/(?:SIMULATE DEMAND|SIMULER LA DEMANDE)/i);
+      if (simSplit.length < 2) {
+        sendToIframe({
+          type: 'AMT_IMPORT_ERROR',
+          message: 'Simulation section not found. Please click "Perform a simulation" on this route page first.'
+        });
+        return;
+      }
+
+      const simSection = simSplit[1].split(/(?:The SUPER Simulation|La SUPER Simulation|Perform a SUPER Simulation|Effectuer une SUPER Simulation|CHANGE YOUR PRICES|MODIFIER VOS PRIX|$)/i)[0];
+      const remDemandMatches = Array.from(simSection.matchAll(/(?:Remaining demand|Demande restante)\s*:\s*(-?[0-9\s,]+)\s*(?:Pax|T)/gi));
       const rDemand = remDemandMatches.map(m => parseNumber(m[1]));
 
-      const hasRemainingDemand = rDemand.length >= 4 && rDemand.every(r => r !== null && !isNaN(r));
+      if (rDemand.length < 4 || rDemand.some(r => r === null || isNaN(r))) {
+        sendToIframe({
+          type: 'AMT_IMPORT_ERROR',
+          message: 'No simulation results found. Please click "Perform a simulation" on this route page before importing.'
+        });
+        return;
+      }
 
       // Build import payload
       const importedData = {
@@ -321,26 +347,26 @@
         hub,
         dst,
         routeName: routeName || (hub && dst ? `${hub} / ${dst}` : `Route #${lineId}`),
-        hasRemainingDemand,
+        hasRemainingDemand: true,
         eco: {
           pAudit: pAudit[0],
           dSim: dAudit[0],
-          r: hasRemainingDemand ? rDemand[0] : ''
+          r: rDemand[0]
         },
         bus: {
           pAudit: pAudit[1],
           dSim: dAudit[1],
-          r: hasRemainingDemand ? rDemand[1] : ''
+          r: rDemand[1]
         },
         first: {
           pAudit: pAudit[2],
           dSim: dAudit[2],
-          r: hasRemainingDemand ? rDemand[2] : ''
+          r: rDemand[2]
         },
         cargo: {
           pAudit: pAudit[3],
           dSim: dAudit[3],
-          r: hasRemainingDemand ? rDemand[3] : ''
+          r: rDemand[3]
         }
       };
 
