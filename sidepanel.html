@@ -87,6 +87,44 @@
       box-shadow: 0 1px 4px rgba(6, 182, 212, 0.3);
     }
 
+    /* Disabled Mode Toggle (Coming Soon) */
+    .mode-toggle.mode-toggle-disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      position: relative;
+    }
+
+    .mode-toggle.mode-toggle-disabled .mode-btn {
+      pointer-events: none;
+      cursor: not-allowed;
+    }
+
+    .mode-toggle.mode-toggle-disabled::after {
+      content: 'Coming soon';
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%) translateY(-2px);
+      background: #020617;
+      color: #22d3ee;
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      z-index: 9999;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+    }
+
+    .mode-toggle.mode-toggle-disabled:hover::after {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
     .actions {
       display: flex;
       align-items: center;
@@ -236,6 +274,46 @@
       }
       setTimeout(() => sendModeToIframe(currentMode), 200);
       setTimeout(() => sendModeToIframe(currentMode), 800);
+    });
+
+    const EXPANDED_TABS = ['seat-config', 'route-finder', 'circuit-finder'];
+    let savedModeBeforeAutoExpand = currentMode;
+    let isAutoExpanded = false;
+
+    window.addEventListener('message', (e) => {
+      if (!e.data) return;
+      if (e.data.type === 'AMT_TAB_CHANGED') {
+        const tabId = e.data.tabId;
+        const modeToggle = document.getElementById('mode-toggle');
+        if (EXPANDED_TABS.includes(tabId)) {
+          if (!isAutoExpanded) {
+            savedModeBeforeAutoExpand = currentMode;
+            isAutoExpanded = true;
+          }
+          setMode('standard');
+          if (modeToggle) {
+            modeToggle.classList.add('mode-toggle-disabled');
+            modeToggle.title = 'Coming soon';
+          }
+          btnCompact.disabled = true;
+          btnStandard.disabled = true;
+          btnCompact.title = 'Coming soon';
+          btnStandard.title = 'Coming soon';
+        } else if (tabId === 'zero-out' || tabId === 'home') {
+          if (isAutoExpanded) {
+            isAutoExpanded = false;
+            if (modeToggle) {
+              modeToggle.classList.remove('mode-toggle-disabled');
+              modeToggle.title = 'Toggle Compact / Standard View';
+            }
+            btnCompact.disabled = false;
+            btnStandard.disabled = false;
+            btnCompact.title = '';
+            btnStandard.title = '';
+            setMode(savedModeBeforeAutoExpand || 'compact');
+          }
+        }
+      }
     });
 
     btnRefresh.addEventListener('click', () => {

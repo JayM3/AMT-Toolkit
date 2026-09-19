@@ -119,6 +119,77 @@
   btnCompact.addEventListener('click', () => setMode('compact'));
   btnStandard.addEventListener('click', () => setMode('standard'));
 
+  const EXPANDED_TABS = ['seat-config', 'route-finder', 'circuit-finder'];
+  let lastZeroOutWidth = currentWidth;
+  let savedModeBeforeAutoExpand = currentMode;
+  let isAutoExpanded = false;
+
+  function getExpandedWidth() {
+    const computed = Math.round(window.innerWidth * 0.58);
+    const minExpanded = 860;
+    const maxAllowed = Math.floor(window.innerWidth * 0.75);
+    return Math.min(Math.max(computed, minExpanded), maxAllowed);
+  }
+
+  function handleTabChange(tabId) {
+    const modeToggle = document.getElementById('amt-mode-toggle');
+
+    if (EXPANDED_TABS.includes(tabId)) {
+      if (!isAutoExpanded) {
+        lastZeroOutWidth = currentWidth;
+        savedModeBeforeAutoExpand = currentMode;
+        isAutoExpanded = true;
+      }
+
+      // Drag/expand sidebar out smoothly to ~58% width
+      const targetWidth = getExpandedWidth();
+      sidebarContainer.style.transition = 'width 0.35s cubic-bezier(0.16, 1, 0.3, 1)';
+      sidebarContainer.style.width = `${targetWidth}px`;
+      currentWidth = targetWidth;
+      setTimeout(() => {
+        sidebarContainer.style.transition = '';
+      }, 380);
+
+      // Force standard mode and disable mode toggle with "Coming soon"
+      setMode('standard');
+      if (modeToggle) {
+        modeToggle.classList.add('amt-mode-toggle-disabled');
+        modeToggle.title = 'Coming soon';
+      }
+      btnCompact.disabled = true;
+      btnStandard.disabled = true;
+      btnCompact.title = 'Coming soon';
+      btnStandard.title = 'Coming soon';
+
+    } else if (tabId === 'zero-out' || tabId === 'home') {
+      if (isAutoExpanded) {
+        isAutoExpanded = false;
+
+        // Revert sidebar back to original zero-out width
+        const revertWidth = Math.max(MIN_WIDTH, lastZeroOutWidth || DEFAULT_WIDTH);
+        sidebarContainer.style.transition = 'width 0.35s cubic-bezier(0.16, 1, 0.3, 1)';
+        sidebarContainer.style.width = `${revertWidth}px`;
+        currentWidth = revertWidth;
+        localStorage.setItem(STORAGE_KEY_WIDTH, revertWidth.toString());
+        setTimeout(() => {
+          sidebarContainer.style.transition = '';
+        }, 380);
+
+        // Re-enable mode toggle and restore previous mode
+        if (modeToggle) {
+          modeToggle.classList.remove('amt-mode-toggle-disabled');
+          modeToggle.title = 'Toggle Compact / Standard View';
+        }
+        btnCompact.disabled = false;
+        btnStandard.disabled = false;
+        btnCompact.title = '';
+        btnStandard.title = '';
+
+        setMode(savedModeBeforeAutoExpand || 'compact');
+      }
+    }
+  }
+
   // Hide spinner once iframe is loaded and send current mode
   iframe.addEventListener('load', () => {
     if (spinner) {
@@ -199,7 +270,10 @@
       resizer.classList.remove('amt-resizing');
       document.body.style.userSelect = '';
       iframe.style.pointerEvents = 'auto';
-      localStorage.setItem(STORAGE_KEY_WIDTH, currentWidth.toString());
+      if (!isAutoExpanded) {
+        lastZeroOutWidth = currentWidth;
+        localStorage.setItem(STORAGE_KEY_WIDTH, currentWidth.toString());
+      }
     }
   });
 
@@ -631,6 +705,8 @@
       handleExportPrices(e.data.prices);
     } else if (e.data.type === 'AMT_COPY_AUDIT_TO_CHANGE_REQUEST') {
       handleCopyAuditToChange();
+    } else if (e.data.type === 'AMT_TAB_CHANGED') {
+      handleTabChange(e.data.tabId);
     }
   });
 

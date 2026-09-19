@@ -1859,6 +1859,13 @@ function switchTab(tabId) {
       updateAllCalculations();
     }
   }
+
+  // Notify parent window (extension sidebar or sidepanel) of tab change
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: 'AMT_TAB_CHANGED', tabId: tabId }, '*');
+    }
+  } catch (e) {}
 }
 window.switchTab = switchTab;
 
