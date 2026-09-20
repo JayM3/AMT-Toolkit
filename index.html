@@ -53,6 +53,14 @@
     body.amt-compact-mode #zero_out_compact_container { display: block !important; }
     body:not(.amt-compact-mode) #zero_out_compact_container { display: none !important; }
 
+    /* Route Finder Compact Mode (extension sidebar / docked side panel only) */
+    body.amt-compact-mode #route_finder_standard_container { display: none !important; }
+    body.amt-compact-mode #route_finder_compact_container { display: block !important; }
+    body:not(.amt-compact-mode) #route_finder_compact_container { display: none !important; }
+
+    /* The full-size floating circuit dock is replaced by the compact action bar */
+    body.amt-compact-mode #rf_floating_circuit_actions { display: none !important; }
+
     /* Compact Draggable FAB */
     body.amt-compact-mode #zo_floating_actions { display: none !important; }
     body.amt-compact-mode #zo_compact_fab { display: block !important; }
@@ -2093,6 +2101,18 @@
 
     <!-- Route Finder & Circuit Builder View -->
     <div id="view_route_finder" class="space-y-6 hidden">
+
+    <!-- ========================================================================= -->
+    <!-- COMPACT LAYOUT (Activated only inside the extension sidebar)              -->
+    <!-- Rendered by rf_renderCompact() in js/route_finder.js                      -->
+    <!-- ========================================================================= -->
+    <div id="route_finder_compact_container" class="space-y-2.5" hidden></div>
+
+    <!-- ========================================================================= -->
+    <!-- STANDARD (FULL-WIDTH) LAYOUT                                              -->
+    <!-- ========================================================================= -->
+    <div id="route_finder_standard_container" class="space-y-6">
+
     <!-- Route Finder View Header & Actions -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
       <div>
@@ -2835,6 +2855,8 @@
       </div>
 
     </aside>
+
+    </div><!-- End of #route_finder_standard_container -->
 
     </div><!-- End of #view_route_finder -->
 

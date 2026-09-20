@@ -276,7 +276,8 @@
       setTimeout(() => sendModeToIframe(currentMode), 800);
     });
 
-    const EXPANDED_TABS = ['seat-config', 'route-finder', 'circuit-finder'];
+    // Route Finder has its own compact sidebar layout now, so it stays at the saved width.
+    const EXPANDED_TABS = ['seat-config', 'circuit-finder'];
     let savedModeBeforeAutoExpand = currentMode;
     let isAutoExpanded = false;
 

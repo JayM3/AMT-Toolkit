@@ -449,6 +449,29 @@ function initRouteFinder() {
     if (sortContainer && !sortContainer.contains(e.target)) {
       rf_closeSortDropdown();
     }
+    // Compact popovers close when clicking anywhere outside them.
+    const compactRoot = document.getElementById('route_finder_compact_container');
+    if (compactRoot && (rfCompact.acOpen || rfCompact.sortOpen)) {
+      const target = e.target;
+      const insideCompact = target && typeof target.closest === 'function' &&
+        (target.closest('#rf_c_ac_root') || target.closest('#rf_c_sort_root'));
+      if (!insideCompact) {
+        rfCompact.acOpen = false;
+        rfCompact.sortOpen = false;
+        rfCompact.acSearch = '';
+        rf_renderCompact();
+      }
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (rfCompact.acOpen || rfCompact.sortOpen || rfCompact.gapOpen) {
+      rfCompact.acOpen = false;
+      rfCompact.sortOpen = false;
+      rfCompact.gapOpen = false;
+      rf_renderCompact();
+    }
   });
 
   const restored = rf_restoreStateFromLocalStorage();
@@ -470,6 +493,10 @@ function initRouteFinder() {
       rf_saveStateToLocalStorage();
     });
   });
+
+  // Draw the compact (sidebar) layout, and keep its default pane sensible.
+  if (!currentHub) rfCompact.tab = 'setup';
+  rf_renderCompact();
 }
 window.initRouteFinder = initRouteFinder;
 document.addEventListener('DOMContentLoaded', () => {
@@ -1607,7 +1634,14 @@ document.addEventListener('DOMContentLoaded', () => {
       rf_saveStateToLocalStorage();
     }
 
+    // Full-page circuit renderer + compact mirror (the compact layer reads the same state,
+    // so both views are redrawn from the single update cycle).
     function rf_updateCircuitUI() {
+      rf_updateCircuitUIStandard();
+      rf_renderCompact();
+    }
+
+    function rf_updateCircuitUIStandard() {
       const legCount = currentCircuitLegs.length;
       const circuitBadge = document.getElementById('header_circuit_count');
       if (circuitBadge) circuitBadge.textContent = `${legCount} routes`;
@@ -2033,6 +2067,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // RENDERING ENGINE (Destination Results Table & Cards)
     // =========================================================================
     function rf_renderResults() {
+      rf_renderResultsStandard();
+      rf_renderCompact();
+    }
+
+    function rf_renderResultsStandard() {
       const total = filteredCandidates.length;
       document.getElementById('results_count_badge').textContent = `${Number(total).toLocaleString()} routes`;
       document.getElementById('page_total_text').textContent = Number(total).toLocaleString();
@@ -2622,10 +2661,8 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       }
     }
 
-    function rf_renderGapSuggestions() {
-      const grid = document.getElementById('rf_gap_suggestions_grid');
-      if (!grid) return;
-
+    // Shared circuit maths — used by the full page, the gap filler and the compact sidebar view.
+    function rf_circuitMath() {
       const baseSingleSum = currentCircuitLegs.reduce((acc, l) => acc + l.durationHours, 0);
       const is24hCircuit = baseSingleSum <= 24;
       const targetHours = is24hCircuit ? 24 : 168;
@@ -2634,7 +2671,60 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       currentCircuitLegs.forEach(l => {
         totalScheduledHours += l.durationHours * l.flightsPerDay;
       });
-      const freeHours = Math.max(0, targetHours - totalScheduledHours);
+
+      return {
+        count: currentCircuitLegs.length,
+        is24hCircuit,
+        isWeekly: !is24hCircuit,
+        target: targetHours,
+        used: totalScheduledHours,
+        free: Math.max(0, targetHours - totalScheduledHours),
+        util: Math.min(100, Math.round((totalScheduledHours / targetHours) * 100))
+      };
+    }
+
+    // Gap filler candidates — extracted so the compact view offers the exact same picks.
+    function rf_computeGapSuggestions() {
+      const math = rf_circuitMath();
+      const freeHours = math.free;
+      const existingIatas = new Set(currentCircuitLegs.map(l => l.dstIata));
+      const candidates = [];
+
+      if (freeHours > 0.25 && candidatePool && candidatePool.length) {
+        candidatePool.forEach(c => {
+          if (existingIatas.has(c.dstIata)) return;
+          if (c.durationHours <= freeHours + 0.001) {
+            candidates.push({
+              cand: c,
+              durHours: c.durationHours,
+              remainingAfter: Math.max(0, freeHours - c.durationHours),
+              isExactFit: Math.abs(freeHours - c.durationHours) < 0.01
+            });
+          }
+        });
+
+        candidates.sort((a, b) => {
+          const starsA = a.cand.demand?.stars || 1;
+          const starsB = b.cand.demand?.stars || 1;
+          if (starsA !== starsB) return starsB - starsA;
+          if (a.isExactFit && !b.isExactFit) return -1;
+          if (!a.isExactFit && b.isExactFit) return 1;
+          const avgA = a.cand.demand?.avg || 0;
+          const avgB = b.cand.demand?.avg || 0;
+          if (Math.abs(avgA - avgB) > 0.001) return avgB - avgA;
+          if (a.remainingAfter !== b.remainingAfter) return a.remainingAfter - b.remainingAfter;
+          return b.cand.category - a.cand.category;
+        });
+      }
+
+      return { freeHours, targetHours: math.target, suggestions: candidates };
+    }
+
+    function rf_renderGapSuggestions() {
+      const grid = document.getElementById('rf_gap_suggestions_grid');
+      if (!grid) return;
+
+      const { freeHours, targetHours, suggestions } = rf_computeGapSuggestions();
 
       if (freeHours <= 0.25) {
         grid.innerHTML = `
@@ -2654,46 +2744,7 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
         return;
       }
 
-      const existingIatas = new Set(currentCircuitLegs.map(l => l.dstIata));
-      const candidates = [];
-
-      candidatePool.forEach(c => {
-        if (existingIatas.has(c.dstIata)) return;
-        if (c.durationHours <= freeHours + 0.001) {
-          const remainingAfter = Math.max(0, freeHours - c.durationHours);
-          const isExactFit = Math.abs(freeHours - c.durationHours) < 0.01;
-          candidates.push({
-            cand: c,
-            durHours: c.durationHours,
-            remainingAfter,
-            isExactFit
-          });
-        }
-      });
-
-      candidates.sort((a, b) => {
-        // 1. Primary sort: Star rating descending (highest stars first)
-        const starsA = a.cand.demand?.stars || 1;
-        const starsB = b.cand.demand?.stars || 1;
-        if (starsA !== starsB) return starsB - starsA;
-
-        // 2. Exact fit preference within the same star level
-        if (a.isExactFit && !b.isExactFit) return -1;
-        if (!a.isExactFit && b.isExactFit) return 1;
-
-        // 3. Average demand score descending
-        const avgA = a.cand.demand?.avg || 0;
-        const avgB = b.cand.demand?.avg || 0;
-        if (Math.abs(avgA - avgB) > 0.001) return avgB - avgA;
-
-        // 4. Closest to filling gap (less remaining free hours)
-        if (a.remainingAfter !== b.remainingAfter) return a.remainingAfter - b.remainingAfter;
-
-        // 5. Airport category descending
-        return b.cand.category - a.cand.category;
-      });
-
-      const topSuggestions = candidates.slice(0, 3);
+      const topSuggestions = suggestions.slice(0, 3);
 
       if (topSuggestions.length === 0) {
         grid.innerHTML = `
@@ -2802,6 +2853,31 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
     window.rf_toggleGapDrawer = rf_toggleGapDrawer;
     window.rf_renderGapSuggestions = rf_renderGapSuggestions;
     window.rf_syncDurationFilterToRemaining = rf_syncDurationFilterToRemaining;
+
+    // Compact (sidebar) layout
+    window.rf_renderCompact = rf_renderCompact;
+    window.rf_isCompactMode = rf_isCompactMode;
+    window.rf_compactSetTab = rf_compactSetTab;
+    window.rf_compactToggleAircraft = rf_compactToggleAircraft;
+    window.rf_compactSetAcSearch = rf_compactSetAcSearch;
+    window.rf_compactSetHaul = rf_compactSetHaul;
+    window.rf_compactPickAircraft = rf_compactPickAircraft;
+    window.rf_compactSetHubInput = rf_compactSetHubInput;
+    window.rf_compactSetHubCountry = rf_compactSetHubCountry;
+    window.rf_compactSetHubAirport = rf_compactSetHubAirport;
+    window.rf_compactSetCat = rf_compactSetCat;
+    window.rf_compactSetDur = rf_compactSetDur;
+    window.rf_compactSetContinent = rf_compactSetContinent;
+    window.rf_compactSetCountry = rf_compactSetCountry;
+    window.rf_compactSetPreset = rf_compactSetPreset;
+    window.rf_compactToggleDiv24 = rf_compactToggleDiv24;
+    window.rf_compactResetFilters = rf_compactResetFilters;
+    window.rf_compactSetSearch = rf_compactSetSearch;
+    window.rf_compactToggleSort = rf_compactToggleSort;
+    window.rf_compactPickSort = rf_compactPickSort;
+    window.rf_compactFlipSort = rf_compactFlipSort;
+    window.rf_compactSetPageSize = rf_compactSetPageSize;
+    window.rf_compactToggleGap = rf_compactToggleGap;
     window.rf_getStarRating = rf_getStarRating;
     window.rf_computeAirportDemandStats = rf_computeAirportDemandStats;
     window.rf_updateDurationLimitsForAircraft = rf_updateDurationLimitsForAircraft;
@@ -2810,4 +2886,850 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
     window.rf_saveStateToLocalStorage = rf_saveStateToLocalStorage;
     window.rf_restoreStateFromLocalStorage = rf_restoreStateFromLocalStorage;
 
+    /* =====================================================================
+       COMPACT (SIDEBAR) LAYOUT
+       ---------------------------------------------------------------------
+       Rendered into #route_finder_compact_container and only ever visible
+       while body.amt-compact-mode is set — app.js applies that class from
+       initUIMode() only when window.isSidebarMode() is true, exactly like the
+       Zero-Out compact calculator. On the public site the mode is forced to
+       standard, so this markup never shows up outside the extension sidebar.
+
+       It shares every piece of state with the full page (currentAircraft,
+       currentHub, filteredCandidates, currentCircuitLegs, currentSort,
+       currentDurationPreset…) and only calls the existing rf_* actions, so
+       the two layouts can never drift apart.
+       ===================================================================== */
+    const RF_QUICK_HUBS = ['OSL', 'LHR', 'CDG', 'JFK', 'DXB', 'SIN', 'HND'];
+
+    // UI-only state for the compact layer (open popovers, active pane).
+    const rfCompact = {
+      tab: 'routes',   // setup | routes | circuit
+      acOpen: false,   // aircraft combobox popover
+      acSearch: '',
+      sortOpen: false,
+      gapOpen: false
+    };
+
+    const RF_SORT_FLIP = {
+      dist_asc: 'dist_desc', dist_desc: 'dist_asc',
+      dur_asc: 'dur_desc', dur_desc: 'dur_asc',
+      cat_asc: 'cat_desc', cat_desc: 'cat_asc',
+      stars_asc: 'stars_desc', stars_desc: 'stars_asc',
+      name_asc: 'name_desc', name_desc: 'name_asc',
+      country_asc: 'country_desc', country_desc: 'country_asc',
+      fit_asc: 'fit_desc', fit_desc: 'fit_asc'
+    };
+
+    function rf_isCompactMode() {
+      return !!(document.body && document.body.classList.contains('amt-compact-mode'));
+    }
+
+    // Compact selects mirror the standard ones, so the option lists (aircraft-specific
+    // duration limits, country lists…) stay identical without a second source of truth.
+    function rf_compactSelectHTML(sourceId, onchange, extraClass) {
+      const src = document.getElementById(sourceId);
+      if (!src) return '';
+      const opts = Array.from(src.options)
+        .map(o => `<option value="${o.value}"${o.selected ? ' selected' : ''}>${o.textContent}</option>`)
+        .join('');
+      return `<select onchange="${onchange}" class="amt-micro-input ${extraClass || ''}">${opts}</select>`;
+    }
+
+    function rf_compactMaxFit(leg) {
+      const math = rf_circuitMath();
+      const others = currentCircuitLegs
+        .filter(l => l.dstIata !== leg.dstIata)
+        .reduce((acc, l) => acc + l.durationHours * l.flightsPerDay, 0);
+      return Math.max(1, Math.floor((math.target - others + 0.0001) / leg.durationHours));
+    }
+
+    // ---- header -----------------------------------------------------------
+    function rf_compactHeaderHTML() {
+      const math = rf_circuitMath();
+      const total = filteredCandidates.length;
+      const hub = currentHub;
+      const tabBtn = (key, label, count) => `
+        <button type="button" onclick="rf_compactSetTab('${key}')" class="px-1.5 py-1 rounded-md border transition ${rfCompact.tab === key ? 'bg-cyan-950 text-cyan-300 border-cyan-800 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'}">
+          ${label}${count != null ? ` <span class="text-[9px] font-mono opacity-70">${count}</span>` : ''}
+        </button>`;
+
+      return `
+        <div class="glass-panel rounded-xl border border-slate-800 px-2.5 py-2 space-y-2">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <button type="button" onclick="rf_compactSetTab('setup')" class="flex items-center gap-1.5 min-w-0 px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-600 transition text-left">
+              <span class="text-[11px] font-bold text-white truncate">${currentAircraft ? currentAircraft.name : 'Select aircraft'}</span>
+              ${currentAircraft ? `<span class="text-[9px] font-mono px-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 shrink-0">Cat ${currentAircraft.category}</span>` : ''}
+            </button>
+            <button type="button" onclick="rf_compactSetTab('setup')" class="flex items-center gap-1.5 min-w-0 px-2 py-1 rounded-lg transition text-left ${hub ? 'bg-slate-900 border border-slate-700 hover:border-cyan-600' : 'bg-amber-950/50 border border-amber-800 hover:border-amber-600'}">
+              ${hub
+                ? `<span class="text-[11px] font-mono font-bold text-white">${hub.iata}</span><span class="text-[9px] text-slate-400 truncate">${hub.city}</span>`
+                : `<span class="text-[11px] font-semibold text-amber-300">＋ Set hub</span>`}
+            </button>
+            <span class="ml-auto shrink-0 text-[10px] font-mono text-slate-400">${hub ? total + ' routes' : '—'}</span>
+          </div>
+          <div class="grid grid-cols-3 gap-0.5 p-0.5 bg-slate-900 border border-slate-800 rounded-lg text-[10px] font-semibold text-center">
+            ${tabBtn('setup', 'Setup', null)}
+            ${tabBtn('routes', 'Routes', hub ? total : null)}
+            ${tabBtn('circuit', 'Circuit', math.count)}
+          </div>
+        </div>`;
+    }
+
+    // ---- pane: setup ------------------------------------------------------
+    function rf_compactAircraftPaneHTML() {
+      const ac = currentAircraft;
+      const q = rfCompact.acSearch.trim().toLowerCase();
+      const list = (typeof AIRCRAFT_DATABASE !== 'undefined' ? AIRCRAFT_DATABASE : []).filter(a => {
+        if (comboboxHaulFilter !== 'all' && a.type !== comboboxHaulFilter) return false;
+        if (!q) return true;
+        return a.name.toLowerCase().includes(q) || a.manufacturer.toLowerCase().includes(q) || a.id.toLowerCase().includes(q);
+      });
+      const haulPill = (val, label) => `
+        <button type="button" onclick="rf_compactSetHaul('${val}')" class="px-1.5 py-0.5 rounded text-[10px] font-semibold transition ${comboboxHaulFilter === val ? 'bg-cyan-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">${label}</button>`;
+      const rows = list.slice(0, 60);
+
+      return `
+        <div class="glass-panel rounded-xl border border-slate-800 p-2.5 space-y-1.5">
+          <div class="flex items-center gap-1.5">
+            <span class="w-4 h-4 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-300 text-[9px] font-bold font-mono flex items-center justify-center shrink-0">1</span>
+            <span class="text-[10px] uppercase font-bold text-slate-300 tracking-wide">Aircraft model</span>
+            <span class="ml-auto text-[9px] px-1 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono shrink-0">Cat ${ac ? ac.category : '—'}</span>
+          </div>
+
+          <div class="relative" id="rf_c_ac_root">
+            <button type="button" onclick="rf_compactToggleAircraft()" class="w-full px-2 py-1.5 bg-slate-900 border rounded-lg flex items-center justify-between gap-1.5 text-left transition ${rfCompact.acOpen ? 'border-cyan-600 ring-1 ring-cyan-500/40' : 'border-slate-700 hover:border-cyan-600'}">
+              <span class="min-w-0 flex items-baseline gap-1.5">
+                <span class="text-[11px] font-bold text-white shrink-0">${ac ? ac.name : 'Select aircraft'}</span>
+                <span class="text-[9px] text-slate-400 truncate">${ac ? `(${Number(ac.seats).toLocaleString()} seats • ${ac.speed_kmh} km/h • ${Number(ac.range_km).toLocaleString()} km)` : ''}</span>
+              </span>
+              <svg class="w-3 h-3 text-slate-400 shrink-0 transition-transform duration-200 ${rfCompact.acOpen ? 'rotate-180' : ''}" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+
+            ${rfCompact.acOpen ? `
+            <div class="absolute left-0 right-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[272px]">
+              <div class="p-1.5 border-b border-slate-800 bg-slate-950/95 space-y-1.5 shrink-0">
+                <div class="relative">
+                  <svg class="w-3 h-3 text-slate-500 absolute left-2 top-[7px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                  <input id="rf_c_ac_search" type="text" value="${rfCompact.acSearch}" oninput="rf_compactSetAcSearch(this.value)" placeholder="Search aircraft (e.g. 777, A350, neo)…" class="amt-micro-input pl-7 pr-6">
+                </div>
+                <div class="flex items-center justify-between gap-1">
+                  <div class="flex items-center gap-1">
+                    ${haulPill('all', 'All')}${haulPill('Long-Haul', 'Long')}${haulPill('Medium-Haul', 'Med')}${haulPill('Short-Haul', 'Short')}
+                  </div>
+                  <span class="text-[9px] font-mono text-slate-400 shrink-0">${list.length} of ${typeof AIRCRAFT_DATABASE !== 'undefined' ? AIRCRAFT_DATABASE.length : 0} aircraft</span>
+                </div>
+              </div>
+              <div class="overflow-y-auto thin-scroll flex-1 min-h-0 divide-y divide-slate-800/60">
+                ${rows.length ? rows.map(a => {
+                  const sel = currentAircraft && currentAircraft.id === a.id;
+                  return `
+                  <button type="button" onclick="rf_compactPickAircraft('${a.id}')" class="w-full text-left px-2 py-1.5 flex items-center justify-between gap-1.5 transition ${sel ? 'bg-cyan-950/40' : 'hover:bg-slate-800/70'}">
+                    <span class="min-w-0">
+                      <span class="block text-[11px] font-bold truncate ${sel ? 'text-cyan-300' : 'text-slate-200'}">${a.name} <span class="text-[9px] font-normal text-slate-400">(${a.manufacturer})</span></span>
+                      <span class="block text-[9px] font-mono text-slate-400 truncate">${a.seats} seats &bull; ${a.speed_kmh} km/h &bull; ${Number(a.range_km).toLocaleString()} km</span>
+                    </span>
+                    <span class="shrink-0 flex items-center gap-1">
+                      <span class="text-[9px] px-1 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">Cat ${a.category}</span>
+                      ${sel ? '<span class="text-cyan-400 text-[10px] font-bold">&check;</span>' : ''}
+                    </span>
+                  </button>`;
+                }).join('') : `<div class="p-3 text-center text-[10px] text-slate-500">No aircraft match your search</div>`}
+              </div>
+              <div class="px-2 py-1 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-[9px] text-slate-400 shrink-0">
+                <span>Select to change active plane</span>
+                <span class="font-mono text-slate-500">Esc to close</span>
+              </div>
+            </div>` : ''}
+          </div>
+
+          ${ac ? `
+          <div class="grid grid-cols-4 gap-1">
+            ${[['Range', Number(ac.range_km).toLocaleString() + ' km'], ['Cruise', ac.speed_kmh + ' km/h'], ['Min Cat', 'Cat ' + ac.category], ['Seats', Number(ac.seats).toLocaleString()]]
+              .map(([k, v]) => `<div class="px-1.5 py-1 rounded-md bg-slate-950/70 border border-slate-800 min-w-0">
+                <span class="block text-[8px] uppercase text-slate-500 tracking-wide">${k}</span>
+                <span class="block text-[10px] font-bold text-slate-200 font-mono truncate">${v}</span>
+              </div>`).join('')}
+          </div>
+          <div class="flex items-center justify-between text-[9px] text-slate-500">
+            <span class="truncate">${ac.manufacturer} · ${ac.type} · payload ${ac.payload_ton} T</span>
+            <span class="shrink-0 ml-2 font-mono">Cat ${ac.category}</span>
+          </div>` : ''}
+        </div>`;
+    }
+
+    function rf_compactHubPaneHTML() {
+      const hub = currentHub;
+      const demand = hub ? rf_computeAirportDemandStats(hub) : null;
+      const mismatch = hub && currentAircraft && hub.cat < currentAircraft.category;
+      return `
+        <div class="glass-panel rounded-xl border border-slate-800 p-2.5 space-y-1.5">
+          <div class="flex items-center gap-1.5">
+            <span class="w-4 h-4 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-300 text-[9px] font-bold font-mono flex items-center justify-center shrink-0">2</span>
+            <span class="text-[10px] uppercase font-bold text-slate-300 tracking-wide">Departure hub</span>
+            <button type="button" onclick="rf_clearHub()" class="ml-auto text-[9px] text-slate-500 hover:text-rose-300 font-semibold shrink-0">Clear</button>
+          </div>
+
+          <div class="flex items-start gap-1.5">
+            <input id="rf_c_hub_input" type="text" maxlength="3" value="${hub ? hub.iata : ''}" oninput="rf_compactSetHubInput(this.value)" placeholder="IATA"
+                   class="amt-micro-input font-mono font-bold uppercase tracking-[0.2em] text-center text-[13px] w-[68px] shrink-0">
+            <div class="flex flex-wrap gap-1 min-w-0 flex-1">
+              ${RF_QUICK_HUBS.map(q => `<button type="button" onclick="rf_setQuickHub('${q}')"
+                class="px-1.5 py-0.5 rounded border font-mono text-[10px] transition ${hub && hub.iata === q ? 'border-cyan-600 text-cyan-300 bg-cyan-950/60' : 'border-slate-700 text-slate-400 hover:text-slate-200 bg-slate-900'}">${q}</button>`).join('')}
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5">
+            ${rf_compactSelectHTML('rf_hub_country_select', 'rf_compactSetHubCountry(this.value)')}
+            ${rf_compactSelectHTML('rf_hub_airport_select', 'rf_compactSetHubAirport(this.value)')}
+          </div>
+
+          ${hub ? `
+          <div class="p-2 rounded-lg bg-slate-900/90 border border-slate-800 space-y-0.5 text-[10px]">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-bold text-white truncate">${hub.name}</span>
+              <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono font-bold text-[9px] shrink-0">Cat ${hub.cat}</span>
+            </div>
+            <div class="flex items-center justify-between gap-2 text-slate-400">
+              <span class="truncate">${hub.city} · ${hub.country}</span>
+              <span class="font-mono shrink-0" title="Demand index ${demand.avgFormatted} · ${demand.label}">${demand.starsText} <span class="text-slate-500">${demand.avgFormatted}</span></span>
+            </div>
+          </div>` : `<div class="text-[10px] text-slate-500">Enter an IATA code or tap a quick hub to load destinations.</div>`}
+
+          ${mismatch ? `<div class="px-1.5 py-1 rounded-md bg-amber-950/40 border border-amber-700/60 text-amber-200 text-[10px] leading-snug">⚠ Hub runway Cat ${hub.cat} is below ${currentAircraft.name}'s Cat ${currentAircraft.category} requirement.</div>` : ''}
+        </div>`;
+    }
+
+    function rf_compactFiltersPaneHTML() {
+      const presetBtn = (key, label) => `
+        <button type="button" onclick="rf_compactSetPreset('${key}')" class="px-1.5 py-0.5 rounded border text-[10px] font-semibold transition ${currentDurationPreset === key ? 'border-cyan-600 text-cyan-300 bg-cyan-950/60' : 'border-slate-700 text-slate-400 hover:text-slate-200'}">${label}</button>`;
+      return `
+        <div class="glass-panel rounded-xl border border-slate-800 p-2.5 space-y-1.5">
+          <div class="flex items-center gap-1.5">
+            <span class="w-4 h-4 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-300 text-[9px] font-bold font-mono flex items-center justify-center shrink-0">3</span>
+            <span class="text-[10px] uppercase font-bold text-slate-300 tracking-wide">Criteria &amp; filters</span>
+            <button type="button" onclick="rf_compactResetFilters()" class="ml-auto text-[9px] text-slate-500 hover:text-rose-300 font-semibold shrink-0">Reset</button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5">
+            <label class="block min-w-0">
+              <span class="text-[8px] uppercase text-slate-500 font-semibold">Cat min</span>
+              ${rf_compactSelectHTML('rf_cat_min', 'rf_compactSetCat(\'min\', this.value)')}
+            </label>
+            <label class="block min-w-0">
+              <span class="text-[8px] uppercase text-slate-500 font-semibold">Cat max</span>
+              ${rf_compactSelectHTML('rf_cat_max', 'rf_compactSetCat(\'max\', this.value)')}
+            </label>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5">
+            <div class="min-w-0">
+              <span class="block text-[8px] uppercase text-slate-500 font-semibold">RT min</span>
+              <div class="flex items-center gap-0.5">
+                ${rf_compactSelectHTML('rf_dur_min_hh', 'rf_compactSetDur(\'min\', \'hh\', this.value)', 'font-mono text-center')}
+                <span class="text-slate-500 text-[10px]">:</span>
+                ${rf_compactSelectHTML('rf_dur_min_mm', 'rf_compactSetDur(\'min\', \'mm\', this.value)', 'font-mono text-center')}
+              </div>
+            </div>
+            <div class="min-w-0">
+              <span class="block text-[8px] uppercase text-slate-500 font-semibold">RT max</span>
+              <div class="flex items-center gap-0.5">
+                ${rf_compactSelectHTML('rf_dur_max_hh', 'rf_compactSetDur(\'max\', \'hh\', this.value)', 'font-mono text-center')}
+                <span class="text-slate-500 text-[10px]">:</span>
+                ${rf_compactSelectHTML('rf_dur_max_mm', 'rf_compactSetDur(\'max\', \'mm\', this.value)', 'font-mono text-center')}
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-1">
+            ${presetBtn('any', 'Any')}${presetBtn('24h_divisors', '÷24h')}${presetBtn('short', 'Short')}${presetBtn('medium', 'Med')}${presetBtn('long', 'Long')}
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5">
+            ${rf_compactSelectHTML('rf_continent_filter', 'rf_compactSetContinent(this.value)')}
+            ${rf_compactSelectHTML('rf_country_filter', 'rf_compactSetCountry(this.value)')}
+          </div>
+        </div>`;
+    }
+
+    function rf_compactSetupHTML() {
+      return rf_compactAircraftPaneHTML() + rf_compactHubPaneHTML() + rf_compactFiltersPaneHTML();
+    }
+
+    // ---- pane: routes -----------------------------------------------------
+    function rf_compactFitBadgeHTML(c) {
+      if (c.fits24h) {
+        const runs = c.durationHours > 0 ? Math.round(24 / c.durationHours) : 0;
+        return `<span class="px-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 text-[9px] font-bold shrink-0" title="Divides 24h exactly → ${runs}x ${c.durationText} fills the day">24h fit</span>`;
+      }
+      if (c.fits168h) {
+        return `<span class="px-1 rounded bg-blue-950 text-blue-300 border border-blue-800 text-[9px] font-semibold shrink-0" title="Divides 168h exactly → fills the week">168h fit</span>`;
+      }
+      return '';
+    }
+
+    function rf_compactRouteRowHTML(c) {
+      const leg = currentCircuitLegs.find(l => l.dstIata === c.dstIata);
+      const demand = c.demand || rf_computeAirportDemandStats(c);
+      return `
+        <div class="flex items-center gap-2 px-2 py-1.5 rounded-lg border transition ${leg ? 'border-emerald-700/70 bg-emerald-950/20' : 'border-slate-800/70 bg-slate-900/40 hover:border-slate-700'}">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="font-mono font-bold text-white text-[11px]">${c.dstIata}</span>
+              <span class="text-[10px] text-slate-400 truncate">${c.name}</span>
+              <span class="ml-auto shrink-0 text-amber-400 text-[10px] tracking-tight" title="Demand index ${demand.avgFormatted} · ${demand.label}">${demand.starsText}</span>
+            </div>
+            <div class="flex items-center gap-1 text-[9px] font-mono mt-0.5 min-w-0">
+              <span class="px-1 rounded bg-slate-800 text-slate-200 border border-slate-700 min-w-0 truncate" title="${c.country} · ${c.continent}">${c.country}</span>
+              <span class="px-1 rounded bg-slate-800/70 text-slate-400 border border-slate-700/70 shrink-0">Cat ${c.category}</span>
+              <span class="text-slate-400 shrink-0">${Number(c.distanceKm).toLocaleString()} km</span>
+              <span class="text-cyan-300 shrink-0">${c.durationText}</span>
+              ${rf_compactFitBadgeHTML(c)}
+            </div>
+          </div>
+          <button type="button" onclick="rf_addRouteToCircuit('${c.dstIata}')" title="${leg ? 'In circuit at ' + leg.flightsPerDay + 'x — tap to add another run' : 'Add to circuit'}"
+            class="shrink-0 h-7 min-w-[30px] px-1.5 rounded-lg border text-[10px] font-bold transition flex items-center justify-center ${leg ? 'bg-emerald-950/80 border-emerald-700 text-emerald-300 hover:bg-emerald-900' : 'bg-cyan-950/70 border-cyan-800 text-cyan-300 hover:bg-cyan-900'}">
+            ${leg ? '✓ ' + leg.flightsPerDay + 'x' : '＋'}
+          </button>
+        </div>`;
+    }
+
+    function rf_compactSortHTML() {
+      const active = sortOptionItems.find(i => i.value === currentSort) || sortOptionItems[0];
+      const canFlip = !!RF_SORT_FLIP[currentSort];
+      const divisorOn = currentDurationPreset === '24h_divisors';
+      return `
+        <div class="relative shrink-0" id="rf_c_sort_root">
+          <div class="flex items-center">
+            <button type="button" onclick="rf_compactToggleSort()" title="Sort the results list"
+              class="flex items-center gap-1 pl-1.5 pr-1 py-1 rounded-l-md bg-slate-900 border text-[10px] font-semibold transition ${rfCompact.sortOpen ? 'border-cyan-600 text-cyan-300' : 'border-slate-700 text-slate-300 hover:border-slate-600'}">
+              <span class="text-[8px] uppercase text-slate-500 tracking-wide">Sort</span>
+              <span class="font-mono">${active.label.split(':')[0]}${active.label.includes('High to Low') || active.label.includes('Longest') || active.label.includes('Best') || active.label.includes('Z to A') ? ' ↓' : ' ↑'}</span>
+              <svg class="w-2.5 h-2.5 text-slate-400 transition-transform duration-200 ${rfCompact.sortOpen ? 'rotate-180' : ''}" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <button type="button" onclick="rf_compactFlipSort()" ${canFlip ? '' : 'disabled'} title="${canFlip ? 'Flip sort direction' : 'IATA order has a single direction'}"
+              class="w-[22px] h-[24px] -ml-px rounded-r-md bg-slate-900 border ${rfCompact.sortOpen ? 'border-cyan-600' : 'border-slate-700'} ${canFlip ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-600 cursor-not-allowed'} flex items-center justify-center text-[10px] leading-none">⇅</button>
+          </div>
+          ${rfCompact.sortOpen ? `
+          <div class="absolute right-0 top-full mt-1 z-50 w-[196px] bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
+            <div class="px-2 py-1 border-b border-slate-800 text-[8px] uppercase font-bold text-slate-500 tracking-wide">Sort results</div>
+            <div class="max-h-[188px] overflow-y-auto thin-scroll p-1 space-y-0.5">
+              ${sortOptionItems.map(item => {
+                const sel = item.value === currentSort;
+                return `<button type="button" onclick="rf_compactPickSort('${item.value}')" class="w-full flex items-center justify-between gap-1.5 px-1.5 py-1 rounded-lg text-[10px] text-left transition ${sel ? 'bg-cyan-950/80 text-cyan-300 font-semibold border border-cyan-800/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/80 font-medium'}">
+                  <span>${item.label}</span>
+                  ${sel ? '<span class="text-cyan-400 shrink-0">✓</span>' : ''}
+                </button>`;
+              }).join('')}
+            </div>
+            <div class="px-2 py-1 border-t border-slate-800 text-[8px] text-slate-500">⇅ flips the direction of the current sort</div>
+          </div>` : ''}
+        </div>`;
+    }
+
+    function rf_compactRoutesHTML() {
+      const total = filteredCandidates.length;
+      const totalPages = Math.ceil(total / pageSize) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+      const startIdx = (currentPage - 1) * pageSize;
+      const visible = filteredCandidates.slice(startIdx, startIdx + pageSize);
+      const endIdx = Math.min(total, startIdx + pageSize);
+      const divisorOn = currentDurationPreset === '24h_divisors';
+
+      const durationSummary = (() => {
+        const minEl = document.getElementById('rf_dur_min_hh');
+        const maxEl = document.getElementById('rf_dur_max_hh');
+        const maxMm = document.getElementById('rf_dur_max_mm');
+        if (!minEl || !maxEl) return '';
+        const minTxt = `${minEl.value}:${document.getElementById('rf_dur_min_mm')?.value || '00'}`;
+        const maxTxt = `${maxEl.value}:${maxMm ? maxMm.value : '00'}`;
+        return `RT ${minTxt}–${maxTxt}`;
+      })();
+
+      const empty = !currentHub
+        ? `<div class="p-3 rounded-xl border border-dashed border-slate-800 bg-slate-900/30 text-center space-y-2">
+             <div class="w-9 h-9 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-cyan-400/80 text-sm">🧭</div>
+             <div class="text-[11px] font-bold text-white">Enter a departure hub</div>
+             <div class="text-[10px] text-slate-400 leading-snug">Pick an airport to see every destination ${currentAircraft ? currentAircraft.name : 'this aircraft'} can reach.</div>
+             <div class="flex flex-wrap justify-center gap-1">
+               ${RF_QUICK_HUBS.map(q => `<button type="button" onclick="rf_setQuickHub('${q}')" class="px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-300 font-mono text-[10px] hover:border-cyan-600 hover:text-cyan-300">${q}</button>`).join('')}
+             </div>
+           </div>`
+        : `<div class="px-2 py-6 text-center rounded-xl border border-slate-800 bg-slate-900/30 space-y-1.5">
+             <div class="text-[11px] font-bold text-white">No matching routes</div>
+             <div class="text-[10px] text-slate-400 leading-snug">${currentAircraft ? currentAircraft.name : 'This aircraft'} needs runway Cat ${currentAircraft ? currentAircraft.category : '—'}+ and ${currentAircraft ? Number(currentAircraft.range_km).toLocaleString() : '—'} km of range. Loosen the category, duration or region filters.</div>
+             <button type="button" onclick="rf_resetAllFilters()" class="px-2 py-1 rounded-lg bg-cyan-950 border border-cyan-800 text-cyan-300 text-[10px] font-bold hover:bg-cyan-900">Reset filters</button>
+           </div>`;
+
+      return `
+        <div class="glass-panel rounded-xl border border-slate-800 p-2.5 space-y-1.5">
+          <div class="flex items-center gap-1.5">
+            <div class="relative flex-1 min-w-0">
+              <svg class="w-3 h-3 text-slate-500 absolute left-2 top-[7px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              <input id="rf_c_search" type="text" value="${tableSearchQuery.replace(/"/g, '&quot;')}" oninput="rf_compactSetSearch(this.value)" placeholder="Search IATA, city, airport…" class="amt-micro-input pl-7">
+            </div>
+            ${tableSearchQuery ? `<button type="button" onclick="rf_compactSetSearch('')" class="shrink-0 w-6 h-6 rounded-md bg-slate-900 border border-slate-700 text-slate-400 hover:text-white text-[11px] leading-none">✕</button>` : ''}
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <div class="min-w-0 flex-1">
+              <div class="text-[9px] font-mono text-slate-400 truncate">${total} routes${currentHub ? ' · ' + currentHub.iata : ''}</div>
+              <div class="text-[9px] font-mono text-slate-500 truncate">${durationSummary}${divisorOn ? ' · <span class="text-cyan-300">÷24h</span>' : ''}</div>
+            </div>
+            <button type="button" onclick="rf_compactToggleDiv24()" title="24h divisors only — round trips that tile the day exactly (e.g. 3h × 8 runs)"
+              class="shrink-0 h-[24px] px-1.5 rounded-md border text-[9px] font-bold font-mono transition ${divisorOn ? 'bg-cyan-700 border-cyan-500 text-white shadow-sm' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-cyan-700 hover:text-white'}">÷24h</button>
+            ${rf_compactSortHTML()}
+          </div>
+
+          ${total === 0 ? empty : `
+            <div class="space-y-1">${visible.map(rf_compactRouteRowHTML).join('')}</div>
+            <div class="flex items-center gap-1.5 pt-0.5">
+              <button type="button" onclick="rf_changePage(-1)" ${currentPage <= 1 ? 'disabled' : ''} class="w-6 h-6 rounded-md border border-slate-800 text-slate-300 text-[11px] leading-none ${currentPage <= 1 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-800'}">‹</button>
+              <span class="text-[10px] font-mono text-slate-400">${currentPage} / ${totalPages}</span>
+              <button type="button" onclick="rf_changePage(1)" ${currentPage >= totalPages ? 'disabled' : ''} class="w-6 h-6 rounded-md border border-slate-800 text-slate-300 text-[11px] leading-none ${currentPage >= totalPages ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-800'}">›</button>
+              <span class="ml-auto text-[9px] font-mono text-slate-500">${startIdx + 1}–${endIdx} of ${total}</span>
+              <select onchange="rf_compactSetPageSize(this.value)" class="amt-micro-input w-[86px] shrink-0 text-[10px]">
+                ${[25, 50, 100, 250].map(n => `<option value="${n}"${pageSize === n ? ' selected' : ''}>${n} / page</option>`).join('')}
+              </select>
+            </div>`}
+        </div>`;
+    }
+
+    // ---- pane: circuit ----------------------------------------------------
+    // Same tiling as rf_updateCircuitUI(): round-robin for a 24h day, leg-by-leg for the week.
+    function rf_compactTimelineBlocks() {
+      const math = rf_circuitMath();
+      const blocks = [];
+      let t = 0;
+      if (!math.count) return blocks;
+
+      if (math.is24hCircuit) {
+        const maxRuns = Math.max(1, ...currentCircuitLegs.map(l => l.flightsPerDay || 1));
+        for (let run = 0; run < maxRuns; run++) {
+          currentCircuitLegs.forEach(leg => {
+            if (run < (leg.flightsPerDay || 1)) {
+              blocks.push({ leg, start: t, end: t + leg.durationHours });
+              t += leg.durationHours;
+            }
+          });
+        }
+      } else {
+        currentCircuitLegs.forEach(leg => {
+          for (let rep = 0; rep < (leg.flightsPerDay || 1); rep++) {
+            blocks.push({ leg, start: t, end: t + leg.durationHours });
+            t += leg.durationHours;
+          }
+        });
+      }
+      return blocks;
+    }
+
+    function rf_compactBarHTML() {
+      const math = rf_circuitMath();
+      const hubIata = currentHub ? currentHub.iata : 'HUB';
+
+      // Percentage widths relative to the target (24h day or 168h week), exactly like the
+      // standard "Daily Bar"/"Summary Bar" so both layouts scale identically.
+      const blocks = [];
+      let clockMinutes = 0;
+      currentCircuitLegs.forEach(leg => {
+        for (let rep = 0; rep < (leg.flightsPerDay || 1); rep++) {
+          const startLabel = rf_compactClock(clockMinutes);
+          clockMinutes += leg.durationHours * 60;
+          const widthPct = Math.min(100, (leg.durationHours / math.target) * 100);
+          blocks.push(`
+            <div style="width:${widthPct.toFixed(3)}%" class="h-full rounded border ${leg.color.borderCol} p-1 flex flex-col justify-center overflow-hidden shrink-0"
+              title="${hubIata} ➔ ${leg.dstIata} (${leg.durationText}) | ${startLabel} - ${rf_compactClock(clockMinutes)}">
+              <div class="font-mono font-bold text-[9px] leading-none truncate text-slate-950">${widthPct > 7 ? `${hubIata} ✈ ${leg.dstIata}` : leg.dstIata}</div>
+              ${widthPct > 14 ? `<div class="text-[8px] font-mono leading-none truncate mt-0.5 text-slate-900/80">${leg.durationText}</div>` : ''}
+            </div>`);
+        }
+      });
+      if (math.free > 0) {
+        blocks.push(`
+          <div style="width:${Math.min(100, (math.free / math.target) * 100).toFixed(3)}%" class="h-full rounded border border-slate-800 bg-slate-900 flex items-center justify-center overflow-hidden shrink-0" title="Free unallocated rotation time: ${formatHoursMinutes(math.free)}">
+            <span class="text-[9px] font-mono text-slate-500 truncate px-1">${math.free / math.target > 0.12 ? 'Free ' + formatHoursMinutes(math.free) : ''}</span>
+          </div>`);
+      }
+
+      const bar = math.is24hCircuit
+        ? `<div class="grid grid-cols-6 text-[8px] font-mono text-slate-500 px-0.5 mt-0.5"><div>00:00</div><div class="text-center">04:00</div><div class="text-center">08:00</div><div class="text-center">12:00</div><div class="text-center">16:00</div><div class="text-right">24:00</div></div>`
+        : `<div class="grid grid-cols-7 text-[8px] font-mono text-slate-500 px-0.5 mt-0.5"><div>Mon</div><div class="text-center">Tue</div><div class="text-center">Wed</div><div class="text-center">Thu</div><div class="text-center">Fri</div><div class="text-center">Sat</div><div class="text-right">Sun</div></div>`;
+
+      return `
+        <div class="h-8 rounded-lg bg-slate-900 border border-slate-800 overflow-hidden flex gap-0.5 p-0.5">
+          ${blocks.length ? blocks.join('') : `<span class="flex-1 flex items-center justify-center text-[10px] text-slate-500">No flights scheduled · ${formatHoursMinutes(math.free)} free</span>`}
+        </div>
+        ${bar}`;
+    }
+
+    function rf_compactClock(totalMinutes) {
+      const h = Math.floor(totalMinutes / 60) % 24;
+      const m = Math.round(totalMinutes % 60);
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+
+    function rf_compactWeekHTML() {
+      const blocks = rf_compactTimelineBlocks();
+      const hubIata = currentHub ? currentHub.iata : 'HUB';
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const rows = days.map((day, i) => {
+        const dayStart = i * 24;
+        const dayEnd = dayStart + 24;
+        const segs = blocks
+          .map(b => ({ ...b, s: Math.max(b.start, dayStart), e: Math.min(b.end, dayEnd) }))
+          .filter(b => b.s < b.e);
+        return `
+          <div class="flex items-center gap-1">
+            <span class="w-6 shrink-0 text-[8px] text-slate-500 font-mono">${day}</span>
+            <div class="relative flex-1 h-3 rounded bg-slate-900 border border-slate-800 overflow-hidden" style="background-image: repeating-linear-gradient(to right, rgba(148,163,184,0.18) 0 1px, transparent 1px calc(100% / 24));">
+              ${segs.map(s => `<div class="absolute top-0 bottom-0"
+                style="left:${((s.s - dayStart) / 24 * 100).toFixed(3)}%;width:${((s.e - s.s) / 24 * 100).toFixed(3)}%;background:${rf_compactLegColor(s.leg)};"
+                title="${day} ${formatHoursMinutes(s.s - dayStart)}–${formatHoursMinutes(s.e - dayStart)} · ${hubIata} → ${s.leg.dstIata}"></div>`).join('')}
+            </div>
+          </div>`;
+      }).join('');
+      return `
+        <div class="space-y-1">${rows}</div>
+        <div class="flex items-center gap-1 mt-0.5">
+          <span class="w-6 shrink-0"></span>
+          <div class="grid grid-cols-5 text-[8px] font-mono text-slate-500 flex-1"><div>00</div><div class="text-center">06</div><div class="text-center">12</div><div class="text-center">18</div><div class="text-right">24</div></div>
+        </div>`;
+    }
+
+    // The app palette stores gradient classes; the compact bars need a solid colour.
+    function rf_compactLegColor(leg) {
+      const solids = ['#06b6d4', '#10b981', '#a855f7', '#f59e0b', '#f43f5e', '#4f46e5'];
+      const idx = currentCircuitLegs.findIndex(l => l.dstIata === leg.dstIata);
+      return solids[(idx < 0 ? 0 : idx) % solids.length];
+    }
+
+    function rf_compactStatsHTML() {
+      const math = rf_circuitMath();
+      const cell = (label, value, cls) => `
+        <div class="rounded-md bg-slate-950/70 border border-slate-800 px-1.5 py-1 min-w-0">
+          <span class="block text-[8px] uppercase text-slate-500 tracking-wide">${label}</span>
+          <span class="block text-[11px] font-mono font-bold truncate ${cls}">${value}</span>
+        </div>`;
+      return `
+        <div class="grid grid-cols-3 gap-1">
+          ${cell('Scheduled', formatHoursMinutes(math.used), 'text-white')}
+          ${cell('Free', formatHoursMinutes(math.free), math.free > 0.25 ? 'text-amber-300' : 'text-slate-400')}
+          ${cell('Utilized', math.util + '%', math.util >= 90 ? 'text-emerald-300' : math.util >= 50 ? 'text-cyan-300' : 'text-amber-300')}
+        </div>`;
+    }
+
+    function rf_compactLegRowHTML(leg) {
+      const math = rf_circuitMath();
+      const maxFit = rf_compactMaxFit(leg);
+      const canUp = leg.flightsPerDay < maxFit;
+      const canDown = leg.flightsPerDay > 1;
+      const totalLegHours = leg.durationHours * leg.flightsPerDay;
+      const isOnlyRouteIn24h = currentCircuitLegs.length === 1 && math.is24hCircuit;
+
+      let quickChips = '';
+      if (isOnlyRouteIn24h && maxFit > 1) {
+        const options = [];
+        for (let f = 1; f <= Math.min(4, maxFit); f++) options.push(f);
+        quickChips = `
+          <div class="flex items-center gap-1 flex-wrap pl-3 pt-0.5">
+            <span class="text-[8px] uppercase font-semibold text-slate-500">Runs/day</span>
+            ${options.map(f => `<button type="button" onclick="rf_setLegFrequency('${leg.dstIata}', ${f})" class="px-1.5 py-0.5 rounded border text-[9px] font-mono font-bold transition ${leg.flightsPerDay === f ? 'bg-cyan-700 border-cyan-500 text-white' : 'bg-slate-950 border-slate-700 text-slate-300 hover:border-cyan-700'}">${f}x (${formatHoursMinutes(leg.durationHours * f)})</button>`).join('')}
+            ${options.includes(maxFit) ? '' : `<button type="button" onclick="rf_setLegFrequency('${leg.dstIata}', ${maxFit})" class="px-1.5 py-0.5 rounded border text-[9px] font-mono font-bold transition ${leg.flightsPerDay === maxFit ? 'bg-cyan-700 border-cyan-500 text-white' : 'bg-cyan-950 border-cyan-800 text-cyan-300 hover:bg-cyan-900'}">Fill day ${maxFit}x (${formatHoursMinutes(leg.durationHours * maxFit)})</button>`}
+          </div>`;
+      }
+
+      return `
+        <div class="px-2 py-1.5 rounded-lg bg-slate-900/50 border ${leg.color.borderCol} space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="w-1 h-7 rounded-full shrink-0" style="background:${rf_compactLegColor(leg)}"></span>
+            <div class="min-w-0">
+              <div class="font-mono text-[11px] font-bold text-white truncate">${currentHub ? currentHub.iata : 'HUB'} ✈ ${leg.dstIata}</div>
+              <div class="text-[9px] text-slate-500 truncate">${leg.name} · Cat ${leg.category} · ${Number(leg.distanceKm).toLocaleString()} km</div>
+              <div class="text-[9px] text-slate-400 truncate">RT <span class="text-cyan-300 font-mono">${leg.durationText}</span> · scheduled <span class="text-white font-mono">${formatHoursMinutes(totalLegHours)}</span></div>
+            </div>
+            <div class="ml-auto flex items-center gap-1 shrink-0">
+              <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden">
+                <button type="button" onclick="rf_changeLegFrequency('${leg.dstIata}',-1)" ${canDown ? '' : 'disabled'} class="w-5 h-5 text-[11px] leading-none ${canDown ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-600 cursor-not-allowed'}">&minus;</button>
+                <span class="px-1 font-mono text-[10px] font-bold text-cyan-300">${leg.flightsPerDay}x</span>
+                <button type="button" onclick="rf_changeLegFrequency('${leg.dstIata}',1)" ${canUp ? '' : 'disabled'} title="${canUp ? 'Add a daily run' : `Maximum ${maxFit}x runs reached (${math.target}h schedule limit)`}" class="w-5 h-5 text-[11px] leading-none ${canUp ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-600 cursor-not-allowed'}">&plus;</button>
+              </div>
+              <button type="button" onclick="rf_removeRouteFromCircuit('${leg.dstIata}')" title="Remove route" class="w-6 h-6 rounded-md text-slate-500 hover:text-rose-300 hover:bg-rose-950/50 transition flex items-center justify-center">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              </button>
+            </div>
+          </div>
+          ${quickChips}
+        </div>`;
+    }
+
+    function rf_compactGapHTML() {
+      if (!rfCompact.gapOpen) return '';
+      const math = rf_circuitMath();
+      const { freeHours, suggestions } = rf_computeGapSuggestions();
+
+      if (freeHours <= 0.25) {
+        return `<div class="px-2 py-1.5 rounded-lg bg-emerald-950/30 border border-emerald-800/60 text-[10px] text-emerald-300">✓ The ${math.target}h ${math.isWeekly ? 'week' : 'day'} is already filled.</div>`;
+      }
+      const picks = suggestions.slice(0, 3);
+      if (!picks.length) {
+        return `
+          <div class="px-2 py-1.5 rounded-lg bg-slate-900/60 border border-slate-800 text-[10px] text-slate-400 flex items-center gap-2">
+            <span class="min-w-0">No single route fits the ${formatHoursMinutes(freeHours)} gap.</span>
+            <button type="button" onclick="rf_syncDurationFilterToRemaining()" class="ml-auto shrink-0 text-cyan-400 hover:text-cyan-300 font-semibold">Filter →</button>
+          </div>`;
+      }
+      return `
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-[9px] uppercase font-bold text-amber-300 tracking-wide">
+            <span>⚡ Fits the ${formatHoursMinutes(freeHours)} gap</span>
+            <button type="button" onclick="rf_syncDurationFilterToRemaining()" class="text-cyan-400 hover:text-cyan-300 normal-case font-semibold">Filter table ↘</button>
+          </div>
+          ${picks.map(s => `
+            <div class="flex items-center gap-1.5 px-2 py-1 rounded-lg border ${s.isExactFit ? 'bg-emerald-950/25 border-emerald-700/60' : 'bg-amber-950/20 border-amber-800/50'}">
+              <span class="font-mono text-[10px] font-bold text-white">${s.cand.dstIata}</span>
+              <span class="text-[9px] text-slate-400 truncate">${s.cand.city}</span>
+              <span class="text-[9px] font-mono text-cyan-300 shrink-0">${s.cand.durationText}</span>
+              <span class="text-[9px] font-mono shrink-0 ${s.isExactFit ? 'text-emerald-300 font-bold' : 'text-slate-400'}">${s.isExactFit ? '⚡ fills day' : formatHoursMinutes(s.remainingAfter) + ' left'}</span>
+              <button type="button" onclick="rf_addRouteToCircuit('${s.cand.dstIata}')" title="Add to circuit" class="ml-auto shrink-0 px-1.5 py-0.5 rounded border ${s.isExactFit ? 'border-emerald-600 text-emerald-200 hover:bg-emerald-900/40' : 'border-amber-600 text-amber-200 hover:bg-amber-900/40'} text-[9px] font-bold">＋</button>
+            </div>`).join('')}
+        </div>`;
+    }
+
+    function rf_compactCircuitHTML() {
+      const math = rf_circuitMath();
+      const activeView = rf_timelineViewMode || (math.is24hCircuit ? 'bar' : 'week');
+      const viewBtn = (mode, label) => `
+        <button type="button" onclick="rf_setTimelineViewMode('${mode}')" class="px-1.5 py-0.5 rounded border transition ${activeView === mode ? 'bg-cyan-950 text-cyan-300 border-cyan-800 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'}">${label}</button>`;
+
+      return `
+        <div class="glass-panel rounded-xl border border-slate-800 p-2.5 space-y-2">
+          ${rf_compactStatsHTML()}
+
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-bold ${math.isWeekly ? 'text-blue-300' : 'text-cyan-300'}">${math.isWeekly ? '168h weekly rotation' : '24h daily rotation'}</span>
+            <span class="text-[9px] font-mono px-1 rounded bg-slate-800 text-slate-300 border border-slate-700">${math.count} leg${math.count === 1 ? '' : 's'}</span>
+            <div class="ml-auto flex items-center bg-slate-950 border border-slate-800 rounded-md p-0.5 text-[9px] font-mono">
+              ${viewBtn('bar', '24h Bar')}${viewBtn('week', '7-Day')}
+            </div>
+          </div>
+
+          ${activeView === 'week' ? rf_compactWeekHTML() : rf_compactBarHTML()}
+
+          ${rf_compactGapHTML()}
+
+          <div class="space-y-1">
+            ${math.count ? currentCircuitLegs.map(rf_compactLegRowHTML).join('')
+              : `<div class="px-2 py-4 text-center rounded-xl border border-dashed border-slate-800 bg-slate-900/20 space-y-1.5">
+                   <div class="text-[10px] text-slate-400">Circuit is empty — add routes to start the rotation.</div>
+                   <button type="button" onclick="rf_compactSetTab('routes')" class="px-2 py-1 rounded-lg bg-cyan-950 border border-cyan-800 text-cyan-300 text-[10px] font-bold hover:bg-cyan-900">Browse destinations</button>
+                 </div>`}
+          </div>
+        </div>`;
+    }
+
+    // ---- sticky action bar ------------------------------------------------
+    function rf_compactActionsHTML() {
+      const math = rf_circuitMath();
+      return `
+        <div class="sticky bottom-0 z-30 px-2 py-2 rounded-xl bg-slate-950/95 border border-slate-800 shadow-2xl backdrop-blur flex items-center gap-1.5">
+          <button type="button" onclick="rf_compactToggleGap()" class="flex-1 px-2 py-1.5 rounded-lg text-[10px] font-bold border transition ${rfCompact.gapOpen ? 'bg-amber-900/40 border-amber-700 text-amber-200' : 'bg-slate-900 border-slate-700 text-amber-300 hover:border-amber-700'}">⚡ Fill${math.free > 0.25 ? ' ' + formatHoursMinutes(math.free) : ''}</button>
+          <button type="button" onclick="rf_openSaveCircuitModal()" class="flex-1 px-2 py-1.5 rounded-lg bg-slate-900 border border-emerald-800 text-emerald-300 text-[10px] font-bold hover:bg-emerald-950/50">💾 Save</button>
+          <button type="button" onclick="rf_openInSeatConfigurator()" title="Send to Seat Configurator" class="flex-1 px-2 py-1.5 rounded-lg bg-cyan-700 hover:bg-cyan-600 text-white text-[10px] font-bold">➤ Seat</button>
+          <button type="button" onclick="rf_clearCurrentCircuit()" title="Clear circuit" class="px-2 py-1.5 rounded-lg bg-slate-900 border border-rose-900 text-rose-300 text-[10px] font-bold hover:bg-rose-950/50">🗑</button>
+        </div>`;
+    }
+
+    function rf_renderCompact() {
+      const cont = document.getElementById('route_finder_compact_container');
+      if (!cont) return;
+      if (!rf_isCompactMode()) {
+        cont.innerHTML = '';
+        return;
+      }
+
+      const active = document.activeElement;
+      const focusId = active && active.id ? active.id : null;
+      const selStart = (focusId && active.selectionStart != null) ? active.selectionStart : null;
+      const scrollY = window.scrollY;
+
+      const pane = rfCompact.tab === 'setup' ? rf_compactSetupHTML()
+        : rfCompact.tab === 'routes' ? rf_compactRoutesHTML()
+        : rf_compactCircuitHTML();
+
+      cont.innerHTML = `
+        ${rf_compactHeaderHTML()}
+        <div class="space-y-2.5">${pane}</div>
+        ${rf_compactActionsHTML()}`;
+
+      if (focusId) {
+        const el = document.getElementById(focusId);
+        if (el && el.focus) {
+          el.focus();
+          if (selStart != null && el.setSelectionRange) {
+            try { el.setSelectionRange(selStart, selStart); } catch (e) {}
+          }
+        }
+      }
+      if (window.scrollY !== scrollY) window.scrollTo(0, scrollY);
+    }
+
+    // ---- compact actions (thin wrappers over the full-page handlers) -------
+    function rf_compactSetTab(tab) {
+      rfCompact.tab = tab;
+      rfCompact.acOpen = false;
+      rfCompact.sortOpen = false;
+      rf_renderCompact();
+    }
+
+    function rf_compactToggleAircraft() {
+      rfCompact.acOpen = !rfCompact.acOpen;
+      rfCompact.sortOpen = false;
+      rf_renderCompact();
+    }
+
+    function rf_compactSetAcSearch(value) {
+      rfCompact.acSearch = value;
+      rf_renderCompact();
+    }
+
+    function rf_compactSetHaul(haul) {
+      rf_setComboboxHaul(haul);   // comboboxHaulFilter stays shared with the full page
+      rf_renderCompact();
+    }
+
+    function rf_compactPickAircraft(id) {
+      rfCompact.acOpen = false;
+      rfCompact.acSearch = '';
+      rf_setAircraftById(id);
+      rf_refreshAll();
+      showToast(`Selected ${currentAircraft ? currentAircraft.name : id}`, 'success');
+    }
+
+    function rf_compactSetHubInput(value) {
+      const input = document.getElementById('rf_hub_iata_input');
+      if (input) input.value = (value || '').toUpperCase().replace(/[^A-Za-z]/g, '').slice(0, 3);
+      rf_onHubIataInput();
+      rf_renderCompact();
+    }
+
+    function rf_compactSetHubCountry(country) {
+      const el = document.getElementById('rf_hub_country_select');
+      if (el) el.value = country;
+      rf_onHubCountryChange();
+      rf_renderCompact();
+    }
+
+    function rf_compactSetHubAirport(iata) {
+      const el = document.getElementById('rf_hub_airport_select');
+      if (el) el.value = iata;
+      rf_onHubAirportSelectChange();
+      rf_renderCompact();
+    }
+
+    function rf_compactSetCat(which, value) {
+      const el = document.getElementById(which === 'min' ? 'rf_cat_min' : 'rf_cat_max');
+      if (el) el.value = value;
+      rf_applyFilters();
+    }
+
+    function rf_compactSetDur(bound, part, value) {
+      const el = document.getElementById(`rf_dur_${bound}_${part}`);
+      if (el) el.value = value;
+      rf_applyFilters();
+    }
+
+    function rf_compactSetContinent(value) {
+      const el = document.getElementById('rf_continent_filter');
+      if (el) el.value = value;
+      rf_onContinentChange();
+    }
+
+    function rf_compactSetCountry(value) {
+      const el = document.getElementById('rf_country_filter');
+      if (el) el.value = value;
+      rf_applyFilters();
+    }
+
+    function rf_compactSetPreset(key) {
+      rf_setDurationPreset(key);
+    }
+
+    // The full page's "24h Divisors" preset, surfaced as the sidebar toggle.
+    function rf_compactToggleDiv24() {
+      const wasOn = currentDurationPreset === '24h_divisors';
+      rf_setDurationPreset(wasOn ? 'any' : '24h_divisors');
+      showToast(wasOn
+        ? 'Showing all matching routes again'
+        : '24h divisors only — round trips that fill the day exactly', wasOn ? 'info' : 'success');
+    }
+
+    // Criteria only — keeps the aircraft and hub the user picked.
+    function rf_compactResetFilters() {
+      if (currentAircraft) {
+        const catMin = document.getElementById('rf_cat_min');
+        const catMax = document.getElementById('rf_cat_max');
+        if (catMin) catMin.value = Math.max(1, currentAircraft.category);
+        if (catMax) catMax.value = '10';
+        rf_updateDurationLimitsForAircraft(currentAircraft, true);
+      }
+      const minHh = document.getElementById('rf_dur_min_hh');
+      const minMm = document.getElementById('rf_dur_min_mm');
+      if (minHh) minHh.value = '0';
+      if (minMm) minMm.value = '0';
+      const cont = document.getElementById('rf_continent_filter');
+      if (cont) cont.value = 'ALL';
+      rf_initCountryFilter('ALL');
+      rf_clearTableSearch();
+      currentSort = 'dist_asc';
+      const sortSelect = document.getElementById('rf_sort_select');
+      if (sortSelect) sortSelect.value = 'dist_asc';
+      rf_setDurationPreset('any');
+      rf_applyFilters();
+      showToast('Filters reset', 'info');
+    }
+
+    function rf_compactSetSearch(value) {
+      rf_onTableSearchInput(value);
+    }
+
+    function rf_compactToggleSort() {
+      rfCompact.sortOpen = !rfCompact.sortOpen;
+      rfCompact.acOpen = false;
+      rf_renderCompact();
+    }
+
+    function rf_compactPickSort(value) {
+      const item = sortOptionItems.find(i => i.value === value);
+      rfCompact.sortOpen = false;
+      rf_selectSortOption(value, item ? item.label : value);
+    }
+
+    function rf_compactFlipSort() {
+      const next = RF_SORT_FLIP[currentSort];
+      if (!next) { showToast('IATA order has a single direction', 'info'); return; }
+      const item = sortOptionItems.find(i => i.value === next);
+      rfCompact.sortOpen = false;
+      rf_selectSortOption(next, item ? item.label : next);
+    }
+
+    function rf_compactSetPageSize(value) {
+      const el = document.getElementById('rf_page_size');
+      if (el) el.value = value;
+      pageSize = parseInt(value, 10) || 50;
+      currentPage = 1;
+      rf_renderResults();
+      rf_saveStateToLocalStorage();
+    }
+
+    function rf_compactToggleGap() {
+      rfCompact.gapOpen = !rfCompact.gapOpen;
+      rf_renderCompact();
+      if (rfCompact.gapOpen) {
+        const math = rf_circuitMath();
+        if (math.free <= 0.25) showToast(`Circuit schedule is 100% full (${math.target}h)`, 'warning');
+      }
+    }
+
 })();
+

@@ -19,7 +19,9 @@
   const APP_URL = 'https://jaym3.github.io/AMT-Toolkit/';
   const APP_IFRAME_URL = 'https://jaym3.github.io/AMT-Toolkit/?sidebar=true';
 
-  const EXPANDED_TABS = ['seat-config', 'route-finder', 'circuit-finder'];
+  // Route Finder now ships a dedicated compact (sidebar) layout, so it keeps the
+  // saved narrow width instead of force-expanding like Seat Config / Circuit Finder.
+  const EXPANDED_TABS = ['seat-config', 'circuit-finder'];
 
   function getExpandedWidth() {
     const computed = Math.round(window.innerWidth * 0.58);

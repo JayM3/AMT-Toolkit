@@ -602,6 +602,26 @@ window.setUIMode = function(mode) {
     compCont.style.setProperty('display', isCompact ? 'block' : 'none', 'important');
   }
 
+  // Route Finder uses the same mechanics: its compact pane layout is only ever shown
+  // when body.amt-compact-mode is set, which initUIMode() only applies in the sidebar.
+  const rfStdCont = document.getElementById('route_finder_standard_container');
+  const rfCompCont = document.getElementById('route_finder_compact_container');
+  if (rfStdCont) {
+    rfStdCont.style.setProperty('display', isCompact ? 'none' : 'block', 'important');
+  }
+  if (rfCompCont) {
+    rfCompCont.style.setProperty('display', isCompact ? 'block' : 'none', 'important');
+  }
+  // The full-size floating circuit dock is replaced by the compact action bar.
+  const rfDock = document.getElementById('rf_floating_circuit_actions');
+  if (rfDock) {
+    rfDock.style.setProperty('display', isCompact ? 'none' : 'flex', 'important');
+  }
+  // Redraw (or clear, when standard) the compact Route Finder layout.
+  if (typeof window.rf_renderCompact === 'function') {
+    window.rf_renderCompact();
+  }
+
   // Manage Action Dock: Standard vs Compact Draggable FAB
   const stdFloating = document.getElementById('zo_floating_actions');
   const compFab = document.getElementById('zo_compact_fab');
@@ -2135,6 +2155,10 @@ function switchTab(tabId, pushHistory = true) {
     if (viewRouteFinder) viewRouteFinder.classList.remove('hidden');
     if (typeof window.initRouteFinder === 'function') {
       window.initRouteFinder();
+    }
+    // Redraw the compact (sidebar) route finder whenever the tab is opened.
+    if (typeof window.rf_renderCompact === 'function') {
+      window.rf_renderCompact();
     }
   } else if (tabId === 'seat-config') {
     navSeatConfig.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tab-btn-active border transition shadow-sm';
