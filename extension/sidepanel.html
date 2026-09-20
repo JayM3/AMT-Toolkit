@@ -300,7 +300,8 @@
           btnStandard.disabled = true;
           btnCompact.title = 'Coming soon';
           btnStandard.title = 'Coming soon';
-        } else if (tabId === 'zero-out' || tabId === 'home') {
+        } else if (!EXPANDED_TABS.includes(tabId)) {
+          // Zero-Out, Home and Route Finder all keep their own compact layout.
           if (isAutoExpanded) {
             isAutoExpanded = false;
             if (modeToggle) {

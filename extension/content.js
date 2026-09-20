@@ -207,7 +207,9 @@
       btnCompact.title = 'Coming soon';
       btnStandard.title = 'Coming soon';
 
-    } else if (tabId === 'zero-out' || tabId === 'home') {
+    } else if (!EXPANDED_TABS.includes(tabId)) {
+      // Any compact-capable tab (Zero-Out, Home, Route Finder) leaves the auto-expanded
+      // state, gets its saved width back and re-enables the Compact/Standard toggle.
       if (isAutoExpanded) {
         isAutoExpanded = false;
 
