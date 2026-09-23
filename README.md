@@ -27,6 +27,7 @@
 
 - **Zero-Out Price Calculator**: Calculates the exact ticket prices needed to capture 100% of remaining passenger and cargo demand after an audit.
 - **Seat Configuration Optimizer**: Configures multi-class cabin layouts (Economy, Business, First, Cargo) to maximize revenue within aircraft space and payload limits.
+  The sidebar's **Compact / Standard** switch selects a compact Routes, Fleet, Schedule, and Financials workspace or the original layout. Both modes share the same circuit, form inputs, saved data, and calculations.
 - **Route Finder**: Searches and filters a database of 2,650 airports by runway category, distance, and demand multipliers.
 - **Circuit Finder**: Assembles 168-hour weekly schedules (or 24h / 48h / 72h cycles) for selected aircraft and hubs with customizable class focus.
 

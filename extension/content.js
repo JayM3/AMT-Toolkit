@@ -19,9 +19,8 @@
   const APP_URL = 'https://jaym3.github.io/AMT-Toolkit/';
   const APP_IFRAME_URL = 'https://jaym3.github.io/AMT-Toolkit/?sidebar=true';
 
-  // Route Finder now ships a dedicated compact (sidebar) layout, so it keeps the
-  // saved narrow width instead of force-expanding like Seat Config / Circuit Finder.
-  const EXPANDED_TABS = ['seat-config', 'circuit-finder'];
+  // Compact-capable tools keep their saved width and the mode switch enabled.
+  const EXPANDED_TABS = ['circuit-finder'];
 
   function getExpandedWidth() {
     const computed = Math.round(window.innerWidth * 0.58);
@@ -208,7 +207,7 @@
       btnStandard.title = 'Coming soon';
 
     } else if (!EXPANDED_TABS.includes(tabId)) {
-      // Any compact-capable tab (Zero-Out, Home, Route Finder) leaves the auto-expanded
+      // Any compact-capable tab (Zero-Out, Home, Route Finder, Seat Config) leaves the auto-expanded
       // state, gets its saved width back and re-enables the Compact/Standard toggle.
       if (isAutoExpanded) {
         isAutoExpanded = false;

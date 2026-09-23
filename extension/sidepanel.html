@@ -276,8 +276,8 @@
       setTimeout(() => sendModeToIframe(currentMode), 800);
     });
 
-    // Route Finder has its own compact sidebar layout now, so it stays at the saved width.
-    const EXPANDED_TABS = ['seat-config', 'circuit-finder'];
+    // Only Circuit Finder still requires standard mode.
+    const EXPANDED_TABS = ['circuit-finder'];
     let savedModeBeforeAutoExpand = currentMode;
     let isAutoExpanded = false;
 
@@ -301,7 +301,7 @@
           btnCompact.title = 'Coming soon';
           btnStandard.title = 'Coming soon';
         } else if (!EXPANDED_TABS.includes(tabId)) {
-          // Zero-Out, Home and Route Finder all keep their own compact layout.
+          // Zero-Out, Home, Route Finder and Seat Config support compact mode.
           if (isAutoExpanded) {
             isAutoExpanded = false;
             if (modeToggle) {

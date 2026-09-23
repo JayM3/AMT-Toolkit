@@ -622,6 +622,11 @@ window.setUIMode = function(mode) {
     window.rf_renderCompact();
   }
 
+  // Seat Config moves the existing controls between standard and tabbed layouts.
+  if (typeof window.scSetCompactMode === 'function') {
+    window.scSetCompactMode(isCompact);
+  }
+
   // Manage Action Dock: Standard vs Compact Draggable FAB
   const stdFloating = document.getElementById('zo_floating_actions');
   const compFab = document.getElementById('zo_compact_fab');

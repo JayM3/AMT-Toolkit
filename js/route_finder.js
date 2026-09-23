@@ -2990,7 +2990,7 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       const rows = list.slice(0, 60);
 
       return `
-        <div class="glass-panel rounded-xl border border-slate-800 p-2.5 space-y-1.5">
+        <div class="glass-panel rounded-xl border border-slate-800 p-2.5 space-y-1.5 relative ${rfCompact.acOpen ? 'z-40 is-open' : 'z-20'}" id="rf_c_ac_pane">
           <div class="flex items-center gap-1.5">
             <span class="w-4 h-4 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-300 text-[9px] font-bold font-mono flex items-center justify-center shrink-0">1</span>
             <span class="text-[10px] uppercase font-bold text-slate-300 tracking-wide">Aircraft model</span>
@@ -3063,7 +3063,7 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       const demand = hub ? rf_computeAirportDemandStats(hub) : null;
       const mismatch = hub && currentAircraft && hub.cat < currentAircraft.category;
       return `
-        <div class="glass-panel rounded-xl border border-slate-800 p-2.5 space-y-1.5">
+        <div class="glass-panel rounded-xl border border-slate-800 p-2.5 space-y-1.5 relative z-10" id="rf_c_hub_pane">
           <div class="flex items-center gap-1.5">
             <span class="w-4 h-4 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-300 text-[9px] font-bold font-mono flex items-center justify-center shrink-0">2</span>
             <span class="text-[10px] uppercase font-bold text-slate-300 tracking-wide">Departure hub</span>
@@ -3104,7 +3104,7 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       const presetBtn = (key, label) => `
         <button type="button" onclick="rf_compactSetPreset('${key}')" class="px-1.5 py-0.5 rounded border text-[10px] font-semibold transition ${currentDurationPreset === key ? 'border-cyan-600 text-cyan-300 bg-cyan-950/60' : 'border-slate-700 text-slate-400 hover:text-slate-200'}">${label}</button>`;
       return `
-        <div class="glass-panel rounded-xl border border-slate-800 p-2.5 space-y-1.5">
+        <div class="glass-panel rounded-xl border border-slate-800 p-2.5 space-y-1.5 relative z-0" id="rf_c_filters_pane">
           <div class="flex items-center gap-1.5">
             <span class="w-4 h-4 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-300 text-[9px] font-bold font-mono flex items-center justify-center shrink-0">3</span>
             <span class="text-[10px] uppercase font-bold text-slate-300 tracking-wide">Criteria &amp; filters</span>

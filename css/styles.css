@@ -373,6 +373,19 @@ body.amt-compact-mode header > div {
   gap: 0.5rem !important;
 }
 
-
-
-
+/* Ensure Compact Route Finder Aircraft dropdown appears above Departure Hub and Criteria filters */
+#rf_c_ac_pane {
+  position: relative;
+  z-index: 20;
+}
+#rf_c_ac_pane.is-open {
+  z-index: 40;
+}
+#rf_c_hub_pane {
+  position: relative;
+  z-index: 10;
+}
+#rf_c_filters_pane {
+  position: relative;
+  z-index: 0;
+}

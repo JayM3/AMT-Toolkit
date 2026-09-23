@@ -47,6 +47,7 @@
     }
   </script>
   <link rel="stylesheet" href="css/styles.css?v=3.6">
+  <link rel="stylesheet" href="css/seat_config_compact.css?v=3">
   <link rel="stylesheet" href="css/homepage.css?v=3.6">
   <style>
     body.amt-compact-mode #zero_out_standard_container { display: none !important; }
@@ -57,6 +58,10 @@
     body.amt-compact-mode #route_finder_standard_container { display: none !important; }
     body.amt-compact-mode #route_finder_compact_container { display: block !important; }
     body:not(.amt-compact-mode) #route_finder_compact_container { display: none !important; }
+    #rf_c_ac_pane { position: relative; z-index: 20; }
+    #rf_c_ac_pane.is-open { z-index: 40; }
+    #rf_c_hub_pane { position: relative; z-index: 10; }
+    #rf_c_filters_pane { position: relative; z-index: 0; }
 
     /* The full-size floating circuit dock is replaced by the compact action bar */
     body.amt-compact-mode #rf_floating_circuit_actions { display: none !important; }
@@ -4491,8 +4496,9 @@
   <!-- JavaScript Datasets & Logic -->
   <script src="data/aircraft.js?v=2.3"></script>
   <script src="data/airports.js?v=2.3"></script>
-  <script src="js/app.js?v=3.6"></script>
+  <script src="js/app.js?v=3.7"></script>
   <script src="js/route_finder.js?v=2.3"></script>
   <script src="js/circuit_finder.js?v=2.3"></script>
+  <script src="js/seat_config_compact.js?v=4"></script>
 </body>
 </html>
