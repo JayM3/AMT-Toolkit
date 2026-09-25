@@ -3011,18 +3011,22 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       const mismatch = hub && ac && hub.cat < ac.category;
 
       return `
-        <!-- Topline: Hub Input + Aircraft Combobox -->
+        <!-- Topline: Hub Input + Aircraft Combobox + Browse Button (Matches Seat Config) -->
         <div class="sc-topline ${rfCompact.acOpen ? 'is-open' : ''}" id="rf_c_topline">
-          <input type="text" id="rf_c_hub_input" list="airports_datalist" placeholder="e.g. OSL or DWC" value="${hub ? hub.iata : (window.CIRCUIT_HUB || '')}" oninput="rf_compactOnHubInput(this.value)" onchange="rf_compactOnHubChange(this)" title="Departure Hub (Fixed Departure)" aria-label="Circuit hub">
+          <input type="text" id="rf_c_hub_input" list="airports_datalist" placeholder="e.g. OSL or DWC" value="${hub ? hub.iata : (window.CIRCUIT_HUB || '')}" oninput="rf_compactOnHubInput(this.value)" onchange="rf_compactOnHubChange(this)" title="Departure Hub (Fixed Departure)" aria-label="Circuit hub" style="width: 44px; min-width: 44px; max-width: 44px; flex: 0 0 44px; padding: 3px 5px; text-align: center; min-height: 25px; font-weight: 700; font-family: ui-monospace, monospace; text-transform: uppercase; box-sizing: border-box;">
 
-          <div class="sc-combobox-root ${rfCompact.acOpen ? 'is-open' : ''}" id="rf_c_ac_root" style="flex: 1; min-width: 0;">
-            <button type="button" class="sc-combobox-trigger" onclick="rf_compactToggleAircraft()" id="rf_c_ac_trigger" title="Select aircraft model">
-              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ac ? ac.name : 'Select Plane'}</span>
-              <span class="sc-tag" style="color: var(--sc-cyan); border-color: rgba(34, 211, 238, 0.3);">${ac ? 'Cat ' + ac.category : 'Cat —'}</span>
+          <div class="sc-combobox-root ${rfCompact.acOpen ? 'is-open' : ''}" id="rf_c_ac_root" style="flex: 1; min-width: 0; position: relative;">
+            <button type="button" class="sc-combobox-trigger" onclick="rf_compactToggleAircraft()" id="rf_c_ac_trigger" title="Select aircraft model" style="width: 100%; min-height: 25px; padding: 3px 6px; font-size: 10px; display: flex; align-items: center; justify-content: space-between; gap: 4px; cursor: pointer; text-align: left;">
+              <span style="font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sc-text-bright, #fff);">${ac ? ac.name : 'Select Plane'}</span>
+              <svg style="width: 13px; height: 13px; color: var(--sc-text-muted, #7f92ad); flex-shrink: 0; margin-left: auto;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
             </button>
 
             ${rfCompact.acOpen ? rf_compactAircraftPopoverHTML() : ''}
           </div>
+
+          <button type="button" class="sc-browse-btn" onclick="openAircraftModal()" title="Browse aircraft catalog" style="padding: 3px 8px; font-size: 9px; font-weight: 600; border-radius: 5px; white-space: nowrap; min-height: 25px; border: 1px solid #304056; background: #101f32; color: #94cee0; cursor: pointer; flex-shrink: 0;">Browse</button>
         </div>
 
         <!-- Statusline Strip (Matches Seat Config .sc-statusline) -->

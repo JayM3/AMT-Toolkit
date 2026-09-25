@@ -144,12 +144,41 @@
   #rf_c_hub_input {
     width: 44px;
     min-width: 44px;
+    max-width: 44px;
+    flex: 0 0 44px;
     padding: 3px 5px;
     text-align: center;
     min-height: 25px;
     font-weight: 700;
-    font-family: ui-monospace, monospace;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     text-transform: uppercase;
+    box-sizing: border-box;
+  }
+  #rf_c_hub_input::-webkit-calendar-picker-indicator {
+    display: none !important;
+    -webkit-appearance: none !important;
+    opacity: 0 !important;
+    width: 0 !important;
+  }
+
+  .sc-browse-btn {
+    padding: 3px 8px;
+    font-size: 9px;
+    font-weight: 600;
+    border-radius: 5px;
+    white-space: nowrap;
+    min-height: 25px;
+    border: 1px solid #304056;
+    background: #101f32;
+    color: #94cee0;
+    cursor: pointer;
+    flex: 0 0 auto;
+    transition: all 0.15s ease;
+  }
+  .sc-browse-btn:hover {
+    background: #172a44;
+    color: #c8effc;
+    border-color: #3b5578;
   }
 
   /* Statusline Strip (Matches Seat Config .sc-statusline) */
@@ -888,9 +917,10 @@
     overflow: hidden;
   }
   #rf_c_ac_popover {
-    left: -52px;
-    right: 0;
-    max-width: min(540px, calc(100vw - 14px));
+    left: -48px;
+    right: auto;
+    width: min(340px, calc(100vw - 24px));
+    max-width: calc(100vw - 14px);
   }
   .sc-combobox-header {
     padding: 5px 6px;

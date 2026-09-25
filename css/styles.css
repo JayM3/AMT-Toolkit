@@ -373,19 +373,68 @@ body.amt-compact-mode header > div {
   gap: 0.5rem !important;
 }
 
-/* Ensure Compact Route Finder Aircraft dropdown appears above Departure Hub and Criteria filters */
-#rf_c_ac_pane {
+/* Ensure Compact Route Finder Aircraft dropdown appears above Departure Hub, Criteria filters and tabs */
+#rf_c_topline,
+.sc-topline {
   position: relative;
-  z-index: 20;
+  z-index: 45;
 }
-#rf_c_ac_pane.is-open {
-  z-index: 40;
+#rf_c_topline.is-open,
+.sc-topline.is-open,
+.sc-topline:has(.sc-combobox-popover) {
+  z-index: 70 !important;
 }
-#rf_c_hub_pane {
+#rf_c_ac_root,
+.sc-combobox-root {
   position: relative;
-  z-index: 10;
+  z-index: 50;
 }
-#rf_c_filters_pane {
-  position: relative;
-  z-index: 0;
+#rf_c_ac_root.is-open,
+.sc-combobox-root.is-open,
+.sc-combobox-root:has(.sc-combobox-popover) {
+  z-index: 70 !important;
+}
+#rf_c_ac_popover,
+.sc-combobox-popover {
+  z-index: 100 !important;
+}
+.sc_layout_tabs {
+  z-index: 10 !important;
+}
+#rf_c_hub_input {
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  flex: 0 0 44px !important;
+  padding: 3px 5px !important;
+  text-align: center !important;
+  min-height: 25px !important;
+  font-weight: 700 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  text-transform: uppercase !important;
+  box-sizing: border-box !important;
+}
+#rf_c_hub_input::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+}
+.sc-browse-btn {
+  padding: 3px 8px !important;
+  font-size: 9px !important;
+  font-weight: 600 !important;
+  border-radius: 5px !important;
+  white-space: nowrap !important;
+  min-height: 25px !important;
+  border: 1px solid #304056 !important;
+  background: #101f32 !important;
+  color: #94cee0 !important;
+  cursor: pointer !important;
+  flex: 0 0 auto !important;
+}
+.sc-browse-btn:hover {
+  background: #172a44 !important;
+  color: #c8effc !important;
+  border-color: #3b5578 !important;
 }
