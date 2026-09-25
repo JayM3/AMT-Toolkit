@@ -49,6 +49,7 @@
   <link rel="stylesheet" href="css/styles.css?v=3.6">
   <link rel="stylesheet" href="css/seat_config_compact.css?v=7">
   <link rel="stylesheet" href="css/route_finder_compact.css?v=3">
+  <link rel="stylesheet" href="css/circuit_finder_compact.css?v=1">
   <link rel="stylesheet" href="css/zero_out_compact.css?v=1">
   <link rel="stylesheet" href="css/homepage.css?v=3.6">
   <style>
@@ -62,6 +63,14 @@
     body:not(.amt-compact-mode) #route_finder_compact_container,
     #view_route_finder.hidden #route_finder_compact_container,
     #route_finder_compact_container[hidden] { display: none !important; }
+
+    /* Circuit Finder Compact Mode (extension sidebar / docked side panel only) */
+    body.amt-compact-mode #circuit_finder_standard_container { display: none !important; }
+    body.amt-compact-mode:has(#view_circuit_finder:not(.hidden)) #circuit_finder_compact_container { display: flex !important; flex-direction: column !important; }
+    body:not(.amt-compact-mode) #circuit_finder_compact_container,
+    #view_circuit_finder.hidden #circuit_finder_compact_container,
+    #circuit_finder_compact_container[hidden] { display: none !important; }
+    body.amt-compact-mode #cf_floating_actions { display: none !important; }
 
     /* Enforce hidden views across all tabs */
     #view_route_finder.hidden,
@@ -2871,6 +2880,17 @@
     <!-- ===================================================================== -->
     <div id="view_circuit_finder" class="space-y-6 hidden">
 
+      <!-- ========================================================================= -->
+      <!-- COMPACT LAYOUT (Activated only inside the extension sidebar)              -->
+      <!-- Rendered by cf_renderCompact() in js/circuit_finder_compact.js             -->
+      <!-- ========================================================================= -->
+      <div id="circuit_finder_compact_container" hidden></div>
+
+      <!-- ========================================================================= -->
+      <!-- STANDARD (FULL-WIDTH) LAYOUT                                              -->
+      <!-- ========================================================================= -->
+      <div id="circuit_finder_standard_container" class="space-y-6">
+
       <!-- ===================================================================== -->
       <!-- COLLAPSIBLE DROPDOWN: MY OWNED HUBS & AIRLINE NETWORK                 -->
       <!-- ===================================================================== -->
@@ -3413,6 +3433,8 @@
       </div>
 
     </aside>
+
+    </div><!-- End of #circuit_finder_standard_container -->
 
     </div><!-- End of #view_circuit_finder -->
 
@@ -4500,6 +4522,7 @@
   <script src="js/app.js?v=3.7"></script>
   <script src="js/route_finder.js?v=2.3"></script>
   <script src="js/circuit_finder.js?v=2.3"></script>
+  <script src="js/circuit_finder_compact.js?v=1"></script>
   <script src="js/seat_config_compact.js?v=5"></script>
 </body>
 </html>

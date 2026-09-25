@@ -704,6 +704,24 @@ window.setUIMode = function(mode) {
     window.rf_renderCompact();
   }
 
+  // Circuit Finder uses the same mechanics: its compact pane layout is only ever shown
+  // when body.amt-compact-mode is set.
+  const cfStdCont = document.getElementById('circuit_finder_standard_container');
+  const cfCompCont = document.getElementById('circuit_finder_compact_container');
+  if (cfStdCont) {
+    cfStdCont.style.setProperty('display', isCompact ? 'none' : 'block', 'important');
+  }
+  if (cfCompCont) {
+    cfCompCont.style.setProperty('display', isCompact ? 'flex' : 'none', 'important');
+  }
+  const cfFloating = document.getElementById('cf_floating_actions');
+  if (cfFloating) {
+    cfFloating.style.setProperty('display', isCompact ? 'none' : 'flex', 'important');
+  }
+  if (typeof window.cf_renderCompact === 'function') {
+    window.cf_renderCompact();
+  }
+
   // Seat Config moves the existing controls between standard and tabbed layouts.
   if (typeof window.scSetCompactMode === 'function') {
     window.scSetCompactMode(isCompact);
@@ -2271,6 +2289,10 @@ function switchTab(tabId, pushHistory = true) {
     if (viewCircuitFinder) viewCircuitFinder.classList.remove('hidden');
     if (typeof window.initCircuitFinder === 'function') {
       window.initCircuitFinder();
+    }
+    // Redraw the compact (sidebar) circuit finder whenever the tab is opened.
+    if (typeof window.cf_renderCompact === 'function' && document.body.classList.contains('amt-compact-mode')) {
+      window.cf_renderCompact();
     }
   } else if (tabId === 'route-finder') {
     if (navRouteFinder) {
