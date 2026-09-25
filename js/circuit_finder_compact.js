@@ -974,6 +974,11 @@
               <div id="cf_c_exc_chips" style="display: flex; flex-wrap: wrap; gap: 3px; min-height: 16px;"></div>
             </div>
           </div>
+
+          <!-- Primary Action Button: Find Circuits -->
+          <button type="button" class="cf-btn-find-main" id="cf_c_btn_find_circuits">
+            ⚡ Find Circuits
+          </button>
         </div>
 
         <!-- ==================== TAB 2: CIRCUITS (RESULTS) ==================== -->
@@ -1021,9 +1026,6 @@
 
       <!-- Docked Bottom Action Toolbar -->
       <div class="sc_layout_toolbar" id="cf_c_toolbar">
-        <button type="button" class="primary" id="cf_c_btn_find_circuits">
-          ⚡ Find Circuits
-        </button>
         <button type="button" id="cf_c_btn_toolbar_saved">
           💾 Saved (<span id="cf_c_tb_saved_count">0</span>)
         </button>

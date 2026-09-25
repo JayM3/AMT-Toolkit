@@ -730,6 +730,38 @@ select.sc-input option {
   border-color: #3b5376;
 }
 
+/* Primary Action Button under Filters Module */
+.cf-btn-find-main {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #082d25;
+  border: 1px solid #135546;
+  border-radius: 6px;
+  color: #a7f3d0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
+  transition: all 0.15s ease;
+  user-select: none;
+  box-sizing: border-box;
+}
+.cf-btn-find-main:hover {
+  background: #0c3e33;
+  border-color: #10b981;
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.35);
+}
+.cf-btn-find-main:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.2);
+}
+
 /* Fixed Bottom Docked Toolbar (.sc_layout_toolbar) */
 .sc_layout_toolbar {
   position: fixed;
