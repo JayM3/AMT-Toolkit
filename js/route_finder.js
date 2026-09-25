@@ -495,7 +495,7 @@ function initRouteFinder() {
   });
 
   // Draw the compact (sidebar) layout, and keep its default pane sensible.
-  if (!currentHub) rfCompact.tab = 'setup';
+  if (!currentHub) rfCompact.tab = 'criteria';
   rf_renderCompact();
 }
 window.initRouteFinder = initRouteFinder;
@@ -2878,6 +2878,8 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
     window.rf_compactFlipSort = rf_compactFlipSort;
     window.rf_compactSetPageSize = rf_compactSetPageSize;
     window.rf_compactToggleGap = rf_compactToggleGap;
+    window.rf_compactLoad24h = rf_compactLoad24h;
+    window.rf_compactLoad168h = rf_compactLoad168h;
     window.rf_getStarRating = rf_getStarRating;
     window.rf_computeAirportDemandStats = rf_computeAirportDemandStats;
     window.rf_updateDurationLimitsForAircraft = rf_updateDurationLimitsForAircraft;
@@ -2900,15 +2902,13 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
        currentDurationPreset…) and only calls the existing rf_* actions, so
        the two layouts can never drift apart.
        ===================================================================== */
-    const RF_QUICK_HUBS = ['OSL', 'LHR', 'CDG', 'JFK', 'DXB', 'SIN', 'HND'];
-
     // UI-only state for the compact layer (open popovers, active pane).
     const rfCompact = {
-      tab: 'routes',   // setup | routes | circuit
-      acOpen: false,   // aircraft combobox popover
+      tab: 'criteria',   // criteria | routes | circuit | info
+      acOpen: false,     // aircraft combobox popover
       acSearch: '',
       sortOpen: false,
-      gapOpen: false
+      gapOpen: true
     };
 
     const RF_SORT_FLIP = {
@@ -2933,7 +2933,7 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       const opts = Array.from(src.options)
         .map(o => `<option value="${o.value}"${o.selected ? ' selected' : ''}>${o.textContent}</option>`)
         .join('');
-      return `<select onchange="${onchange}" class="amt-micro-input ${extraClass || ''}">${opts}</select>`;
+      return `<select onchange="${onchange}" class="${extraClass || 'sc-input'}">${opts}</select>`;
     }
 
     function rf_compactMaxFit(leg) {
@@ -2944,226 +2944,178 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       return Math.max(1, Math.floor((math.target - others + 0.0001) / leg.durationHours));
     }
 
-    // ---- header -----------------------------------------------------------
-    function rf_compactHeaderHTML() {
-      const math = rf_circuitMath();
-      const total = filteredCandidates.length;
-      const hub = currentHub;
-      const tabBtn = (key, label, count) => `
-        <button type="button" onclick="rf_compactSetTab('${key}')" class="px-1.5 py-1 rounded-md border transition ${rfCompact.tab === key ? 'bg-cyan-950 text-cyan-300 border-cyan-800 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'}">
-          ${label}${count != null ? ` <span class="text-[9px] font-mono opacity-70">${count}</span>` : ''}
-        </button>`;
-
-      return `
-        <div class="glass-panel rounded-xl border border-slate-800 px-2.5 py-2 space-y-2">
-          <div class="flex items-center gap-1.5 min-w-0">
-            <button type="button" onclick="rf_compactSetTab('setup')" class="flex items-center gap-1.5 min-w-0 px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-600 transition text-left">
-              <span class="text-[11px] font-bold text-white truncate">${currentAircraft ? currentAircraft.name : 'Select aircraft'}</span>
-              ${currentAircraft ? `<span class="text-[9px] font-mono px-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 shrink-0">Cat ${currentAircraft.category}</span>` : ''}
-            </button>
-            <button type="button" onclick="rf_compactSetTab('setup')" class="flex items-center gap-1.5 min-w-0 px-2 py-1 rounded-lg transition text-left ${hub ? 'bg-slate-900 border border-slate-700 hover:border-cyan-600' : 'bg-amber-950/50 border border-amber-800 hover:border-amber-600'}">
-              ${hub
-                ? `<span class="text-[11px] font-mono font-bold text-white">${hub.iata}</span><span class="text-[9px] text-slate-400 truncate">${hub.city}</span>`
-                : `<span class="text-[11px] font-semibold text-amber-300">＋ Set hub</span>`}
-            </button>
-            <span class="ml-auto shrink-0 text-[10px] font-mono text-slate-400">${hub ? total + ' routes' : '—'}</span>
-          </div>
-          <div class="grid grid-cols-3 gap-0.5 p-0.5 bg-slate-900 border border-slate-800 rounded-lg text-[10px] font-semibold text-center">
-            ${tabBtn('setup', 'Setup', null)}
-            ${tabBtn('routes', 'Routes', hub ? total : null)}
-            ${tabBtn('circuit', 'Circuit', math.count)}
-          </div>
-        </div>`;
-    }
-
-    // ---- pane: setup ------------------------------------------------------
-    function rf_compactAircraftPaneHTML() {
-      const ac = currentAircraft;
+    function rf_compactAircraftPopoverHTML() {
       const q = rfCompact.acSearch.trim().toLowerCase();
       const list = (typeof AIRCRAFT_DATABASE !== 'undefined' ? AIRCRAFT_DATABASE : []).filter(a => {
         if (comboboxHaulFilter !== 'all' && a.type !== comboboxHaulFilter) return false;
         if (!q) return true;
         return a.name.toLowerCase().includes(q) || a.manufacturer.toLowerCase().includes(q) || a.id.toLowerCase().includes(q);
       });
-      const haulPill = (val, label) => `
-        <button type="button" onclick="rf_compactSetHaul('${val}')" class="px-1.5 py-0.5 rounded text-[10px] font-semibold transition ${comboboxHaulFilter === val ? 'bg-cyan-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">${label}</button>`;
+      const haulChip = (val, label) => `
+        <button type="button" onclick="rf_compactSetHaul('${val}')" class="sc-chip ${comboboxHaulFilter === val ? 'active' : ''}">${label}</button>`;
       const rows = list.slice(0, 60);
 
       return `
-        <div class="glass-panel rounded-xl border border-slate-800 p-2.5 space-y-1.5 relative ${rfCompact.acOpen ? 'z-40 is-open' : 'z-20'}" id="rf_c_ac_pane">
-          <div class="flex items-center gap-1.5">
-            <span class="w-4 h-4 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-300 text-[9px] font-bold font-mono flex items-center justify-center shrink-0">1</span>
-            <span class="text-[10px] uppercase font-bold text-slate-300 tracking-wide">Aircraft model</span>
-            <span class="ml-auto text-[9px] px-1 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono shrink-0">Cat ${ac ? ac.category : '—'}</span>
+        <div class="sc-combobox-popover" id="rf_c_ac_popover">
+          <div class="sc-combobox-header">
+            <input type="text" id="rf_c_ac_search" value="${rfCompact.acSearch.replace(/"/g, '&quot;')}" oninput="rf_compactSetAcSearch(this.value)" placeholder="Search aircraft (e.g. 777, A350, neo)…" class="sc-input">
+            <div style="display: flex; align-items: center; gap: 3px;">
+              ${haulChip('all', 'All')}
+              ${haulChip('Long-Haul', 'Long')}
+              ${haulChip('Medium-Haul', 'Med')}
+              ${haulChip('Short-Haul', 'Short')}
+              <span style="margin-left: auto; font-size: 8px; color: var(--sc-text-muted); font-family: ui-monospace, monospace;">${list.length} planes</span>
+            </div>
           </div>
+          <div class="sc-combobox-list" id="rf_c_ac_list">
+            ${rows.length ? rows.map(a => {
+              const sel = currentAircraft && currentAircraft.id === a.id;
+              return `
+                <button type="button" class="sc-combobox-item ${sel ? 'selected' : ''}" onclick="rf_compactPickAircraft('${a.id}')">
+                  <div style="min-width: 0;">
+                    <div style="font-weight: 700; font-size: 10px; color: ${sel ? 'var(--sc-cyan)' : 'var(--sc-text-bright)'};">
+                      ${a.name} <span style="font-size: 8px; font-weight: normal; color: var(--sc-text-muted);">(${a.manufacturer})</span>
+                    </div>
+                    <div style="font-size: 8px; font-family: ui-monospace, monospace; color: var(--sc-text-muted);">
+                      ${Number(a.seats).toLocaleString()} seats · ${a.speed_kmh} km/h · ${Number(a.range_km).toLocaleString()} km
+                    </div>
+                  </div>
+                  <span class="sc-tag" style="margin-left: auto;">Cat ${a.category}</span>
+                </button>`;
+            }).join('') : `<div class="sc-empty">No aircraft match search</div>`}
+          </div>
+        </div>`;
+    }
 
-          <div class="relative" id="rf_c_ac_root">
-            <button type="button" onclick="rf_compactToggleAircraft()" class="w-full px-2 py-1.5 bg-slate-900 border rounded-lg flex items-center justify-between gap-1.5 text-left transition ${rfCompact.acOpen ? 'border-cyan-600 ring-1 ring-cyan-500/40' : 'border-slate-700 hover:border-cyan-600'}">
-              <span class="min-w-0 flex items-baseline gap-1.5">
-                <span class="text-[11px] font-bold text-white shrink-0">${ac ? ac.name : 'Select aircraft'}</span>
-                <span class="text-[9px] text-slate-400 truncate">${ac ? `(${Number(ac.seats).toLocaleString()} seats • ${ac.speed_kmh} km/h • ${Number(ac.range_km).toLocaleString()} km)` : ''}</span>
-              </span>
-              <svg class="w-3 h-3 text-slate-400 shrink-0 transition-transform duration-200 ${rfCompact.acOpen ? 'rotate-180' : ''}" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+    // ---- header -----------------------------------------------------------
+    function rf_compactHeaderHTML() {
+      const math = rf_circuitMath();
+      const total = filteredCandidates.length;
+      const hub = currentHub;
+      const ac = currentAircraft;
+      const mismatch = hub && ac && hub.cat < ac.category;
+
+      return `
+        <!-- Topline: Hub Input + Aircraft Combobox (Quick hubs & info button removed) -->
+        <div class="sc-topline" id="rf_c_topline">
+          <input type="text" id="rf_c_hub_input" maxlength="3" value="${hub ? hub.iata : ''}" oninput="rf_compactSetHubInput(this.value)" placeholder="HUB" title="Departure Hub (3-letter IATA code, e.g. DXB, LHR, JFK)" style="width: 48px; min-width: 48px; text-align: center; font-weight: 700; font-family: ui-monospace, monospace; text-transform: uppercase;">
+
+          <div class="sc-combobox-root" id="rf_c_ac_root" style="flex: 1; min-width: 0;">
+            <button type="button" class="sc-combobox-trigger" onclick="rf_compactToggleAircraft()" id="rf_c_ac_trigger" title="Select aircraft model">
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ac ? ac.name : 'Select Plane'}</span>
+              <span class="sc-tag" style="color: var(--sc-cyan); border-color: rgba(34, 211, 238, 0.3);">${ac ? 'Cat ' + ac.category : 'Cat —'}</span>
             </button>
 
-            ${rfCompact.acOpen ? `
-            <div class="absolute left-0 right-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[272px]">
-              <div class="p-1.5 border-b border-slate-800 bg-slate-950/95 space-y-1.5 shrink-0">
-                <div class="relative">
-                  <svg class="w-3 h-3 text-slate-500 absolute left-2 top-[7px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                  <input id="rf_c_ac_search" type="text" value="${rfCompact.acSearch}" oninput="rf_compactSetAcSearch(this.value)" placeholder="Search aircraft (e.g. 777, A350, neo)…" class="amt-micro-input pl-7 pr-6">
-                </div>
-                <div class="flex items-center justify-between gap-1">
-                  <div class="flex items-center gap-1">
-                    ${haulPill('all', 'All')}${haulPill('Long-Haul', 'Long')}${haulPill('Medium-Haul', 'Med')}${haulPill('Short-Haul', 'Short')}
-                  </div>
-                  <span class="text-[9px] font-mono text-slate-400 shrink-0">${list.length} of ${typeof AIRCRAFT_DATABASE !== 'undefined' ? AIRCRAFT_DATABASE.length : 0} aircraft</span>
-                </div>
-              </div>
-              <div class="overflow-y-auto thin-scroll flex-1 min-h-0 divide-y divide-slate-800/60">
-                ${rows.length ? rows.map(a => {
-                  const sel = currentAircraft && currentAircraft.id === a.id;
-                  return `
-                  <button type="button" onclick="rf_compactPickAircraft('${a.id}')" class="w-full text-left px-2 py-1.5 flex items-center justify-between gap-1.5 transition ${sel ? 'bg-cyan-950/40' : 'hover:bg-slate-800/70'}">
-                    <span class="min-w-0">
-                      <span class="block text-[11px] font-bold truncate ${sel ? 'text-cyan-300' : 'text-slate-200'}">${a.name} <span class="text-[9px] font-normal text-slate-400">(${a.manufacturer})</span></span>
-                      <span class="block text-[9px] font-mono text-slate-400 truncate">${a.seats} seats &bull; ${a.speed_kmh} km/h &bull; ${Number(a.range_km).toLocaleString()} km</span>
-                    </span>
-                    <span class="shrink-0 flex items-center gap-1">
-                      <span class="text-[9px] px-1 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">Cat ${a.category}</span>
-                      ${sel ? '<span class="text-cyan-400 text-[10px] font-bold">&check;</span>' : ''}
-                    </span>
-                  </button>`;
-                }).join('') : `<div class="p-3 text-center text-[10px] text-slate-500">No aircraft match your search</div>`}
-              </div>
-              <div class="px-2 py-1 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-[9px] text-slate-400 shrink-0">
-                <span>Select to change active plane</span>
-                <span class="font-mono text-slate-500">Esc to close</span>
-              </div>
-            </div>` : ''}
+            ${rfCompact.acOpen ? rf_compactAircraftPopoverHTML() : ''}
           </div>
+        </div>
 
-          ${ac ? `
-          <div class="grid grid-cols-4 gap-1">
-            ${[['Range', Number(ac.range_km).toLocaleString() + ' km'], ['Cruise', ac.speed_kmh + ' km/h'], ['Min Cat', 'Cat ' + ac.category], ['Seats', Number(ac.seats).toLocaleString()]]
-              .map(([k, v]) => `<div class="px-1.5 py-1 rounded-md bg-slate-950/70 border border-slate-800 min-w-0">
-                <span class="block text-[8px] uppercase text-slate-500 tracking-wide">${k}</span>
-                <span class="block text-[10px] font-bold text-slate-200 font-mono truncate">${v}</span>
-              </div>`).join('')}
-          </div>
-          <div class="flex items-center justify-between text-[9px] text-slate-500">
-            <span class="truncate">${ac.manufacturer} · ${ac.type} · payload ${ac.payload_ton} T</span>
-            <span class="shrink-0 ml-2 font-mono">Cat ${ac.category}</span>
-          </div>` : ''}
+        <!-- Statusline Strip (Matches Seat Config .sc-statusline) -->
+        <div class="sc-statusline" id="rf_c_statusline">
+          <span>${math.isWeekly ? '168h weekly rotation' : '24h daily rotation'}</span>
+          <span><b>${formatHoursMinutes(math.used)}</b> / ${math.target}h</span>
+          <span><b>${total}</b> routes</span>
+          <span class="${math.free <= 0.25 ? 'sc-good' : 'sc-warn'}">${formatHoursMinutes(math.free)} free</span>
+        </div>
+        ${mismatch ? `<div class="sc-warning">⚠ Hub runway Cat ${hub.cat} is below ${ac.name}'s Cat ${ac.category} requirement.</div>` : ''}
+
+        <!-- Workspace Tabs: Criteria - Routes - Circuit - Info -->
+        <div class="sc_layout_tabs" role="tablist" aria-label="Route Finder workspace tabs">
+          <button type="button" role="tab" onclick="rf_compactSetTab('criteria')" class="${rfCompact.tab === 'criteria' ? 'active' : ''}" aria-selected="${rfCompact.tab === 'criteria'}">
+            Criteria
+          </button>
+          <button type="button" role="tab" onclick="rf_compactSetTab('routes')" class="${rfCompact.tab === 'routes' ? 'active' : ''}" aria-selected="${rfCompact.tab === 'routes'}">
+            Routes <span class="sc-tab-badge">${total}</span>
+          </button>
+          <button type="button" role="tab" onclick="rf_compactSetTab('circuit')" class="${rfCompact.tab === 'circuit' ? 'active' : ''}" aria-selected="${rfCompact.tab === 'circuit'}">
+            Circuit <span class="sc-tab-badge">${math.count}</span>
+          </button>
+          <button type="button" role="tab" onclick="rf_compactSetTab('info')" class="${rfCompact.tab === 'info' ? 'active' : ''}" aria-selected="${rfCompact.tab === 'info'}">
+            Info
+          </button>
         </div>`;
     }
 
-    function rf_compactHubPaneHTML() {
-      const hub = currentHub;
-      const demand = hub ? rf_computeAirportDemandStats(hub) : null;
-      const mismatch = hub && currentAircraft && hub.cat < currentAircraft.category;
+    // ---- tab: criteria ----------------------------------------------------
+    function rf_compactCriteriaHTML() {
+      const total = filteredCandidates.length;
       return `
-        <div class="glass-panel rounded-xl border border-slate-800 p-2.5 space-y-1.5 relative z-10" id="rf_c_hub_pane">
-          <div class="flex items-center gap-1.5">
-            <span class="w-4 h-4 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-300 text-[9px] font-bold font-mono flex items-center justify-center shrink-0">2</span>
-            <span class="text-[10px] uppercase font-bold text-slate-300 tracking-wide">Departure hub</span>
-            <button type="button" onclick="rf_clearHub()" class="ml-auto text-[9px] text-slate-500 hover:text-rose-300 font-semibold shrink-0">Clear</button>
+        <div class="sc-card">
+          <div class="sc-section-title">
+            <strong>Runway &amp; Duration Constraints</strong>
+            <button type="button" onclick="rf_compactResetFilters()" class="sc-muted" style="background: none; border: none; cursor: pointer; color: var(--sc-rose);">Reset</button>
           </div>
 
-          <div class="flex items-start gap-1.5">
-            <input id="rf_c_hub_input" type="text" maxlength="3" value="${hub ? hub.iata : ''}" oninput="rf_compactSetHubInput(this.value)" placeholder="IATA"
-                   class="amt-micro-input font-mono font-bold uppercase tracking-[0.2em] text-center text-[13px] w-[68px] shrink-0">
-            <div class="flex flex-wrap gap-1 min-w-0 flex-1">
-              ${RF_QUICK_HUBS.map(q => `<button type="button" onclick="rf_setQuickHub('${q}')"
-                class="px-1.5 py-0.5 rounded border font-mono text-[10px] transition ${hub && hub.iata === q ? 'border-cyan-600 text-cyan-300 bg-cyan-950/60' : 'border-slate-700 text-slate-400 hover:text-slate-200 bg-slate-900'}">${q}</button>`).join('')}
+          <!-- Runway Category Min / Max -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <div>
+              <label style="display: block; font-size: 8px; color: var(--sc-text-muted); margin-bottom: 2px;">RUNWAY CAT MIN</label>
+              ${rf_compactSelectHTML('rf_cat_min', "rf_compactSetCat('min', this.value)", 'sc-input')}
+            </div>
+            <div>
+              <label style="display: block; font-size: 8px; color: var(--sc-text-muted); margin-bottom: 2px;">RUNWAY CAT MAX</label>
+              ${rf_compactSelectHTML('rf_cat_max', "rf_compactSetCat('max', this.value)", 'sc-input')}
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-1.5">
-            ${rf_compactSelectHTML('rf_hub_country_select', 'rf_compactSetHubCountry(this.value)')}
-            ${rf_compactSelectHTML('rf_hub_airport_select', 'rf_compactSetHubAirport(this.value)')}
-          </div>
-
-          ${hub ? `
-          <div class="p-2 rounded-lg bg-slate-900/90 border border-slate-800 space-y-0.5 text-[10px]">
-            <div class="flex items-center justify-between gap-2">
-              <span class="font-bold text-white truncate">${hub.name}</span>
-              <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono font-bold text-[9px] shrink-0">Cat ${hub.cat}</span>
-            </div>
-            <div class="flex items-center justify-between gap-2 text-slate-400">
-              <span class="truncate">${hub.city} · ${hub.country}</span>
-              <span class="font-mono shrink-0" title="Demand index ${demand.avgFormatted} · ${demand.label}">${demand.starsText} <span class="text-slate-500">${demand.avgFormatted}</span></span>
-            </div>
-          </div>` : `<div class="text-[10px] text-slate-500">Enter an IATA code or tap a quick hub to load destinations.</div>`}
-
-          ${mismatch ? `<div class="px-1.5 py-1 rounded-md bg-amber-950/40 border border-amber-700/60 text-amber-200 text-[10px] leading-snug">⚠ Hub runway Cat ${hub.cat} is below ${currentAircraft.name}'s Cat ${currentAircraft.category} requirement.</div>` : ''}
-        </div>`;
-    }
-
-    function rf_compactFiltersPaneHTML() {
-      const presetBtn = (key, label) => `
-        <button type="button" onclick="rf_compactSetPreset('${key}')" class="px-1.5 py-0.5 rounded border text-[10px] font-semibold transition ${currentDurationPreset === key ? 'border-cyan-600 text-cyan-300 bg-cyan-950/60' : 'border-slate-700 text-slate-400 hover:text-slate-200'}">${label}</button>`;
-      return `
-        <div class="glass-panel rounded-xl border border-slate-800 p-2.5 space-y-1.5 relative z-0" id="rf_c_filters_pane">
-          <div class="flex items-center gap-1.5">
-            <span class="w-4 h-4 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-300 text-[9px] font-bold font-mono flex items-center justify-center shrink-0">3</span>
-            <span class="text-[10px] uppercase font-bold text-slate-300 tracking-wide">Criteria &amp; filters</span>
-            <button type="button" onclick="rf_compactResetFilters()" class="ml-auto text-[9px] text-slate-500 hover:text-rose-300 font-semibold shrink-0">Reset</button>
-          </div>
-
-          <div class="grid grid-cols-2 gap-1.5">
-            <label class="block min-w-0">
-              <span class="text-[8px] uppercase text-slate-500 font-semibold">Cat min</span>
-              ${rf_compactSelectHTML('rf_cat_min', 'rf_compactSetCat(\'min\', this.value)')}
-            </label>
-            <label class="block min-w-0">
-              <span class="text-[8px] uppercase text-slate-500 font-semibold">Cat max</span>
-              ${rf_compactSelectHTML('rf_cat_max', 'rf_compactSetCat(\'max\', this.value)')}
-            </label>
-          </div>
-
-          <div class="grid grid-cols-2 gap-1.5">
-            <div class="min-w-0">
-              <span class="block text-[8px] uppercase text-slate-500 font-semibold">RT min</span>
-              <div class="flex items-center gap-0.5">
-                ${rf_compactSelectHTML('rf_dur_min_hh', 'rf_compactSetDur(\'min\', \'hh\', this.value)', 'font-mono text-center')}
-                <span class="text-slate-500 text-[10px]">:</span>
-                ${rf_compactSelectHTML('rf_dur_min_mm', 'rf_compactSetDur(\'min\', \'mm\', this.value)', 'font-mono text-center')}
+          <!-- Round-Trip Duration Range -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <div>
+              <label style="display: block; font-size: 8px; color: var(--sc-text-muted); margin-bottom: 2px;">MIN RT DURATION</label>
+              <div style="display: flex; align-items: center; gap: 2px;">
+                ${rf_compactSelectHTML('rf_dur_min_hh', "rf_compactSetDur('min', 'hh', this.value)", 'sc-input font-mono text-center')}
+                <span style="color: var(--sc-text-muted); font-size: 10px;">:</span>
+                ${rf_compactSelectHTML('rf_dur_min_mm', "rf_compactSetDur('min', 'mm', this.value)", 'sc-input font-mono text-center')}
               </div>
             </div>
-            <div class="min-w-0">
-              <span class="block text-[8px] uppercase text-slate-500 font-semibold">RT max</span>
-              <div class="flex items-center gap-0.5">
-                ${rf_compactSelectHTML('rf_dur_max_hh', 'rf_compactSetDur(\'max\', \'hh\', this.value)', 'font-mono text-center')}
-                <span class="text-slate-500 text-[10px]">:</span>
-                ${rf_compactSelectHTML('rf_dur_max_mm', 'rf_compactSetDur(\'max\', \'mm\', this.value)', 'font-mono text-center')}
+            <div>
+              <label style="display: block; font-size: 8px; color: var(--sc-text-muted); margin-bottom: 2px;">MAX RT DURATION</label>
+              <div style="display: flex; align-items: center; gap: 2px;">
+                ${rf_compactSelectHTML('rf_dur_max_hh', "rf_compactSetDur('max', 'hh', this.value)", 'sc-input font-mono text-center')}
+                <span style="color: var(--sc-text-muted); font-size: 10px;">:</span>
+                ${rf_compactSelectHTML('rf_dur_max_mm', "rf_compactSetDur('max', 'mm', this.value)", 'sc-input font-mono text-center')}
               </div>
             </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-1">
-            ${presetBtn('any', 'Any')}${presetBtn('24h_divisors', '÷24h')}${presetBtn('short', 'Short')}${presetBtn('medium', 'Med')}${presetBtn('long', 'Long')}
+          <!-- Duration Quick Presets -->
+          <div>
+            <label style="display: block; font-size: 8px; color: var(--sc-text-muted); margin-bottom: 3px;">DURATION PRESETS</label>
+            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+              <button type="button" onclick="rf_compactSetPreset('any')" class="sc-chip ${currentDurationPreset === 'any' ? 'active' : ''}">Any RT</button>
+              <button type="button" onclick="rf_compactSetPreset('24h_divisors')" class="sc-chip ${currentDurationPreset === '24h_divisors' ? 'active' : ''}">÷24h Divisors</button>
+              <button type="button" onclick="rf_compactSetPreset('short')" class="sc-chip ${currentDurationPreset === 'short' ? 'active' : ''}">Short (&lt;6h)</button>
+              <button type="button" onclick="rf_compactSetPreset('medium')" class="sc-chip ${currentDurationPreset === 'medium' ? 'active' : ''}">Med (6–12h)</button>
+              <button type="button" onclick="rf_compactSetPreset('long')" class="sc-chip ${currentDurationPreset === 'long' ? 'active' : ''}">Long (12h+)</button>
+            </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-1.5">
-            ${rf_compactSelectHTML('rf_continent_filter', 'rf_compactSetContinent(this.value)')}
-            ${rf_compactSelectHTML('rf_country_filter', 'rf_compactSetCountry(this.value)')}
+          <!-- Geographical Region Filters -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <div>
+              <label style="display: block; font-size: 8px; color: var(--sc-text-muted); margin-bottom: 2px;">CONTINENT</label>
+              ${rf_compactSelectHTML('rf_continent_filter', "rf_compactSetContinent(this.value)", 'sc-input')}
+            </div>
+            <div>
+              <label style="display: block; font-size: 8px; color: var(--sc-text-muted); margin-bottom: 2px;">COUNTRY</label>
+              ${rf_compactSelectHTML('rf_country_filter', "rf_compactSetCountry(this.value)", 'sc-input')}
+            </div>
           </div>
+
+          <!-- Jump to Routes Action -->
+          <button type="button" onclick="rf_compactSetTab('routes')" class="sc-pill-btn" style="width: 100%; height: 26px; margin-top: 4px; background: #0e303e; border-color: #16566d; color: #a5f3fc; font-weight: 600;">
+            View Routes (${total}) →
+          </button>
         </div>`;
     }
 
-    function rf_compactSetupHTML() {
-      return rf_compactAircraftPaneHTML() + rf_compactHubPaneHTML() + rf_compactFiltersPaneHTML();
-    }
-
-    // ---- pane: routes -----------------------------------------------------
+    // ---- tab: routes ------------------------------------------------------
     function rf_compactFitBadgeHTML(c) {
       if (c.fits24h) {
-        const runs = c.durationHours > 0 ? Math.round(24 / c.durationHours) : 0;
-        return `<span class="px-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 text-[9px] font-bold shrink-0" title="Divides 24h exactly → ${runs}x ${c.durationText} fills the day">24h fit</span>`;
+        return `<span class="sc-tag sc-tag-fit" title="Divides 24h exactly → fills the day">24h fit</span>`;
       }
       if (c.fits168h) {
-        return `<span class="px-1 rounded bg-blue-950 text-blue-300 border border-blue-800 text-[9px] font-semibold shrink-0" title="Divides 168h exactly → fills the week">168h fit</span>`;
+        return `<span class="sc-tag sc-tag-fit-week" title="Divides 168h exactly → fills the week">168h fit</span>`;
       }
       return '';
     }
@@ -3172,57 +3124,52 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       const leg = currentCircuitLegs.find(l => l.dstIata === c.dstIata);
       const demand = c.demand || rf_computeAirportDemandStats(c);
       return `
-        <div class="flex items-center gap-2 px-2 py-1.5 rounded-lg border transition ${leg ? 'border-emerald-700/70 bg-emerald-950/20' : 'border-slate-800/70 bg-slate-900/40 hover:border-slate-700'}">
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-1.5 min-w-0">
-              <span class="font-mono font-bold text-white text-[11px]">${c.dstIata}</span>
-              <span class="text-[10px] text-slate-400 truncate">${c.name}</span>
-              <span class="ml-auto shrink-0 text-amber-400 text-[10px] tracking-tight" title="Demand index ${demand.avgFormatted} · ${demand.label}">${demand.starsText}</span>
-            </div>
-            <div class="flex items-center gap-1 text-[9px] font-mono mt-0.5 min-w-0">
-              <span class="px-1 rounded bg-slate-800 text-slate-200 border border-slate-700 min-w-0 truncate" title="${c.country} · ${c.continent}">${c.country}</span>
-              <span class="px-1 rounded bg-slate-800/70 text-slate-400 border border-slate-700/70 shrink-0">Cat ${c.category}</span>
-              <span class="text-slate-400 shrink-0">${Number(c.distanceKm).toLocaleString()} km</span>
-              <span class="text-cyan-300 shrink-0">${c.durationText}</span>
-              ${rf_compactFitBadgeHTML(c)}
-            </div>
+        <div class="sc-route ${leg ? 'in-circuit' : ''}">
+          <div class="sc-route-top">
+            <span class="sc-route-code">${c.dstIata}</span>
+            <span class="sc-route-name" title="${c.name} · ${c.city}">${c.name}</span>
+            <span class="sc-route-stars" title="Demand ${demand.avgFormatted}">${demand.starsText}</span>
+            <button type="button" class="sc-btn-add ${leg ? 'in-circuit' : ''}" onclick="rf_addRouteToCircuit('${c.dstIata}')" title="${leg ? `In circuit at ${leg.flightsPerDay}x — tap to add another run` : `Add ${c.dstIata} to circuit`}">
+              ${leg ? '✓ ' + leg.flightsPerDay + '×' : '＋'}
+            </button>
           </div>
-          <button type="button" onclick="rf_addRouteToCircuit('${c.dstIata}')" title="${leg ? 'In circuit at ' + leg.flightsPerDay + 'x — tap to add another run' : 'Add to circuit'}"
-            class="shrink-0 h-7 min-w-[30px] px-1.5 rounded-lg border text-[10px] font-bold transition flex items-center justify-center ${leg ? 'bg-emerald-950/80 border-emerald-700 text-emerald-300 hover:bg-emerald-900' : 'bg-cyan-950/70 border-cyan-800 text-cyan-300 hover:bg-cyan-900'}">
-            ${leg ? '✓ ' + leg.flightsPerDay + 'x' : '＋'}
-          </button>
+          <div class="sc-route-bottom">
+            <span class="sc-tag" title="${c.country}">${c.country}</span>
+            <span class="sc-tag">Cat ${c.category}</span>
+            <span style="color: var(--sc-text-secondary);">${Number(c.distanceKm).toLocaleString()} km</span>
+            <span style="color: var(--sc-cyan); font-weight: 600;">${c.durationText}</span>
+            ${rf_compactFitBadgeHTML(c)}
+          </div>
         </div>`;
     }
 
     function rf_compactSortHTML() {
       const active = sortOptionItems.find(i => i.value === currentSort) || sortOptionItems[0];
       const canFlip = !!RF_SORT_FLIP[currentSort];
-      const divisorOn = currentDurationPreset === '24h_divisors';
+      const shortLabel = active.label.split(':')[0];
+      const arrow = (active.label.includes('High to Low') || active.label.includes('Longest') || active.label.includes('Best') || active.label.includes('Z to A') || currentSort.endsWith('_desc')) ? ' ↓' : ' ↑';
+
       return `
-        <div class="relative shrink-0" id="rf_c_sort_root">
-          <div class="flex items-center">
-            <button type="button" onclick="rf_compactToggleSort()" title="Sort the results list"
-              class="flex items-center gap-1 pl-1.5 pr-1 py-1 rounded-l-md bg-slate-900 border text-[10px] font-semibold transition ${rfCompact.sortOpen ? 'border-cyan-600 text-cyan-300' : 'border-slate-700 text-slate-300 hover:border-slate-600'}">
-              <span class="text-[8px] uppercase text-slate-500 tracking-wide">Sort</span>
-              <span class="font-mono">${active.label.split(':')[0]}${active.label.includes('High to Low') || active.label.includes('Longest') || active.label.includes('Best') || active.label.includes('Z to A') ? ' ↓' : ' ↑'}</span>
-              <svg class="w-2.5 h-2.5 text-slate-400 transition-transform duration-200 ${rfCompact.sortOpen ? 'rotate-180' : ''}" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
-            </button>
-            <button type="button" onclick="rf_compactFlipSort()" ${canFlip ? '' : 'disabled'} title="${canFlip ? 'Flip sort direction' : 'IATA order has a single direction'}"
-              class="w-[22px] h-[24px] -ml-px rounded-r-md bg-slate-900 border ${rfCompact.sortOpen ? 'border-cyan-600' : 'border-slate-700'} ${canFlip ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-600 cursor-not-allowed'} flex items-center justify-center text-[10px] leading-none">⇅</button>
-          </div>
+        <div class="sc-sort-group" style="position: relative;" id="rf_c_sort_root">
+          <button type="button" class="sc-sort-btn" onclick="rf_compactToggleSort()" title="Sort results">
+            <span>${shortLabel}${arrow}</span>
+            <span style="font-size: 8px;">▾</span>
+          </button>
+          <button type="button" class="sc-sort-flip" onclick="rf_compactFlipSort()" ${canFlip ? '' : 'disabled'} title="${canFlip ? 'Flip sort direction' : 'Single direction'}">⇅</button>
+
           ${rfCompact.sortOpen ? `
-          <div class="absolute right-0 top-full mt-1 z-50 w-[196px] bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
-            <div class="px-2 py-1 border-b border-slate-800 text-[8px] uppercase font-bold text-slate-500 tracking-wide">Sort results</div>
-            <div class="max-h-[188px] overflow-y-auto thin-scroll p-1 space-y-0.5">
+          <div class="sc-combobox-popover" id="rf_c_sort_popover" style="display: block; width: 190px; right: 0; left: auto;">
+            <div style="padding: 4px 6px; font-size: 8px; font-weight: 700; color: var(--sc-text-muted); border-bottom: 1px solid var(--sc-border-subtle); text-transform: uppercase;">Sort Candidates</div>
+            <div class="sc-combobox-list" style="max-height: 190px;">
               ${sortOptionItems.map(item => {
                 const sel = item.value === currentSort;
-                return `<button type="button" onclick="rf_compactPickSort('${item.value}')" class="w-full flex items-center justify-between gap-1.5 px-1.5 py-1 rounded-lg text-[10px] text-left transition ${sel ? 'bg-cyan-950/80 text-cyan-300 font-semibold border border-cyan-800/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/80 font-medium'}">
-                  <span>${item.label}</span>
-                  ${sel ? '<span class="text-cyan-400 shrink-0">✓</span>' : ''}
-                </button>`;
+                return `
+                  <button type="button" class="sc-combobox-item ${sel ? 'selected' : ''}" onclick="rf_compactPickSort('${item.value}')">
+                    <span style="font-size: 10px;">${item.label}</span>
+                    ${sel ? '<span style="color: var(--sc-cyan); margin-left: auto;">✓</span>' : ''}
+                  </button>`;
               }).join('')}
             </div>
-            <div class="px-2 py-1 border-t border-slate-800 text-[8px] text-slate-500">⇅ flips the direction of the current sort</div>
           </div>` : ''}
         </div>`;
     }
@@ -3236,67 +3183,55 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       const endIdx = Math.min(total, startIdx + pageSize);
       const divisorOn = currentDurationPreset === '24h_divisors';
 
-      const durationSummary = (() => {
-        const minEl = document.getElementById('rf_dur_min_hh');
-        const maxEl = document.getElementById('rf_dur_max_hh');
-        const maxMm = document.getElementById('rf_dur_max_mm');
-        if (!minEl || !maxEl) return '';
-        const minTxt = `${minEl.value}:${document.getElementById('rf_dur_min_mm')?.value || '00'}`;
-        const maxTxt = `${maxEl.value}:${maxMm ? maxMm.value : '00'}`;
-        return `RT ${minTxt}–${maxTxt}`;
-      })();
-
       const empty = !currentHub
-        ? `<div class="p-3 rounded-xl border border-dashed border-slate-800 bg-slate-900/30 text-center space-y-2">
-             <div class="w-9 h-9 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-cyan-400/80 text-sm">🧭</div>
-             <div class="text-[11px] font-bold text-white">Enter a departure hub</div>
-             <div class="text-[10px] text-slate-400 leading-snug">Pick an airport to see every destination ${currentAircraft ? currentAircraft.name : 'this aircraft'} can reach.</div>
-             <div class="flex flex-wrap justify-center gap-1">
-               ${RF_QUICK_HUBS.map(q => `<button type="button" onclick="rf_setQuickHub('${q}')" class="px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-300 font-mono text-[10px] hover:border-cyan-600 hover:text-cyan-300">${q}</button>`).join('')}
-             </div>
+        ? `<div class="sc-empty">
+             <div style="font-size: 11px; font-weight: 700; color: var(--sc-text-bright); margin-bottom: 2px;">Enter a departure hub</div>
+             <div style="font-size: 9px; color: var(--sc-text-muted);">Enter an IATA code in the hub input above to discover available routes.</div>
            </div>`
-        : `<div class="px-2 py-6 text-center rounded-xl border border-slate-800 bg-slate-900/30 space-y-1.5">
-             <div class="text-[11px] font-bold text-white">No matching routes</div>
-             <div class="text-[10px] text-slate-400 leading-snug">${currentAircraft ? currentAircraft.name : 'This aircraft'} needs runway Cat ${currentAircraft ? currentAircraft.category : '—'}+ and ${currentAircraft ? Number(currentAircraft.range_km).toLocaleString() : '—'} km of range. Loosen the category, duration or region filters.</div>
-             <button type="button" onclick="rf_resetAllFilters()" class="px-2 py-1 rounded-lg bg-cyan-950 border border-cyan-800 text-cyan-300 text-[10px] font-bold hover:bg-cyan-900">Reset filters</button>
+        : `<div class="sc-empty">
+             <div style="font-size: 11px; font-weight: 700; color: var(--sc-text-bright); margin-bottom: 2px;">No matching destinations found</div>
+             <div style="font-size: 9px; color: var(--sc-text-muted); margin-bottom: 5px;">Try loosening category, duration or region filters in Criteria.</div>
+             <button type="button" onclick="rf_compactResetFilters()" class="sc-pill-btn" style="background: #0e303e; border-color: #16566d; color: #a5f3fc;">Reset filters</button>
            </div>`;
 
       return `
-        <div class="glass-panel rounded-xl border border-slate-800 p-2.5 space-y-1.5">
-          <div class="flex items-center gap-1.5">
-            <div class="relative flex-1 min-w-0">
-              <svg class="w-3 h-3 text-slate-500 absolute left-2 top-[7px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-              <input id="rf_c_search" type="text" value="${tableSearchQuery.replace(/"/g, '&quot;')}" oninput="rf_compactSetSearch(this.value)" placeholder="Search IATA, city, airport…" class="amt-micro-input pl-7">
+        <div class="sc-card" style="padding: 5px 6px; gap: 4px;">
+          <div class="sc-search-bar">
+            <div class="sc-search-input-wrap">
+              <span class="sc-search-icon">🔍</span>
+              <input type="text" id="rf_c_search" value="${tableSearchQuery.replace(/"/g, '&quot;')}" oninput="rf_compactSetSearch(this.value)" placeholder="Search IATA, city, airport, country…" class="sc-input">
             </div>
-            ${tableSearchQuery ? `<button type="button" onclick="rf_compactSetSearch('')" class="shrink-0 w-6 h-6 rounded-md bg-slate-900 border border-slate-700 text-slate-400 hover:text-white text-[11px] leading-none">✕</button>` : ''}
-          </div>
-
-          <div class="flex items-center gap-1.5">
-            <div class="min-w-0 flex-1">
-              <div class="text-[9px] font-mono text-slate-400 truncate">${total} routes${currentHub ? ' · ' + currentHub.iata : ''}</div>
-              <div class="text-[9px] font-mono text-slate-500 truncate">${durationSummary}${divisorOn ? ' · <span class="text-cyan-300">÷24h</span>' : ''}</div>
-            </div>
-            <button type="button" onclick="rf_compactToggleDiv24()" title="24h divisors only — round trips that tile the day exactly (e.g. 3h × 8 runs)"
-              class="shrink-0 h-[24px] px-1.5 rounded-md border text-[9px] font-bold font-mono transition ${divisorOn ? 'bg-cyan-700 border-cyan-500 text-white shadow-sm' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-cyan-700 hover:text-white'}">÷24h</button>
+            ${tableSearchQuery ? `<button type="button" onclick="rf_compactSetSearch('')" class="sc-pill-btn" style="padding: 0 5px;" title="Clear search">✕</button>` : ''}
+            <button type="button" onclick="rf_compactToggleDiv24()" class="sc-pill-btn ${divisorOn ? 'active' : ''}" title="24h divisors only (e.g. 3h, 4h, 6h, 8h)">÷24h</button>
             ${rf_compactSortHTML()}
           </div>
 
-          ${total === 0 ? empty : `
-            <div class="space-y-1">${visible.map(rf_compactRouteRowHTML).join('')}</div>
-            <div class="flex items-center gap-1.5 pt-0.5">
-              <button type="button" onclick="rf_changePage(-1)" ${currentPage <= 1 ? 'disabled' : ''} class="w-6 h-6 rounded-md border border-slate-800 text-slate-300 text-[11px] leading-none ${currentPage <= 1 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-800'}">‹</button>
-              <span class="text-[10px] font-mono text-slate-400">${currentPage} / ${totalPages}</span>
-              <button type="button" onclick="rf_changePage(1)" ${currentPage >= totalPages ? 'disabled' : ''} class="w-6 h-6 rounded-md border border-slate-800 text-slate-300 text-[11px] leading-none ${currentPage >= totalPages ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-800'}">›</button>
-              <span class="ml-auto text-[9px] font-mono text-slate-500">${startIdx + 1}–${endIdx} of ${total}</span>
-              <select onchange="rf_compactSetPageSize(this.value)" class="amt-micro-input w-[86px] shrink-0 text-[10px]">
-                ${[25, 50, 100, 250].map(n => `<option value="${n}"${pageSize === n ? ' selected' : ''}>${n} / page</option>`).join('')}
+          <div style="display: flex; align-items: center; justify-content: space-between; font-size: 8px; color: var(--sc-text-muted); padding: 0 2px;">
+            <span>${divisorOn ? 'Filtered to 24h exact divisors' : 'All available range routes'}${currentHub ? ' · ' + currentHub.iata : ''}</span>
+            <span>${total > 0 ? `${startIdx + 1}–${endIdx} of ${total}` : '0 of 0'}</span>
+          </div>
+        </div>
+
+        ${total === 0 ? empty : `
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            ${visible.map(rf_compactRouteRowHTML).join('')}
+          </div>
+
+          <div class="sc-pagination">
+            <button type="button" onclick="rf_changePage(-1)" ${currentPage <= 1 ? 'disabled' : ''}>‹</button>
+            <span class="sc-page-info">${currentPage} / ${totalPages}</span>
+            <button type="button" onclick="rf_changePage(1)" ${currentPage >= totalPages ? 'disabled' : ''}>›</button>
+            <div style="margin-left: auto; display: flex; align-items: center; gap: 4px;">
+              <span style="font-size: 8px; color: var(--sc-text-muted);">Per page:</span>
+              <select onchange="rf_compactSetPageSize(this.value)" class="sc-input" style="width: 58px; height: 22px; padding: 2px 4px; font-size: 9px;">
+                ${[25, 50, 100, 250].map(n => `<option value="${n}"${pageSize === n ? ' selected' : ''}>${n}</option>`).join('')}
               </select>
-            </div>`}
-        </div>`;
+            </div>
+          </div>
+        `}`;
     }
 
-    // ---- pane: circuit ----------------------------------------------------
-    // Same tiling as rf_updateCircuitUI(): round-robin for a 24h day, leg-by-leg for the week.
+    // ---- tab: circuit -----------------------------------------------------
     function rf_compactTimelineBlocks() {
       const math = rf_circuitMath();
       const blocks = [];
@@ -3327,40 +3262,43 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
     function rf_compactBarHTML() {
       const math = rf_circuitMath();
       const hubIata = currentHub ? currentHub.iata : 'HUB';
-
-      // Percentage widths relative to the target (24h day or 168h week), exactly like the
-      // standard "Daily Bar"/"Summary Bar" so both layouts scale identically.
       const blocks = [];
       let clockMinutes = 0;
+
       currentCircuitLegs.forEach(leg => {
         for (let rep = 0; rep < (leg.flightsPerDay || 1); rep++) {
           const startLabel = rf_compactClock(clockMinutes);
           clockMinutes += leg.durationHours * 60;
           const widthPct = Math.min(100, (leg.durationHours / math.target) * 100);
           blocks.push(`
-            <div style="width:${widthPct.toFixed(3)}%" class="h-full rounded border ${leg.color.borderCol} p-1 flex flex-col justify-center overflow-hidden shrink-0"
+            <div class="sc-timeline-seg" style="width:${widthPct.toFixed(2)}%; background:${rf_compactLegColor(leg)};"
               title="${hubIata} ➔ ${leg.dstIata} (${leg.durationText}) | ${startLabel} - ${rf_compactClock(clockMinutes)}">
-              <div class="font-mono font-bold text-[9px] leading-none truncate text-slate-950">${widthPct > 7 ? `${hubIata} ✈ ${leg.dstIata}` : leg.dstIata}</div>
-              ${widthPct > 14 ? `<div class="text-[8px] font-mono leading-none truncate mt-0.5 text-slate-900/80">${leg.durationText}</div>` : ''}
+              ${widthPct > 6 ? leg.dstIata : ''}
             </div>`);
         }
       });
+
       if (math.free > 0) {
+        const freePct = Math.min(100, (math.free / math.target) * 100);
         blocks.push(`
-          <div style="width:${Math.min(100, (math.free / math.target) * 100).toFixed(3)}%" class="h-full rounded border border-slate-800 bg-slate-900 flex items-center justify-center overflow-hidden shrink-0" title="Free unallocated rotation time: ${formatHoursMinutes(math.free)}">
-            <span class="text-[9px] font-mono text-slate-500 truncate px-1">${math.free / math.target > 0.12 ? 'Free ' + formatHoursMinutes(math.free) : ''}</span>
+          <div class="sc-timeline-free" style="width:${freePct.toFixed(2)}%;" title="Free unallocated rotation time: ${formatHoursMinutes(math.free)}">
+            ${freePct > 12 ? formatHoursMinutes(math.free) + ' free' : ''}
           </div>`);
       }
 
-      const bar = math.is24hCircuit
-        ? `<div class="grid grid-cols-6 text-[8px] font-mono text-slate-500 px-0.5 mt-0.5"><div>00:00</div><div class="text-center">04:00</div><div class="text-center">08:00</div><div class="text-center">12:00</div><div class="text-center">16:00</div><div class="text-right">24:00</div></div>`
-        : `<div class="grid grid-cols-7 text-[8px] font-mono text-slate-500 px-0.5 mt-0.5"><div>Mon</div><div class="text-center">Tue</div><div class="text-center">Wed</div><div class="text-center">Thu</div><div class="text-center">Fri</div><div class="text-center">Sat</div><div class="text-right">Sun</div></div>`;
-
       return `
-        <div class="h-8 rounded-lg bg-slate-900 border border-slate-800 overflow-hidden flex gap-0.5 p-0.5">
-          ${blocks.length ? blocks.join('') : `<span class="flex-1 flex items-center justify-center text-[10px] text-slate-500">No flights scheduled · ${formatHoursMinutes(math.free)} free</span>`}
-        </div>
-        ${bar}`;
+        <div class="sc-timeline-bar-wrap">
+          <div class="sc-timeline-bar">
+            ${blocks.length ? blocks.join('') : '<div class="sc-timeline-free" style="width: 100%;">Empty circuit</div>'}
+          </div>
+          <div class="sc-timeline-axis">
+            <span>00:00</span>
+            <span>06:00</span>
+            <span>12:00</span>
+            <span>18:00</span>
+            <span>24:00</span>
+          </div>
+        </div>`;
     }
 
     function rf_compactClock(totalMinutes) {
@@ -3380,43 +3318,26 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
           .map(b => ({ ...b, s: Math.max(b.start, dayStart), e: Math.min(b.end, dayEnd) }))
           .filter(b => b.s < b.e);
         return `
-          <div class="flex items-center gap-1">
-            <span class="w-6 shrink-0 text-[8px] text-slate-500 font-mono">${day}</span>
-            <div class="relative flex-1 h-3 rounded bg-slate-900 border border-slate-800 overflow-hidden" style="background-image: repeating-linear-gradient(to right, rgba(148,163,184,0.18) 0 1px, transparent 1px calc(100% / 24));">
-              ${segs.map(s => `<div class="absolute top-0 bottom-0"
-                style="left:${((s.s - dayStart) / 24 * 100).toFixed(3)}%;width:${((s.e - s.s) / 24 * 100).toFixed(3)}%;background:${rf_compactLegColor(s.leg)};"
-                title="${day} ${formatHoursMinutes(s.s - dayStart)}–${formatHoursMinutes(s.e - dayStart)} · ${hubIata} → ${s.leg.dstIata}"></div>`).join('')}
+          <div class="sc-day">
+            <span>${day}</span>
+            <div class="sc-day-track">
+              ${segs.map(s => `<span style="left:${((s.s - dayStart) / 24 * 100).toFixed(2)}%;width:${((s.e - s.s) / 24 * 100).toFixed(2)}%;background:${rf_compactLegColor(s.leg)};"
+                title="${day} ${formatHoursMinutes(s.s - dayStart)}–${formatHoursMinutes(s.e - dayStart)} · ${hubIata} → ${s.leg.dstIata}">${s.leg.dstIata}</span>`).join('')}
             </div>
           </div>`;
       }).join('');
+
       return `
-        <div class="space-y-1">${rows}</div>
-        <div class="flex items-center gap-1 mt-0.5">
-          <span class="w-6 shrink-0"></span>
-          <div class="grid grid-cols-5 text-[8px] font-mono text-slate-500 flex-1"><div>00</div><div class="text-center">06</div><div class="text-center">12</div><div class="text-center">18</div><div class="text-right">24</div></div>
+        <div class="sc-week">${rows}</div>
+        <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: ui-monospace, monospace; color: var(--sc-text-muted); padding-left: 29px;">
+          <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span>
         </div>`;
     }
 
-    // The app palette stores gradient classes; the compact bars need a solid colour.
     function rf_compactLegColor(leg) {
       const solids = ['#06b6d4', '#10b981', '#a855f7', '#f59e0b', '#f43f5e', '#4f46e5'];
       const idx = currentCircuitLegs.findIndex(l => l.dstIata === leg.dstIata);
       return solids[(idx < 0 ? 0 : idx) % solids.length];
-    }
-
-    function rf_compactStatsHTML() {
-      const math = rf_circuitMath();
-      const cell = (label, value, cls) => `
-        <div class="rounded-md bg-slate-950/70 border border-slate-800 px-1.5 py-1 min-w-0">
-          <span class="block text-[8px] uppercase text-slate-500 tracking-wide">${label}</span>
-          <span class="block text-[11px] font-mono font-bold truncate ${cls}">${value}</span>
-        </div>`;
-      return `
-        <div class="grid grid-cols-3 gap-1">
-          ${cell('Scheduled', formatHoursMinutes(math.used), 'text-white')}
-          ${cell('Free', formatHoursMinutes(math.free), math.free > 0.25 ? 'text-amber-300' : 'text-slate-400')}
-          ${cell('Utilized', math.util + '%', math.util >= 90 ? 'text-emerald-300' : math.util >= 50 ? 'text-cyan-300' : 'text-amber-300')}
-        </div>`;
     }
 
     function rf_compactLegRowHTML(leg) {
@@ -3432,111 +3353,217 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
         const options = [];
         for (let f = 1; f <= Math.min(4, maxFit); f++) options.push(f);
         quickChips = `
-          <div class="flex items-center gap-1 flex-wrap pl-3 pt-0.5">
-            <span class="text-[8px] uppercase font-semibold text-slate-500">Runs/day</span>
-            ${options.map(f => `<button type="button" onclick="rf_setLegFrequency('${leg.dstIata}', ${f})" class="px-1.5 py-0.5 rounded border text-[9px] font-mono font-bold transition ${leg.flightsPerDay === f ? 'bg-cyan-700 border-cyan-500 text-white' : 'bg-slate-950 border-slate-700 text-slate-300 hover:border-cyan-700'}">${f}x (${formatHoursMinutes(leg.durationHours * f)})</button>`).join('')}
-            ${options.includes(maxFit) ? '' : `<button type="button" onclick="rf_setLegFrequency('${leg.dstIata}', ${maxFit})" class="px-1.5 py-0.5 rounded border text-[9px] font-mono font-bold transition ${leg.flightsPerDay === maxFit ? 'bg-cyan-700 border-cyan-500 text-white' : 'bg-cyan-950 border-cyan-800 text-cyan-300 hover:bg-cyan-900'}">Fill day ${maxFit}x (${formatHoursMinutes(leg.durationHours * maxFit)})</button>`}
+          <div style="display: flex; align-items: center; gap: 3px; flex-wrap: wrap; padding-top: 3px; border-top: 1px solid var(--sc-border-subtle); margin-top: 2px;">
+            <span style="font-size: 8px; text-transform: uppercase; font-weight: 600; color: var(--sc-text-muted);">Runs/day</span>
+            ${options.map(f => `<button type="button" onclick="rf_setLegFrequency('${leg.dstIata}', ${f})" class="sc-chip ${leg.flightsPerDay === f ? 'active' : ''}">${f}x (${formatHoursMinutes(leg.durationHours * f)})</button>`).join('')}
+            ${options.includes(maxFit) ? '' : `<button type="button" onclick="rf_setLegFrequency('${leg.dstIata}', ${maxFit})" class="sc-chip ${leg.flightsPerDay === maxFit ? 'active' : ''}">Fill ${maxFit}x (${formatHoursMinutes(leg.durationHours * maxFit)})</button>`}
           </div>`;
       }
 
       return `
-        <div class="px-2 py-1.5 rounded-lg bg-slate-900/50 border ${leg.color.borderCol} space-y-1">
-          <div class="flex items-center gap-2">
-            <span class="w-1 h-7 rounded-full shrink-0" style="background:${rf_compactLegColor(leg)}"></span>
-            <div class="min-w-0">
-              <div class="font-mono text-[11px] font-bold text-white truncate">${currentHub ? currentHub.iata : 'HUB'} ✈ ${leg.dstIata}</div>
-              <div class="text-[9px] text-slate-500 truncate">${leg.name} · Cat ${leg.category} · ${Number(leg.distanceKm).toLocaleString()} km</div>
-              <div class="text-[9px] text-slate-400 truncate">RT <span class="text-cyan-300 font-mono">${leg.durationText}</span> · scheduled <span class="text-white font-mono">${formatHoursMinutes(totalLegHours)}</span></div>
-            </div>
-            <div class="ml-auto flex items-center gap-1 shrink-0">
-              <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden">
-                <button type="button" onclick="rf_changeLegFrequency('${leg.dstIata}',-1)" ${canDown ? '' : 'disabled'} class="w-5 h-5 text-[11px] leading-none ${canDown ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-600 cursor-not-allowed'}">&minus;</button>
-                <span class="px-1 font-mono text-[10px] font-bold text-cyan-300">${leg.flightsPerDay}x</span>
-                <button type="button" onclick="rf_changeLegFrequency('${leg.dstIata}',1)" ${canUp ? '' : 'disabled'} title="${canUp ? 'Add a daily run' : `Maximum ${maxFit}x runs reached (${math.target}h schedule limit)`}" class="w-5 h-5 text-[11px] leading-none ${canUp ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-600 cursor-not-allowed'}">&plus;</button>
+        <div class="sc-route" style="border-left: 3px solid ${rf_compactLegColor(leg)};">
+          <div class="sc-route-top">
+            <span class="sc-route-code" style="border-left: none; padding-left: 0;">${leg.dstIata}</span>
+            <span class="sc-route-name">${leg.name || leg.dstIata}</span>
+            <span class="sc-tag" style="margin-left: auto;">Cat ${leg.category || 1}</span>
+            <div class="sc-route-actions">
+              <div class="sc-stepper">
+                <button type="button" onclick="rf_changeLegFrequency('${leg.dstIata}', -1)" ${canDown ? '' : 'disabled'}>−</button>
+                <b>${leg.flightsPerDay}×</b>
+                <button type="button" onclick="rf_changeLegFrequency('${leg.dstIata}', 1)" ${canUp ? '' : 'disabled'} title="Max ${maxFit}x runs">+</button>
               </div>
-              <button type="button" onclick="rf_removeRouteFromCircuit('${leg.dstIata}')" title="Remove route" class="w-6 h-6 rounded-md text-slate-500 hover:text-rose-300 hover:bg-rose-950/50 transition flex items-center justify-center">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-              </button>
+              <button type="button" onclick="rf_removeRouteFromCircuit('${leg.dstIata}')" title="Remove leg" style="background: none; border: none; color: var(--sc-rose); cursor: pointer; font-size: 11px; padding: 0 3px;">×</button>
             </div>
+          </div>
+          <div class="sc-route-bottom">
+            <span>RT <b style="color: var(--sc-cyan);">${leg.durationText}</b></span>
+            <span>Scheduled: <b style="color: #fff;">${formatHoursMinutes(totalLegHours)}</b></span>
+            <span style="margin-left: auto; color: var(--sc-text-faint);">${Number(leg.distanceKm).toLocaleString()} km</span>
           </div>
           ${quickChips}
         </div>`;
     }
 
     function rf_compactGapHTML() {
-      if (!rfCompact.gapOpen) return '';
       const math = rf_circuitMath();
       const { freeHours, suggestions } = rf_computeGapSuggestions();
 
       if (freeHours <= 0.25) {
-        return `<div class="px-2 py-1.5 rounded-lg bg-emerald-950/30 border border-emerald-800/60 text-[10px] text-emerald-300">✓ The ${math.target}h ${math.isWeekly ? 'week' : 'day'} is already filled.</div>`;
+        return `
+          <div class="sc-gap-box">
+            <div style="font-size: 9px; color: var(--sc-good); padding: 2px;">✓ Rotation schedule is completely filled!</div>
+          </div>`;
       }
+
       const picks = suggestions.slice(0, 3);
       if (!picks.length) {
         return `
-          <div class="px-2 py-1.5 rounded-lg bg-slate-900/60 border border-slate-800 text-[10px] text-slate-400 flex items-center gap-2">
-            <span class="min-w-0">No single route fits the ${formatHoursMinutes(freeHours)} gap.</span>
-            <button type="button" onclick="rf_syncDurationFilterToRemaining()" class="ml-auto shrink-0 text-cyan-400 hover:text-cyan-300 font-semibold">Filter →</button>
+          <div class="sc-gap-box">
+            <div style="font-size: 8px; color: var(--sc-text-muted); display: flex; align-items: center; justify-content: space-between;">
+              <span>No single route fits the ${formatHoursMinutes(freeHours)} gap.</span>
+              <button type="button" onclick="rf_syncDurationFilterToRemaining(); rf_compactSetTab('routes');" class="sc-pill-btn" style="height: 18px; padding: 0 4px; font-size: 8px;">Filter table ↘</button>
+            </div>
           </div>`;
       }
+
       return `
-        <div class="space-y-1">
-          <div class="flex items-center justify-between text-[9px] uppercase font-bold text-amber-300 tracking-wide">
-            <span>⚡ Fits the ${formatHoursMinutes(freeHours)} gap</span>
-            <button type="button" onclick="rf_syncDurationFilterToRemaining()" class="text-cyan-400 hover:text-cyan-300 normal-case font-semibold">Filter table ↘</button>
+        <div class="sc-gap-box">
+          <div class="sc-gap-title">
+            <span>⚡ Gap Fit Suggestions</span>
+            <span style="color: var(--sc-cyan); font-family: ui-monospace, monospace;">${formatHoursMinutes(freeHours)} free</span>
           </div>
-          ${picks.map(s => `
-            <div class="flex items-center gap-1.5 px-2 py-1 rounded-lg border ${s.isExactFit ? 'bg-emerald-950/25 border-emerald-700/60' : 'bg-amber-950/20 border-amber-800/50'}">
-              <span class="font-mono text-[10px] font-bold text-white">${s.cand.dstIata}</span>
-              <span class="text-[9px] text-slate-400 truncate">${s.cand.city}</span>
-              <span class="text-[9px] font-mono text-cyan-300 shrink-0">${s.cand.durationText}</span>
-              <span class="text-[9px] font-mono shrink-0 ${s.isExactFit ? 'text-emerald-300 font-bold' : 'text-slate-400'}">${s.isExactFit ? '⚡ fills day' : formatHoursMinutes(s.remainingAfter) + ' left'}</span>
-              <button type="button" onclick="rf_addRouteToCircuit('${s.cand.dstIata}')" title="Add to circuit" class="ml-auto shrink-0 px-1.5 py-0.5 rounded border ${s.isExactFit ? 'border-emerald-600 text-emerald-200 hover:bg-emerald-900/40' : 'border-amber-600 text-amber-200 hover:bg-amber-900/40'} text-[9px] font-bold">＋</button>
-            </div>`).join('')}
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            ${picks.map(s => `
+              <div class="sc-gap-row ${s.isExactFit ? 'exact' : ''}">
+                <strong style="color: #fff; font-family: ui-monospace, monospace;">${s.cand.dstIata}</strong>
+                <span style="color: var(--sc-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${s.cand.city || s.cand.name}</span>
+                <span style="color: var(--sc-cyan); font-family: ui-monospace, monospace;">${s.cand.durationText}</span>
+                <span style="font-size: 8px; font-family: ui-monospace, monospace; color: ${s.isExactFit ? 'var(--sc-good)' : 'var(--sc-text-muted)'};">
+                  ${s.isExactFit ? '⚡ Fills day' : `${formatHoursMinutes(s.remainingAfter)} left`}
+                </span>
+                <button type="button" class="sc-btn-add" onclick="rf_addRouteToCircuit('${s.cand.dstIata}')" style="height: 18px; min-width: 20px; font-size: 8px;">＋</button>
+              </div>`).join('')}
+          </div>
         </div>`;
     }
 
     function rf_compactCircuitHTML() {
       const math = rf_circuitMath();
       const activeView = rf_timelineViewMode || (math.is24hCircuit ? 'bar' : 'week');
-      const viewBtn = (mode, label) => `
-        <button type="button" onclick="rf_setTimelineViewMode('${mode}')" class="px-1.5 py-0.5 rounded border transition ${activeView === mode ? 'bg-cyan-950 text-cyan-300 border-cyan-800 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'}">${label}</button>`;
 
       return `
-        <div class="glass-panel rounded-xl border border-slate-800 p-2.5 space-y-2">
-          ${rf_compactStatsHTML()}
+        <!-- KPI Stats Grid (Matches .sc-kpis) -->
+        <div class="sc-kpis">
+          <div>
+            <small>Scheduled</small>
+            <strong>${formatHoursMinutes(math.used)}</strong>
+          </div>
+          <div>
+            <small>Free Time</small>
+            <strong class="${math.free <= 0.25 ? 'sc-good' : 'sc-warn'}">${formatHoursMinutes(math.free)}</strong>
+          </div>
+          <div>
+            <small>Utilized</small>
+            <strong>${math.util}%</strong>
+          </div>
+          <div>
+            <small>Target Cycle</small>
+            <strong>${math.target}h</strong>
+          </div>
+        </div>
 
-          <div class="flex items-center gap-1.5">
-            <span class="text-[10px] font-bold ${math.isWeekly ? 'text-blue-300' : 'text-cyan-300'}">${math.isWeekly ? '168h weekly rotation' : '24h daily rotation'}</span>
-            <span class="text-[9px] font-mono px-1 rounded bg-slate-800 text-slate-300 border border-slate-700">${math.count} leg${math.count === 1 ? '' : 's'}</span>
-            <div class="ml-auto flex items-center bg-slate-950 border border-slate-800 rounded-md p-0.5 text-[9px] font-mono">
-              ${viewBtn('bar', '24h Bar')}${viewBtn('week', '7-Day')}
+        <!-- Schedule Timeline Card -->
+        <div class="sc-card">
+          <div class="sc-section-title">
+            <strong>${math.isWeekly ? '168h Weekly' : '24h Daily'} Rotation Timeline</strong>
+            <div style="margin-left: auto; display: flex; gap: 2px;">
+              <button type="button" class="sc-pill-btn ${activeView === 'bar' ? 'active' : ''}" onclick="rf_setTimelineViewMode('bar')" style="height: 18px; padding: 0 5px; font-size: 8px;">24h Bar</button>
+              <button type="button" class="sc-pill-btn ${activeView === 'week' ? 'active' : ''}" onclick="rf_setTimelineViewMode('week')" style="height: 18px; padding: 0 5px; font-size: 8px;">7-Day</button>
             </div>
           </div>
 
           ${activeView === 'week' ? rf_compactWeekHTML() : rf_compactBarHTML()}
+        </div>
 
-          ${rf_compactGapHTML()}
+        <!-- Gap Fit Suggestions -->
+        ${rf_compactGapHTML()}
 
-          <div class="space-y-1">
-            ${math.count ? currentCircuitLegs.map(rf_compactLegRowHTML).join('')
-              : `<div class="px-2 py-4 text-center rounded-xl border border-dashed border-slate-800 bg-slate-900/20 space-y-1.5">
-                   <div class="text-[10px] text-slate-400">Circuit is empty — add routes to start the rotation.</div>
-                   <button type="button" onclick="rf_compactSetTab('routes')" class="px-2 py-1 rounded-lg bg-cyan-950 border border-cyan-800 text-cyan-300 text-[10px] font-bold hover:bg-cyan-900">Browse destinations</button>
-                 </div>`}
+        <!-- Scheduled Circuit Legs -->
+        <div class="sc-card" style="padding-top: 5px;">
+          <div class="sc-section-title">
+            <strong>Scheduled Circuit Legs</strong>
+            <span class="sc-muted">${math.count} leg${math.count === 1 ? '' : 's'}</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            ${math.count ? currentCircuitLegs.map(rf_compactLegRowHTML).join('') : `
+              <div class="sc-empty">
+                No legs added to this rotation.<br>
+                <button type="button" onclick="rf_compactSetTab('routes')" class="sc-pill-btn" style="margin-top: 5px; background: #0e303e; border-color: #16566d; color: #a5f3fc;">Browse Routes</button>
+              </div>`}
           </div>
         </div>`;
     }
 
-    // ---- sticky action bar ------------------------------------------------
-    function rf_compactActionsHTML() {
-      const math = rf_circuitMath();
+    // ---- tab: info --------------------------------------------------------
+    function rf_compactInfoHTML() {
+      const ac = currentAircraft;
+      const hub = currentHub;
+      const demand = hub ? rf_computeAirportDemandStats(hub) : null;
+
       return `
-        <div class="sticky bottom-0 z-30 px-2 py-2 rounded-xl bg-slate-950/95 border border-slate-800 shadow-2xl backdrop-blur flex items-center gap-1.5">
-          <button type="button" onclick="rf_compactToggleGap()" class="flex-1 px-2 py-1.5 rounded-lg text-[10px] font-bold border transition ${rfCompact.gapOpen ? 'bg-amber-900/40 border-amber-700 text-amber-200' : 'bg-slate-900 border-slate-700 text-amber-300 hover:border-amber-700'}">⚡ Fill${math.free > 0.25 ? ' ' + formatHoursMinutes(math.free) : ''}</button>
-          <button type="button" onclick="rf_openSaveCircuitModal()" class="flex-1 px-2 py-1.5 rounded-lg bg-slate-900 border border-emerald-800 text-emerald-300 text-[10px] font-bold hover:bg-emerald-950/50">💾 Save</button>
-          <button type="button" onclick="rf_openInSeatConfigurator()" title="Send to Seat Configurator" class="flex-1 px-2 py-1.5 rounded-lg bg-cyan-700 hover:bg-cyan-600 text-white text-[10px] font-bold">➤ Seat</button>
-          <button type="button" onclick="rf_clearCurrentCircuit()" title="Clear circuit" class="px-2 py-1.5 rounded-lg bg-slate-900 border border-rose-900 text-rose-300 text-[10px] font-bold hover:bg-rose-950/50">🗑</button>
+        <!-- Active Aircraft Specifications Card -->
+        <div class="sc-card">
+          <div class="sc-section-title">
+            <strong>Active Aircraft Specifications</strong>
+            <span class="sc-muted">${ac ? ac.type : '—'}</span>
+          </div>
+          <div class="sc-kpis">
+            <div>
+              <small>Range</small>
+              <strong>${ac ? Number(ac.range_km).toLocaleString() + ' km' : '—'}</strong>
+            </div>
+            <div>
+              <small>Cruise</small>
+              <strong>${ac ? ac.speed_kmh + ' km/h' : '—'}</strong>
+            </div>
+            <div>
+              <small>Runway Req</small>
+              <strong>${ac ? 'Cat ' + ac.category : '—'}</strong>
+            </div>
+            <div>
+              <small>Seats</small>
+              <strong>${ac ? Number(ac.seats).toLocaleString() : '—'}</strong>
+            </div>
+          </div>
+          <div style="font-size: 9px; color: var(--sc-text-muted); display: flex; justify-content: space-between;">
+            <span>${ac ? `${ac.manufacturer} · ${ac.type}` : 'No aircraft selected'}</span>
+            <span>${ac ? `Payload: ${ac.payload_ton} T` : ''}</span>
+          </div>
+        </div>
+
+        <!-- Departure Hub Details Card -->
+        <div class="sc-card">
+          <div class="sc-section-title">
+            <strong>Departure Hub Details</strong>
+            <span class="sc-muted" style="color: var(--sc-warn);">${demand ? demand.starsText : ''}</span>
+          </div>
+          ${hub ? `
+            <div style="background: var(--sc-bg-subpanel); border: 1px solid var(--sc-border-subtle); border-radius: 6px; padding: 6px; display: flex; flex-direction: column; gap: 3px;">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 11px; font-weight: 700; color: var(--sc-text-bright);">${hub.iata} · ${hub.city}</span>
+                <span class="sc-tag" style="color: var(--sc-cyan);">Cat ${hub.cat}</span>
+              </div>
+              <div style="font-size: 9px; color: var(--sc-text-secondary);">${hub.name} · ${hub.country}</div>
+              <div style="font-size: 8px; color: var(--sc-text-muted); display: flex; justify-content: space-between;">
+                <span>${Number(hub.lat).toFixed(2)}°, ${Number(hub.lon).toFixed(2)}°</span>
+                <span>Demand Index: ${demand.avgFormatted} (${demand.label})</span>
+              </div>
+            </div>` : `
+            <div class="sc-empty">
+              No departure hub selected.<br>
+              <span style="font-size: 9px; color: var(--sc-text-muted);">Enter an IATA code in the hub field in the topline.</span>
+            </div>`}
+        </div>`;
+    }
+
+    // ---- sticky action toolbar --------------------------------------------
+    function rf_compactActionsHTML() {
+      return `
+        <div class="sc_layout_toolbar">
+          <button type="button" class="sc-btn-primary" onclick="rf_openSaveCircuitModal()" title="Save current circuit to storage">
+            💾 Save
+          </button>
+          <button type="button" onclick="rf_openInSeatConfigurator()" title="Send current circuit to Seat Configurator">
+            ➤ Seat
+          </button>
+          <button type="button" class="sc-btn-clear" onclick="rf_clearCurrentCircuit()" title="Clear all circuit legs">
+            🗑
+          </button>
+          <div class="sc_layout_examples">
+            <button type="button" onclick="rf_compactLoad24h()" title="Load standard 24h circuit example">24h</button>
+            <button type="button" onclick="rf_compactLoad168h()" title="Load standard 168h circuit example">168h</button>
+          </div>
         </div>`;
     }
 
@@ -3553,13 +3580,14 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       const selStart = (focusId && active.selectionStart != null) ? active.selectionStart : null;
       const scrollY = window.scrollY;
 
-      const pane = rfCompact.tab === 'setup' ? rf_compactSetupHTML()
+      const paneHTML = rfCompact.tab === 'criteria' ? rf_compactCriteriaHTML()
         : rfCompact.tab === 'routes' ? rf_compactRoutesHTML()
-        : rf_compactCircuitHTML();
+        : rfCompact.tab === 'circuit' ? rf_compactCircuitHTML()
+        : rf_compactInfoHTML();
 
       cont.innerHTML = `
         ${rf_compactHeaderHTML()}
-        <div class="space-y-2.5">${pane}</div>
+        ${paneHTML}
         ${rf_compactActionsHTML()}`;
 
       if (focusId) {
@@ -3586,6 +3614,12 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       rfCompact.acOpen = !rfCompact.acOpen;
       rfCompact.sortOpen = false;
       rf_renderCompact();
+      if (rfCompact.acOpen) {
+        setTimeout(() => {
+          const el = document.getElementById('rf_c_ac_search');
+          if (el) el.focus();
+        }, 50);
+      }
     }
 
     function rf_compactSetAcSearch(value) {
@@ -3594,7 +3628,7 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
     }
 
     function rf_compactSetHaul(haul) {
-      rf_setComboboxHaul(haul);   // comboboxHaulFilter stays shared with the full page
+      rf_setComboboxHaul(haul);
       rf_renderCompact();
     }
 
@@ -3686,7 +3720,7 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       if (sortSelect) sortSelect.value = 'dist_asc';
       rf_setDurationPreset('any');
       rf_applyFilters();
-      showToast('Filters reset', 'info');
+      showToast('Criteria filters reset', 'info');
     }
 
     function rf_compactSetSearch(value) {
@@ -3716,7 +3750,7 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
     function rf_compactSetPageSize(value) {
       const el = document.getElementById('rf_page_size');
       if (el) el.value = value;
-      pageSize = parseInt(value, 10) || 50;
+      pageSize = parseInt(value, 10) || 25;
       currentPage = 1;
       rf_renderResults();
       rf_saveStateToLocalStorage();
@@ -3729,6 +3763,32 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
         const math = rf_circuitMath();
         if (math.free <= 0.25) showToast(`Circuit schedule is 100% full (${math.target}h)`, 'warning');
       }
+    }
+
+    function rf_compactLoad24h() {
+      rf_setAircraftById('a380-800');
+      rf_setHubByIata('DXB');
+      currentCircuitLegs = [];
+      rf_updateCircuitUI();
+      setTimeout(() => {
+        rf_addRouteToCircuit('LHR');
+        showToast('Loaded 24h Daily Rotation Example (A380 · DXB)', 'success');
+        rf_renderCompact();
+      }, 50);
+    }
+
+    function rf_compactLoad168h() {
+      rf_setAircraftById('b777-300er');
+      rf_setHubByIata('JFK');
+      currentCircuitLegs = [];
+      rf_updateCircuitUI();
+      setTimeout(() => {
+        rf_addRouteToCircuit('LHR');
+        rf_addRouteToCircuit('CDG');
+        rf_addRouteToCircuit('FRA');
+        showToast('Loaded 168h Weekly Rotation Example (777-300ER · JFK)', 'success');
+        rf_renderCompact();
+      }, 50);
     }
 
 })();
