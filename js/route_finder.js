@@ -3570,10 +3570,13 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
     function rf_renderCompact() {
       const cont = document.getElementById('route_finder_compact_container');
       if (!cont) return;
+      const view = document.getElementById('view_route_finder');
       if (!rf_isCompactMode()) {
+        if (view) view.classList.remove('rf-compact');
         cont.innerHTML = '';
         return;
       }
+      if (view) view.classList.add('rf-compact');
 
       const active = document.activeElement;
       const focusId = active && active.id ? active.id : null;

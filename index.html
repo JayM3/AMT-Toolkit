@@ -48,7 +48,7 @@
   </script>
   <link rel="stylesheet" href="css/styles.css?v=3.6">
   <link rel="stylesheet" href="css/seat_config_compact.css?v=3">
-  <link rel="stylesheet" href="css/route_finder_compact.css?v=1">
+  <link rel="stylesheet" href="css/route_finder_compact.css?v=2">
   <link rel="stylesheet" href="css/homepage.css?v=3.6">
   <style>
     body.amt-compact-mode #zero_out_standard_container { display: none !important; }
@@ -57,7 +57,7 @@
 
     /* Route Finder Compact Mode (extension sidebar / docked side panel only) */
     body.amt-compact-mode #route_finder_standard_container { display: none !important; }
-    body.amt-compact-mode #route_finder_compact_container { display: block !important; }
+    body.amt-compact-mode #route_finder_compact_container { display: flex !important; flex-direction: column !important; }
     body:not(.amt-compact-mode) #route_finder_compact_container { display: none !important; }
 
     /* The full-size floating circuit dock is replaced by the compact action bar */
@@ -2108,7 +2108,7 @@
     <!-- COMPACT LAYOUT (Activated only inside the extension sidebar)              -->
     <!-- Rendered by rf_renderCompact() in js/route_finder.js                      -->
     <!-- ========================================================================= -->
-    <div id="route_finder_compact_container" class="space-y-2.5" hidden></div>
+    <div id="route_finder_compact_container" hidden></div>
 
     <!-- ========================================================================= -->
     <!-- STANDARD (FULL-WIDTH) LAYOUT                                              -->
