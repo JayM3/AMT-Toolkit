@@ -49,6 +49,7 @@
   <link rel="stylesheet" href="css/styles.css?v=3.6">
   <link rel="stylesheet" href="css/seat_config_compact.css?v=6">
   <link rel="stylesheet" href="css/route_finder_compact.css?v=3">
+  <link rel="stylesheet" href="css/zero_out_compact.css?v=1">
   <link rel="stylesheet" href="css/homepage.css?v=3.6">
   <style>
     body.amt-compact-mode #zero_out_standard_container { display: none !important; }
@@ -72,9 +73,9 @@
     /* The full-size floating circuit dock is replaced by the compact action bar */
     body.amt-compact-mode #rf_floating_circuit_actions { display: none !important; }
 
-    /* Compact Draggable FAB */
+    /* Compact Draggable FAB (Replaced by bottom toolbar in compact Zero-Out) */
     body.amt-compact-mode #zo_floating_actions { display: none !important; }
-    body.amt-compact-mode #zo_compact_fab { display: block !important; }
+    body.amt-compact-mode #zo_compact_fab { display: none !important; }
     body:not(.amt-compact-mode) #zo_compact_fab { display: none !important; }
 
     /* Hide logo/title, Home nav button, homepage view, and install link in extension/sidebar */
@@ -683,282 +684,276 @@
     <div id="view_zero_out" class="space-y-6 hidden">
 
     <!-- ========================================================================= -->
-    <!-- COMPACT MODE: PROTOTYPE B (MATRIX GRID FOR EXTENSION SIDEBAR)             -->
+    <!-- COMPACT MODE: SEAT CONFIG STYLE CADENCE & MATRIX GRID                     -->
     <!-- ========================================================================= -->
-    <div id="zero_out_compact_container" class="space-y-3">
+    <div id="zero_out_compact_container" class="zo-compact-container">
       
-      <!-- Compact Header & Mini KPI Toolbar -->
-      <div class="glass-panel rounded-xl px-3.5 py-2.5 border border-slate-800 flex items-center justify-between gap-2 shadow-md">
-        <div class="flex items-center gap-2">
-          <span id="compact_route_badge" class="hidden text-[10px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono font-bold"></span>
-          <div class="flex items-center gap-1 text-[11px] font-mono-num">
-            <span class="text-slate-500 uppercase text-[9px] font-semibold">Gain:</span>
-            <span id="compact_daily_gain" class="text-emerald-400 font-bold">+$0/day</span>
-          </div>
-        </div>
+      <!-- Clean Micro Topline (.sc-topline) -->
+      <div class="sc-topline">
+        <!-- Hub & Dst Inputs -->
+        <input type="text" id="compact_route_hub" maxlength="3" placeholder="HUB" title="Departure Hub IATA" style="width: 44px; min-width: 44px; text-align: center; font-weight: 700;" oninput="onCompactRouteChange()">
+        <span style="color: var(--sc-text-muted, #7f92ad); font-size: 10px; user-select: none;">✈</span>
+        <input type="text" id="compact_route_dst" maxlength="3" placeholder="DST" title="Destination IATA" style="flex: 1; min-width: 0; text-align: center; font-weight: 700;" oninput="onCompactRouteChange()">
 
-        <div class="flex items-center gap-2">
-          <!-- Cargo Toggle -->
-          <label class="flex items-center gap-1 text-[11px] text-slate-300 cursor-pointer select-none">
-            <input type="checkbox" id="compact_toggle_cargo" checked onchange="toggleCargo(this.checked)" class="w-3.5 h-3.5 rounded text-purple-600 focus:ring-purple-500 bg-slate-700 border-slate-600">
-            <span>Cargo</span>
-          </label>
-          <div class="h-3 w-px bg-slate-800"></div>
-          <!-- Clear Table Button -->
-          <button type="button" onclick="clearAllInputs()" class="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 transition" title="Clear all inputs">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-          </button>
-        </div>
-      </div>
+        <!-- Cargo Switch -->
+        <label class="sc-switch-label" title="Enable or disable cargo calculations">
+          <input type="checkbox" id="compact_toggle_cargo" checked onchange="toggleCargo(this.checked)">
+          <span style="color: #cbd8e9; font-size: 9px; font-weight: 600;">Cargo</span>
+        </label>
 
-      <!-- Prototype B: Matrix Table Grid -->
-      <div class="glass-panel rounded-xl overflow-hidden border border-slate-800 shadow-md">
-        <table class="w-full text-left text-xs border-collapse">
-          <thead>
-            <tr class="border-b border-slate-800 bg-slate-900/80 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-              <th class="py-2 px-2.5">Class</th>
-              <th class="py-2 px-1 text-center">Audit $</th>
-              <th class="py-2 px-1 text-center">Demand</th>
-              <th class="py-2 px-1 text-center text-slate-300">Offer</th>
-              <th class="py-2 px-1 text-center text-cyan-400">Remain</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-800/60 font-mono-num text-[11px]">
-            
-            <!-- Row: Economy -->
-            <tr id="compact_row_eco" class="hover:bg-slate-800/30 transition">
-              <td class="py-2 px-2.5 font-sans">
-                <div class="flex items-center gap-1.5">
-                  <span>💺</span>
-                  <span class="font-bold text-white text-xs">Y</span>
-                </div>
-              </td>
-              <td class="py-1 px-1">
-                <input type="number" id="compact_eco_paudit" placeholder="Audit" class="amt-micro-input text-center text-[10px] w-14 sm:w-16" oninput="onCompactInput('eco', 'paudit', this.value)">
-              </td>
-              <td class="py-1 px-1">
-                <input type="number" id="compact_eco_dsim" placeholder="Demand" class="amt-micro-input text-center text-[10px] w-14 sm:w-16" oninput="onCompactInput('eco', 'dsim', this.value)">
-              </td>
-              <td class="py-1 px-1">
-                <input type="number" id="compact_eco_c" placeholder="Offer" class="amt-micro-input text-center text-[10px] w-14 sm:w-16 border-slate-700 text-slate-200" oninput="onCompactInput('eco', 'c', this.value)">
-              </td>
-              <td class="py-1 px-1">
-                <input type="number" id="compact_eco_r" placeholder="Remain" class="amt-micro-input text-center text-[10px] w-14 sm:w-16 border-cyan-900/60 text-cyan-300" oninput="onCompactInput('eco', 'r', this.value)">
-              </td>
-            </tr>
-
-            <!-- Row: Business -->
-            <tr id="compact_row_bus" class="hover:bg-slate-800/30 transition">
-              <td class="py-2 px-2.5 font-sans">
-                <div class="flex items-center gap-1.5">
-                  <span>💼</span>
-                  <span class="font-bold text-white text-xs">J</span>
-                </div>
-              </td>
-              <td class="py-1 px-1">
-                <input type="number" id="compact_bus_paudit" placeholder="Audit" class="amt-micro-input text-center text-[10px] w-14 sm:w-16" oninput="onCompactInput('bus', 'paudit', this.value)">
-              </td>
-              <td class="py-1 px-1">
-                <input type="number" id="compact_bus_dsim" placeholder="Demand" class="amt-micro-input text-center text-[10px] w-14 sm:w-16" oninput="onCompactInput('bus', 'dsim', this.value)">
-              </td>
-              <td class="py-1 px-1">
-                <input type="number" id="compact_bus_c" placeholder="Offer" class="amt-micro-input text-center text-[10px] w-14 sm:w-16 border-slate-700 text-slate-200" oninput="onCompactInput('bus', 'c', this.value)">
-              </td>
-              <td class="py-1 px-1">
-                <input type="number" id="compact_bus_r" placeholder="Remain" class="amt-micro-input text-center text-[10px] w-14 sm:w-16 border-blue-900/60 text-blue-300" oninput="onCompactInput('bus', 'r', this.value)">
-              </td>
-            </tr>
-
-            <!-- Row: First Class -->
-            <tr id="compact_row_first" class="hover:bg-slate-800/30 transition">
-              <td class="py-2 px-2.5 font-sans">
-                <div class="flex items-center gap-1.5">
-                  <span>👑</span>
-                  <span class="font-bold text-white text-xs">F</span>
-                </div>
-              </td>
-              <td class="py-1 px-1">
-                <input type="number" id="compact_first_paudit" placeholder="Audit" class="amt-micro-input text-center text-[10px] w-14 sm:w-16" oninput="onCompactInput('first', 'paudit', this.value)">
-              </td>
-              <td class="py-1 px-1">
-                <input type="number" id="compact_first_dsim" placeholder="Demand" class="amt-micro-input text-center text-[10px] w-14 sm:w-16" oninput="onCompactInput('first', 'dsim', this.value)">
-              </td>
-              <td class="py-1 px-1">
-                <input type="number" id="compact_first_c" placeholder="Offer" class="amt-micro-input text-center text-[10px] w-14 sm:w-16 border-slate-700 text-slate-200" oninput="onCompactInput('first', 'c', this.value)">
-              </td>
-              <td class="py-1 px-1">
-                <input type="number" id="compact_first_r" placeholder="Remain" class="amt-micro-input text-center text-[10px] w-14 sm:w-16 border-amber-900/60 text-amber-300" oninput="onCompactInput('first', 'r', this.value)">
-              </td>
-            </tr>
-
-            <!-- Row: Cargo -->
-            <tr id="compact_row_cargo" class="hover:bg-slate-800/30 transition">
-              <td class="py-2 px-2.5 font-sans">
-                <div class="flex items-center gap-1.5">
-                  <span>📦</span>
-                  <span class="font-bold text-white text-xs">C</span>
-                </div>
-              </td>
-              <td class="py-1 px-1">
-                <input type="number" id="compact_cargo_paudit" placeholder="Audit" class="amt-micro-input text-center text-[10px] w-14 sm:w-16" oninput="onCompactInput('cargo', 'paudit', this.value)">
-              </td>
-              <td class="py-1 px-1">
-                <input type="number" id="compact_cargo_dsim" placeholder="Demand" class="amt-micro-input text-center text-[10px] w-14 sm:w-16" oninput="onCompactInput('cargo', 'dsim', this.value)">
-              </td>
-              <td class="py-1 px-1">
-                <input type="number" id="compact_cargo_c" placeholder="Offer" class="amt-micro-input text-center text-[10px] w-14 sm:w-16 border-slate-700 text-slate-200" oninput="onCompactInput('cargo', 'c', this.value)">
-              </td>
-              <td class="py-1 px-1">
-                <input type="number" id="compact_cargo_r" placeholder="Remain" class="amt-micro-input text-center text-[10px] w-14 sm:w-16 border-purple-900/60 text-purple-300" oninput="onCompactInput('cargo', 'r', this.value)">
-              </td>
-            </tr>
-
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Compact Route Results & Financial Impact Table -->
-      <div class="glass-panel rounded-xl overflow-hidden border border-slate-800 shadow-md">
-        <div class="px-3 py-2 border-b border-slate-800/80 bg-slate-900/60 flex items-center justify-between">
-          <span class="text-[10px] uppercase font-bold text-slate-300 tracking-wider flex items-center gap-1.5">
-            <span>Route Results & Impact</span>
-          </span>
-          <span class="text-[9px] font-mono text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-800/50">Live</span>
-        </div>
-
-        <table class="w-full text-left text-xs border-collapse">
-          <thead>
-            <tr class="border-b border-slate-800 bg-slate-950/70 text-[9px] uppercase font-bold text-slate-400 tracking-wider">
-              <th class="py-1.5 px-2.5">Class</th>
-              <th class="py-1.5 px-2 text-right">Offer</th>
-              <th class="py-1.5 px-2 text-right">Target</th>
-              <th class="py-1.5 px-2 text-right">Change</th>
-              <th class="py-1.5 px-2 text-right">Daily Gain</th>
-              <th class="py-1.5 px-1.5 text-right w-7"></th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-800/60 font-mono-num text-[11px]">
-            
-            <!-- Row: Economy -->
-            <tr id="compact_res_row_eco" class="hover:bg-slate-800/20 transition">
-              <td class="py-1.5 px-2.5 font-sans font-medium text-white flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-                <span>Eco</span>
-              </td>
-              <td class="py-1.5 px-2 text-right text-slate-300" id="compact_res_eco_c">—</td>
-              <td class="py-1.5 px-2 text-right font-bold text-cyan-300" id="compact_res_eco_target">—</td>
-              <td class="py-1.5 px-2 text-right text-[10px] text-slate-400" id="compact_res_eco_deltap">—</td>
-              <td class="py-1.5 px-2 text-right font-semibold text-slate-400" id="compact_res_eco_gain">—</td>
-              <td class="py-1.5 px-1.5 text-right">
-                <button id="compact_copy_btn_eco" onclick="copyTargetPrice('eco')" type="button" class="w-5 h-5 rounded bg-slate-800 hover:bg-cyan-600 text-slate-400 hover:text-white flex items-center justify-center transition ml-auto" title="Copy Target Price">
-                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
-                </button>
-              </td>
-            </tr>
-
-            <!-- Row: Business -->
-            <tr id="compact_res_row_bus" class="hover:bg-slate-800/20 transition">
-              <td class="py-1.5 px-2.5 font-sans font-medium text-white flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                <span>Bus</span>
-              </td>
-              <td class="py-1.5 px-2 text-right text-slate-300" id="compact_res_bus_c">—</td>
-              <td class="py-1.5 px-2 text-right font-bold text-blue-300" id="compact_res_bus_target">—</td>
-              <td class="py-1.5 px-2 text-right text-[10px] text-slate-400" id="compact_res_bus_deltap">—</td>
-              <td class="py-1.5 px-2 text-right font-semibold text-slate-400" id="compact_res_bus_gain">—</td>
-              <td class="py-1.5 px-1.5 text-right">
-                <button id="compact_copy_btn_bus" onclick="copyTargetPrice('bus')" type="button" class="w-5 h-5 rounded bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white flex items-center justify-center transition ml-auto" title="Copy Target Price">
-                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
-                </button>
-              </td>
-            </tr>
-
-            <!-- Row: First Class -->
-            <tr id="compact_res_row_first" class="hover:bg-slate-800/20 transition">
-              <td class="py-1.5 px-2.5 font-sans font-medium text-white flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                <span>First</span>
-              </td>
-              <td class="py-1.5 px-2 text-right text-slate-300" id="compact_res_first_c">—</td>
-              <td class="py-1.5 px-2 text-right font-bold text-amber-300" id="compact_res_first_target">—</td>
-              <td class="py-1.5 px-2 text-right text-[10px] text-slate-400" id="compact_res_first_deltap">—</td>
-              <td class="py-1.5 px-2 text-right font-semibold text-slate-400" id="compact_res_first_gain">—</td>
-              <td class="py-1.5 px-1.5 text-right">
-                <button id="compact_copy_btn_first" onclick="copyTargetPrice('first')" type="button" class="w-5 h-5 rounded bg-slate-800 hover:bg-amber-600 text-slate-400 hover:text-white flex items-center justify-center transition ml-auto" title="Copy Target Price">
-                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
-                </button>
-              </td>
-            </tr>
-
-            <!-- Row: Cargo -->
-            <tr id="compact_res_row_cargo" class="hover:bg-slate-800/20 transition">
-              <td class="py-1.5 px-2.5 font-sans font-medium text-white flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
-                <span>Cargo</span>
-              </td>
-              <td class="py-1.5 px-2 text-right text-slate-300" id="compact_res_cargo_c">—</td>
-              <td class="py-1.5 px-2 text-right font-bold text-purple-300" id="compact_res_cargo_target">—</td>
-              <td class="py-1.5 px-2 text-right text-[10px] text-slate-400" id="compact_res_cargo_deltap">—</td>
-              <td class="py-1.5 px-2 text-right font-semibold text-slate-400" id="compact_res_cargo_gain">—</td>
-              <td class="py-1.5 px-1.5 text-right">
-                <button id="compact_copy_btn_cargo" onclick="copyTargetPrice('cargo')" type="button" class="w-5 h-5 rounded bg-slate-800 hover:bg-purple-600 text-slate-400 hover:text-white flex items-center justify-center transition ml-auto" title="Copy Target Price">
-                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
-                </button>
-              </td>
-            </tr>
-
-          </tbody>
-
-          <!-- Totals Footer -->
-          <tfoot class="bg-slate-900/80 border-t border-slate-800 text-[10px] font-mono-num font-bold">
-            <tr>
-              <td class="py-2 px-2.5 text-slate-400 uppercase font-sans">Total</td>
-              <td class="py-2 px-2 text-right text-white" id="compact_summary_offer">0</td>
-              <td class="py-2 px-2 text-right text-cyan-300" id="compact_summary_revenue">$0</td>
-              <td class="py-2 px-2 text-right text-slate-500 font-sans font-normal text-[9px]">Daily Rev</td>
-              <td class="py-2 px-2 text-right text-emerald-400" id="compact_summary_gain">+$0/day</td>
-              <td class="py-2 px-1.5"></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-
-      <!-- Inline Action Bar: Perform Audit & Simulation, Import & Export Values with Airlines Manager -->
-      <div class="glass-panel rounded-xl p-2 border border-slate-800 flex flex-col gap-2 shadow-md relative z-10 pointer-events-auto">
-        <!-- Copy Audit Price to Change Price Button (On top of Import and Export) -->
-        <button type="button" onclick="copyAuditPriceToChangePrice()" id="btn_copy_audit_to_change" class="w-full px-3 py-2 rounded-lg bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-600/80 text-indigo-200 hover:text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer relative z-10 pointer-events-auto" title="Copy the last reliable audit prices into 'Change Your Prices' on Airlines Manager">
-          <svg class="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
-          </svg>
-          <span id="btn_copy_audit_text">Copy Audit Price to Change Price</span>
+        <!-- Copy All Button -->
+        <button type="button" onclick="copyAllPrices()" id="btn_compact_copy_all" title="Copy all target prices to clipboard">
+          <span>Copy All</span>
         </button>
 
-        <div class="grid grid-cols-2 gap-2 relative z-10 pointer-events-auto">
-          <!-- Import Values Button -->
-          <button type="button" onclick="importValuesFromGame()" id="btn_import_game_values" class="px-2.5 py-2 rounded-lg bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-700/80 text-cyan-300 hover:text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer relative z-10 pointer-events-auto" title="Auto-import audit prices and demand from Airlines Manager">
-            <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-            </svg>
+        <!-- Clear Button -->
+        <button type="button" onclick="clearAllInputs()" class="sc-copy-btn" title="Clear all fields" style="width: 24px; height: 24px;">
+          <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Statusline (.sc-statusline) -->
+      <div class="sc-statusline">
+        <span class="sc-route-tag" id="compact_route_badge">Route</span>
+        <span>Offer: <b id="compact_status_total_offer">0</b> <span class="sc-muted">seats/T</span></span>
+        <span>Gain: <b id="compact_daily_gain" class="sc-gain-badge sc-good">+$0/day</b></span>
+      </div>
+
+      <!-- KPI Metric Cards (.sc-kpis) -->
+      <div class="sc-kpis">
+        <div>
+          <small>Scheduled Offer</small>
+          <strong id="compact_kpi_offer">0</strong>
+        </div>
+        <div>
+          <small>Current Daily Rev</small>
+          <strong id="compact_kpi_current_rev">$0</strong>
+        </div>
+        <div>
+          <small>Target Daily Rev</small>
+          <strong id="compact_kpi_target_rev" style="color: var(--sc-cyan, #67e8f9);">$0</strong>
+        </div>
+        <div>
+          <small>Net Daily Gain</small>
+          <strong id="compact_kpi_gain" class="sc-good">+$0/day</strong>
+        </div>
+      </div>
+
+      <!-- Card 1: Pricing & Demand Matrix -->
+      <div class="sc-card">
+        <div class="sc-section-title">
+          <strong>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            Audit Demands &amp; Ticket Fares
+          </strong>
+          <span class="sc-muted">C = D - R &bull; R = D - C</span>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="sc-table" id="matrix_inputs_table">
+            <thead>
+              <tr>
+                <th style="width: 46px;">Class</th>
+                <th>Audit $</th>
+                <th>Demand</th>
+                <th>Offer (C)</th>
+                <th style="color: var(--sc-cyan, #67e8f9);">Remain (R)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Row Eco -->
+              <tr id="compact_row_eco">
+                <td>
+                  <span class="sc-class-tag eco">💺 Y</span>
+                </td>
+                <td><input type="text" inputmode="numeric" autocomplete="off" spellcheck="false" id="compact_eco_paudit" class="micro-input zo-matrix-input" placeholder="Audit" oninput="onCompactInput('eco', 'paudit', this.value)"></td>
+                <td><input type="text" inputmode="numeric" autocomplete="off" spellcheck="false" id="compact_eco_dsim" class="micro-input zo-matrix-input" placeholder="Demand" oninput="onCompactInput('eco', 'dsim', this.value)"></td>
+                <td><input type="text" inputmode="numeric" autocomplete="off" spellcheck="false" id="compact_eco_c" class="micro-input zo-matrix-input" placeholder="Offer" oninput="onCompactInput('eco', 'c', this.value)"></td>
+                <td><input type="text" inputmode="numeric" autocomplete="off" spellcheck="false" id="compact_eco_r" class="micro-input zo-matrix-input zo-input-remain" placeholder="Remain" oninput="onCompactInput('eco', 'r', this.value)"></td>
+              </tr>
+
+              <!-- Row Bus -->
+              <tr id="compact_row_bus">
+                <td>
+                  <span class="sc-class-tag bus">💼 J</span>
+                </td>
+                <td><input type="text" inputmode="numeric" autocomplete="off" spellcheck="false" id="compact_bus_paudit" class="micro-input zo-matrix-input" placeholder="Audit" oninput="onCompactInput('bus', 'paudit', this.value)"></td>
+                <td><input type="text" inputmode="numeric" autocomplete="off" spellcheck="false" id="compact_bus_dsim" class="micro-input zo-matrix-input" placeholder="Demand" oninput="onCompactInput('bus', 'dsim', this.value)"></td>
+                <td><input type="text" inputmode="numeric" autocomplete="off" spellcheck="false" id="compact_bus_c" class="micro-input zo-matrix-input" placeholder="Offer" oninput="onCompactInput('bus', 'c', this.value)"></td>
+                <td><input type="text" inputmode="numeric" autocomplete="off" spellcheck="false" id="compact_bus_r" class="micro-input zo-matrix-input zo-input-remain" placeholder="Remain" oninput="onCompactInput('bus', 'r', this.value)"></td>
+              </tr>
+
+              <!-- Row First -->
+              <tr id="compact_row_first">
+                <td>
+                  <span class="sc-class-tag first">👑 F</span>
+                </td>
+                <td><input type="text" inputmode="numeric" autocomplete="off" spellcheck="false" id="compact_first_paudit" class="micro-input zo-matrix-input" placeholder="Audit" oninput="onCompactInput('first', 'paudit', this.value)"></td>
+                <td><input type="text" inputmode="numeric" autocomplete="off" spellcheck="false" id="compact_first_dsim" class="micro-input zo-matrix-input" placeholder="Demand" oninput="onCompactInput('first', 'dsim', this.value)"></td>
+                <td><input type="text" inputmode="numeric" autocomplete="off" spellcheck="false" id="compact_first_c" class="micro-input zo-matrix-input" placeholder="Offer" oninput="onCompactInput('first', 'c', this.value)"></td>
+                <td><input type="text" inputmode="numeric" autocomplete="off" spellcheck="false" id="compact_first_r" class="micro-input zo-matrix-input zo-input-remain" placeholder="Remain" oninput="onCompactInput('first', 'r', this.value)"></td>
+              </tr>
+
+              <!-- Row Cargo -->
+              <tr id="compact_row_cargo">
+                <td>
+                  <span class="sc-class-tag cargo">📦 C</span>
+                </td>
+                <td><input type="text" inputmode="numeric" autocomplete="off" spellcheck="false" id="compact_cargo_paudit" class="micro-input zo-matrix-input" placeholder="Audit" oninput="onCompactInput('cargo', 'paudit', this.value)"></td>
+                <td><input type="text" inputmode="numeric" autocomplete="off" spellcheck="false" id="compact_cargo_dsim" class="micro-input zo-matrix-input" placeholder="Demand" oninput="onCompactInput('cargo', 'dsim', this.value)"></td>
+                <td><input type="text" inputmode="numeric" autocomplete="off" spellcheck="false" id="compact_cargo_c" class="micro-input zo-matrix-input" placeholder="Offer" oninput="onCompactInput('cargo', 'c', this.value)"></td>
+                <td><input type="text" inputmode="numeric" autocomplete="off" spellcheck="false" id="compact_cargo_r" class="micro-input zo-matrix-input zo-input-remain" placeholder="Remain" oninput="onCompactInput('cargo', 'r', this.value)"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Card 2: Route Results & Financial Impact Table -->
+      <div class="sc-card">
+        <div class="sc-section-title">
+          <strong>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            Target Prices &amp; Revenue Gain
+          </strong>
+          <span class="sc-muted">P = P_audit * (1 + R/3D)</span>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="sc-table" id="matrix_results_table">
+            <thead>
+              <tr>
+                <th style="width: 46px;">Class</th>
+                <th>Offer</th>
+                <th style="color: var(--sc-cyan, #67e8f9);">Target $</th>
+                <th>Change (&Delta;P)</th>
+                <th>Daily Gain</th>
+                <th style="width: 26px;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Eco Result -->
+              <tr id="compact_res_row_eco">
+                <td><span class="sc-class-tag eco">Eco</span></td>
+                <td id="compact_res_eco_c">—</td>
+                <td id="compact_res_eco_target" style="font-weight: 700; color: var(--sc-cyan, #67e8f9); font-size: 11px;">$—</td>
+                <td id="compact_res_eco_deltap" class="font-mono-num">—</td>
+                <td id="compact_res_eco_gain" class="font-mono-num" style="font-weight: 600;">—</td>
+                <td>
+                  <button type="button" onclick="copyTargetPrice('eco')" id="compact_copy_btn_eco" class="sc-copy-btn" title="Copy Economy Target Price">
+                    <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Bus Result -->
+              <tr id="compact_res_row_bus">
+                <td><span class="sc-class-tag bus">Bus</span></td>
+                <td id="compact_res_bus_c">—</td>
+                <td id="compact_res_bus_target" style="font-weight: 700; color: var(--sc-cyan, #67e8f9); font-size: 11px;">$—</td>
+                <td id="compact_res_bus_deltap" class="font-mono-num">—</td>
+                <td id="compact_res_bus_gain" class="font-mono-num" style="font-weight: 600;">—</td>
+                <td>
+                  <button type="button" onclick="copyTargetPrice('bus')" id="compact_copy_btn_bus" class="sc-copy-btn" title="Copy Business Target Price">
+                    <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                  </button>
+                </td>
+              </tr>
+
+              <!-- First Result -->
+              <tr id="compact_res_row_first">
+                <td><span class="sc-class-tag first">First</span></td>
+                <td id="compact_res_first_c">—</td>
+                <td id="compact_res_first_target" style="font-weight: 700; color: var(--sc-cyan, #67e8f9); font-size: 11px;">$—</td>
+                <td id="compact_res_first_deltap" class="font-mono-num">—</td>
+                <td id="compact_res_first_gain" class="font-mono-num" style="font-weight: 600;">—</td>
+                <td>
+                  <button type="button" onclick="copyTargetPrice('first')" id="compact_copy_btn_first" class="sc-copy-btn" title="Copy First Target Price">
+                    <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Cargo Result -->
+              <tr id="compact_res_row_cargo">
+                <td><span class="sc-class-tag cargo">Cargo</span></td>
+                <td id="compact_res_cargo_c">—</td>
+                <td id="compact_res_cargo_target" style="font-weight: 700; color: var(--sc-cyan, #67e8f9); font-size: 11px;">$—</td>
+                <td id="compact_res_cargo_deltap" class="font-mono-num">—</td>
+                <td id="compact_res_cargo_gain" class="font-mono-num" style="font-weight: 600;">—</td>
+                <td>
+                  <button type="button" onclick="copyTargetPrice('cargo')" id="compact_copy_btn_cargo" class="sc-copy-btn" title="Copy Cargo Target Price">
+                    <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+
+            <!-- Table Totals Footer -->
+            <tfoot>
+              <tr>
+                <td>TOTAL</td>
+                <td id="compact_summary_offer">0</td>
+                <td id="compact_summary_revenue" style="color: var(--sc-cyan, #67e8f9);">$0</td>
+                <td class="sc-muted">Daily Net</td>
+                <td id="compact_summary_gain" class="sc-good">+$0/day</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Card 3: Game Integration Actions Strip -->
+      <div class="sc-card" style="gap: 5px;">
+        <div class="sc-section-title">
+          <strong>Airlines Manager Extension Integration</strong>
+          <span class="sc-muted">Docked Sidepanel</span>
+        </div>
+
+        <button type="button" onclick="copyAuditPriceToChangePrice()" id="btn_copy_audit_to_change" class="sc-topline" style="width: 100%; justify-content: center; background: #131738; border-color: #2b356b; color: #a5b4fc; font-weight: 700; cursor: pointer; min-height: 27px;">
+          <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+          <span id="btn_copy_audit_text">Copy Audit Price to "Change your prices"</span>
+        </button>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+          <button type="button" onclick="importValuesFromGame()" id="btn_import_game_values" class="sc-topline" style="justify-content: center; background: #08283a; border-color: #165275; color: #67e8f9; font-weight: 600; cursor: pointer; min-height: 26px;">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
             <span id="btn_import_text">Import Values</span>
           </button>
-
-          <!-- Import Offer Button -->
-          <button type="button" onclick="importOfferFromGame()" id="btn_import_offer_values" class="px-2.5 py-2 rounded-lg bg-sky-950/90 hover:bg-sky-900 border border-sky-700/80 text-sky-300 hover:text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer relative z-10 pointer-events-auto" title="Import scheduled offer from Route Details page (network/showline/...)">
-            <svg class="w-3.5 h-3.5 text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
+          <button type="button" onclick="importOfferFromGame()" id="btn_import_offer_values" class="sc-topline" style="justify-content: center; background: #08203d; border-color: #1a426d; color: #93c5fd; font-weight: 600; cursor: pointer; min-height: 26px;">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
             <span id="btn_import_offer_text">Import Offer</span>
           </button>
         </div>
 
-        <!-- Export Values Button (Full Width) -->
-        <button type="button" onclick="exportValuesToGame()" id="btn_export_game_values" class="w-full px-3 py-2 rounded-lg bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-700/80 text-emerald-300 hover:text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer relative z-10 pointer-events-auto" title="Write calculated target prices into 'Change Your Prices' on Airlines Manager">
-          <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-          </svg>
-          <span id="btn_export_text">Export Values</span>
+        <!-- Export Game Button underneath Import Values and Import Offer -->
+        <button type="button" onclick="exportValuesToGame()" id="btn_export_game_values" class="sc-topline" style="width: 100%; justify-content: center; background: #072b28; border-color: #17574d; color: #6ee7b7; font-weight: 700; cursor: pointer; min-height: 27px;" title="Write calculated target prices into 'Change Your Prices' on Airlines Manager">
+          <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+          <span id="btn_export_text">Export Values to Airlines Manager</span>
         </button>
       </div>
+
+      <!-- Fixed Bottom Toolbar (.sc_layout_toolbar) -->
+      <footer class="sc_layout_toolbar">
+        <button type="button" class="sc-btn-primary" onclick="saveZeroOutToAudit()" title="Save as Audit into Toolkit Storage">
+          <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+          <span>Save Audit</span>
+        </button>
+        <button type="button" onclick="copyAllPrices()" title="Copy all prices">
+          <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+          <span>Copy All</span>
+        </button>
+        <button type="button" onclick="openSavedAuditsModal()" id="btn_route_audits" title="View and load saved route audits">
+          <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+          <span>Route Audits</span>
+        </button>
+        <button type="button" class="sc_layout_clear" onclick="clearAllInputs()" title="Clear form">
+          <span>Clear</span>
+        </button>
+      </footer>
 
     </div>
 

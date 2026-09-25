@@ -63,14 +63,23 @@ function formatCurrency(val, decimals = 0) {
  * P_target = P_audit + (1/3) * P_audit * (1 - C / D_sim)
  * Equivalent to: P_target = P_audit * (1 + R / (3 * D_sim))
  */
+// Safe parser for numeric text inputs, stripping commas, whitespace, and handling negative numbers.
+function parseNum(val) {
+  if (val === null || val === undefined) return NaN;
+  if (typeof val === 'number') return val;
+  const clean = String(val).replace(/,/g, '').trim();
+  if (clean === '' || clean === '-' || clean === '+') return NaN;
+  return parseFloat(clean);
+}
+
 function calculateClass(classId) {
   const dSimRaw = document.getElementById(`${classId}_dsim`)?.value;
   const rRaw = document.getElementById(`${classId}_r`)?.value;
   const pAuditRaw = document.getElementById(`${classId}_paudit`)?.value;
 
-  const dSim = parseFloat(dSimRaw);
-  const r = parseFloat(rRaw);
-  const pAudit = parseFloat(pAuditRaw);
+  const dSim = parseNum(dSimRaw);
+  const r = parseNum(rRaw);
+  const pAudit = parseNum(pAuditRaw);
 
   const hasInputs = !isNaN(dSim) && !isNaN(r) && !isNaN(pAudit);
 
@@ -174,18 +183,44 @@ function updateAllCalculations() {
     totalSeatsEl.textContent = hasAnyData ? formatNumber(totalCapacity) : '0';
   }
 
-  // Update Compact Daily Gain KPI
+  // Update Compact Statusline Total Offer
+  const compStatusOffer = document.getElementById('compact_status_total_offer');
+  if (compStatusOffer) {
+    compStatusOffer.textContent = hasAnyData ? formatNumber(totalCapacity) : '0';
+  }
+
+  // Update Compact Daily Gain Badge in Statusline
   const compactGainEl = document.getElementById('compact_daily_gain');
   if (compactGainEl) {
     if (hasAnyData && totalDeltaRev !== 0) {
       const sign = totalDeltaRev > 0 ? '+' : '';
       compactGainEl.textContent = `${sign}${formatCurrency(totalDeltaRev)}/day`;
       compactGainEl.className = totalDeltaRev >= 0 
-        ? 'text-emerald-400 font-bold font-mono-num text-xs' 
-        : 'text-rose-400 font-bold font-mono-num text-xs';
+        ? 'sc-gain-badge sc-good' 
+        : 'sc-gain-badge sc-rose';
     } else {
       compactGainEl.textContent = '+$0/day';
-      compactGainEl.className = 'text-slate-400 font-bold font-mono-num text-xs';
+      compactGainEl.className = 'sc-gain-badge sc-good';
+    }
+  }
+
+  // Update Compact KPI Metric Cards
+  const compKpiOffer = document.getElementById('compact_kpi_offer');
+  const compKpiCurrentRev = document.getElementById('compact_kpi_current_rev');
+  const compKpiTargetRev = document.getElementById('compact_kpi_target_rev');
+  const compKpiGain = document.getElementById('compact_kpi_gain');
+
+  if (compKpiOffer) compKpiOffer.textContent = hasAnyData ? formatNumber(totalCapacity) : '0';
+  if (compKpiCurrentRev) compKpiCurrentRev.textContent = hasAnyData ? formatCurrency(totalCurrentRev) : '$0';
+  if (compKpiTargetRev) compKpiTargetRev.textContent = hasAnyData ? formatCurrency(totalTargetRev) : '$0';
+  if (compKpiGain) {
+    if (hasAnyData && totalDeltaRev !== 0) {
+      const sign = totalDeltaRev > 0 ? '+' : '';
+      compKpiGain.textContent = `${sign}${formatCurrency(totalDeltaRev)}/day`;
+      compKpiGain.className = totalDeltaRev >= 0 ? 'sc-good' : 'sc-rose';
+    } else {
+      compKpiGain.textContent = '+$0/day';
+      compKpiGain.className = 'sc-good';
     }
   }
 
@@ -199,12 +234,10 @@ function updateAllCalculations() {
     if (hasAnyData && totalDeltaRev !== 0) {
       const sign = totalDeltaRev > 0 ? '+' : '';
       compSummaryGain.textContent = `${sign}${formatCurrency(totalDeltaRev)}/day`;
-      compSummaryGain.className = totalDeltaRev >= 0 
-        ? 'py-2 px-2.5 text-right text-emerald-400' 
-        : 'py-2 px-2.5 text-right text-rose-400';
+      compSummaryGain.className = totalDeltaRev >= 0 ? 'sc-good' : 'sc-rose';
     } else {
       compSummaryGain.textContent = '+$0/day';
-      compSummaryGain.className = 'py-2 px-2.5 text-right text-slate-400';
+      compSummaryGain.className = 'sc-good';
     }
   }
 
@@ -235,12 +268,21 @@ function updateClassUI(classId, calc, isVisible) {
   const cPAudit = document.getElementById(`compact_${classId}_paudit`);
   const cDSim = document.getElementById(`compact_${classId}_dsim`);
   const cR = document.getElementById(`compact_${classId}_r`);
+  const cC = document.getElementById(`compact_${classId}_c`);
   const stdPAudit = document.getElementById(`${classId}_paudit`);
   const stdDSim = document.getElementById(`${classId}_dsim`);
   const stdR = document.getElementById(`${classId}_r`);
   if (cPAudit && stdPAudit && cPAudit.value !== stdPAudit.value) cPAudit.value = stdPAudit.value;
   if (cDSim && stdDSim && cDSim.value !== stdDSim.value) cDSim.value = stdDSim.value;
   if (cR && stdR && cR.value !== stdR.value) cR.value = stdR.value;
+  if (cC && document.activeElement !== cC) {
+    if (calc && (!isNaN(calc.c) && (calc.dSim > 0 || calc.r > 0))) {
+      const rInput = document.getElementById(`${classId}_r`);
+      if (rInput && String(rInput.value).trim() !== '') {
+        cC.value = String(calc.c);
+      }
+    }
+  }
 
   // Update Compact Target Price in Input Table
   const compactTargetEl = document.getElementById(`compact_${classId}_target`);
@@ -460,7 +502,7 @@ window.copyAllCompactTargetPrices = function() {
   window.copyAllPrices();
 };
 
-// Compact Input Handler (Prototype B)
+// Compact Input Handler
 window.onCompactInput = function(classId, field, value) {
   const stdInput = document.getElementById(`${classId}_${field}`);
   if (stdInput) {
@@ -473,46 +515,78 @@ window.onCompactInput = function(classId, field, value) {
 
   // Bidirectional reactive calculations between Demand, Offer, and Remain
   if (field === 'c') {
-    const dSimVal = parseFloat(document.getElementById(`compact_${classId}_dsim`)?.value);
-    const offerVal = parseFloat(value);
+    const dSimVal = parseNum(document.getElementById(`compact_${classId}_dsim`)?.value);
+    const offerVal = parseNum(value);
     if (!isNaN(dSimVal) && !isNaN(offerVal)) {
       const rVal = dSimVal - offerVal;
       const rInput = document.getElementById(`compact_${classId}_r`);
       const stdRInput = document.getElementById(`${classId}_r`);
-      if (rInput) rInput.value = rVal;
-      if (stdRInput) stdRInput.value = rVal;
-      if (state[classId]) state[classId].r = rVal;
+      if (rInput) rInput.value = String(rVal);
+      if (stdRInput) stdRInput.value = String(rVal);
+      if (state[classId]) state[classId].r = String(rVal);
     }
   } else if (field === 'r') {
-    const dSimVal = parseFloat(document.getElementById(`compact_${classId}_dsim`)?.value);
-    const rVal = parseFloat(value);
+    const dSimVal = parseNum(document.getElementById(`compact_${classId}_dsim`)?.value);
+    const rVal = parseNum(value);
     if (!isNaN(dSimVal) && !isNaN(rVal)) {
       const offerVal = dSimVal - rVal;
       const cInput = document.getElementById(`compact_${classId}_c`);
-      if (cInput) cInput.value = offerVal;
-      if (state[classId]) state[classId].c = offerVal;
+      if (cInput) cInput.value = String(offerVal);
+      if (state[classId]) state[classId].c = String(offerVal);
     }
   } else if (field === 'dsim') {
-    const dSimVal = parseFloat(value);
+    const dSimVal = parseNum(value);
     const cInput = document.getElementById(`compact_${classId}_c`);
     const rInput = document.getElementById(`compact_${classId}_r`);
-    const offerVal = cInput && cInput.value.trim() !== '' ? parseFloat(cInput.value) : null;
-    const rVal = rInput && rInput.value.trim() !== '' ? parseFloat(rInput.value) : null;
+    const offerVal = cInput && cInput.value.trim() !== '' ? parseNum(cInput.value) : NaN;
+    const rVal = rInput && rInput.value.trim() !== '' ? parseNum(rInput.value) : NaN;
 
-    if (!isNaN(dSimVal) && offerVal !== null && !isNaN(offerVal)) {
+    if (!isNaN(dSimVal) && !isNaN(offerVal)) {
       const newR = dSimVal - offerVal;
-      if (rInput) rInput.value = newR;
+      if (rInput) rInput.value = String(newR);
       const stdRInput = document.getElementById(`${classId}_r`);
-      if (stdRInput) stdRInput.value = newR;
-      if (state[classId]) state[classId].r = newR;
-    } else if (!isNaN(dSimVal) && rVal !== null && !isNaN(rVal)) {
+      if (stdRInput) stdRInput.value = String(newR);
+      if (state[classId]) state[classId].r = String(newR);
+    } else if (!isNaN(dSimVal) && !isNaN(rVal)) {
       const newOffer = dSimVal - rVal;
-      if (cInput) cInput.value = newOffer;
-      if (state[classId]) state[classId].c = newOffer;
+      if (cInput) cInput.value = String(newOffer);
+      if (state[classId]) state[classId].c = String(newOffer);
     }
   }
 
   updateAllCalculations();
+};
+
+// Compact Topline Route Change Handler
+window.onCompactRouteChange = function() {
+  const hubInput = document.getElementById('compact_route_hub');
+  const dstInput = document.getElementById('compact_route_dst');
+  const badge = document.getElementById('compact_route_badge');
+  const hub = (hubInput?.value || '').trim().toUpperCase();
+  const dst = (dstInput?.value || '').trim().toUpperCase();
+
+  window.LAST_ZERO_OUT_HUB = hub || null;
+  window.LAST_ZERO_OUT_DST = dst || null;
+
+  if (badge) {
+    if (hub || dst) {
+      badge.textContent = `${hub || '???'} → ${dst || '???'}`;
+    } else {
+      badge.textContent = 'Route';
+    }
+  }
+
+  const stdBadge = document.getElementById('zero_out_active_route_badge');
+  if (stdBadge) {
+    if (hub || dst) {
+      stdBadge.textContent = `${hub || 'OSL'} ✈ ${dst || '---'}`;
+      stdBadge.classList.remove('hidden');
+    } else {
+      stdBadge.classList.add('hidden');
+    }
+  }
+
+  saveToLocalStorage();
 };
 
 // Clear Table & Reset all inputs
@@ -547,10 +621,18 @@ window.clearTable = function() {
 
   window.LAST_ZERO_OUT_DST = null;
   window.LAST_ZERO_OUT_HUB = null;
+
+  const compactHubInput = document.getElementById('compact_route_hub');
+  const compactDstInput = document.getElementById('compact_route_dst');
+  if (compactHubInput) compactHubInput.value = '';
+  if (compactDstInput) compactDstInput.value = '';
+
   const routeBadge = document.getElementById('zero_out_active_route_badge');
   const compactBadge = document.getElementById('compact_route_badge');
   if (routeBadge) routeBadge.classList.add('hidden');
-  if (compactBadge) compactBadge.classList.add('hidden');
+  if (compactBadge) {
+    compactBadge.textContent = 'Route';
+  }
 
   updateAllCalculations();
   if (typeof localStorage !== 'undefined') {
@@ -634,10 +716,7 @@ window.setUIMode = function(mode) {
     stdFloating.style.setProperty('display', isCompact ? 'none' : 'flex', 'important');
   }
   if (compFab) {
-    compFab.style.setProperty('display', isCompact ? 'block' : 'none', 'important');
-    if (isCompact && window.initDraggableFab) {
-      window.initDraggableFab();
-    }
+    compFab.style.setProperty('display', 'none', 'important');
   }
 
   // Hide brand logo in extension/addon
@@ -1145,6 +1224,11 @@ window.addEventListener('message', (e) => {
     window.LAST_ZERO_OUT_HUB = data.hub || '';
     window.LAST_ZERO_OUT_DST = data.dst || '';
 
+    const compactHubEl = document.getElementById('compact_route_hub');
+    const compactDstEl = document.getElementById('compact_route_dst');
+    if (compactHubEl && data.hub) compactHubEl.value = data.hub;
+    if (compactDstEl && data.dst) compactDstEl.value = data.dst;
+
     CLASSES.forEach(cls => {
       const classData = data[cls.id];
       if (classData) {
@@ -1230,15 +1314,16 @@ window.addEventListener('message', (e) => {
     }
 
     // Update Route Badges if route name exists
-    if (data.routeName) {
+    if (data.routeName || (data.hub && data.dst)) {
       const activeRouteBadge = document.getElementById('zero_out_active_route_badge');
       const compactRouteBadge = document.getElementById('compact_route_badge');
+      const label = data.routeName || `${data.hub || 'HUB'} → ${data.dst || 'DST'}`;
       if (activeRouteBadge) {
-        activeRouteBadge.textContent = data.routeName;
+        activeRouteBadge.textContent = label;
         activeRouteBadge.classList.remove('hidden');
       }
       if (compactRouteBadge) {
-        compactRouteBadge.textContent = data.routeName;
+        compactRouteBadge.textContent = label;
         compactRouteBadge.classList.remove('hidden');
       }
     }
@@ -1268,8 +1353,16 @@ window.addEventListener('message', (e) => {
     const data = e.data.data;
     if (!data) return;
 
-    if (data.hub) window.LAST_ZERO_OUT_HUB = data.hub;
-    if (data.dst) window.LAST_ZERO_OUT_DST = data.dst;
+    if (data.hub) {
+      window.LAST_ZERO_OUT_HUB = data.hub;
+      const cHub = document.getElementById('compact_route_hub');
+      if (cHub) cHub.value = data.hub;
+    }
+    if (data.dst) {
+      window.LAST_ZERO_OUT_DST = data.dst;
+      const cDst = document.getElementById('compact_route_dst');
+      if (cDst) cDst.value = data.dst;
+    }
 
     CLASSES.forEach(cls => {
       const offerVal = data[cls.id];
@@ -1471,7 +1564,12 @@ function showToast(message, type = 'info') {
 function saveToLocalStorage() {
   if (isClearingZeroOut || typeof localStorage === 'undefined') return;
 
+  const hubVal = window.LAST_ZERO_OUT_HUB || document.getElementById('compact_route_hub')?.value || '';
+  const dstVal = window.LAST_ZERO_OUT_DST || document.getElementById('compact_route_dst')?.value || '';
+
   const data = {
+    hub: hubVal,
+    dst: dstVal,
     cargoEnabled: state.cargoEnabled,
     eco: {
       dSim: document.getElementById('eco_dsim')?.value || document.getElementById('compact_eco_dsim')?.value || '',
@@ -1507,7 +1605,7 @@ function saveToLocalStorage() {
     return (d && String(d).trim() !== '') || (r && String(r).trim() !== '') || (p && String(p).trim() !== '') || (c && String(c).trim() !== '');
   });
 
-  if (!hasData) {
+  if (!hasData && !hubVal && !dstVal) {
     localStorage.removeItem('am_zero_out_state');
     return;
   }
@@ -1530,6 +1628,28 @@ function restoreFromLocalStorage() {
       if (cargoCb) cargoCb.checked = data.cargoEnabled;
       const compCargoCb = document.getElementById('compact_toggle_cargo');
       if (compCargoCb) compCargoCb.checked = data.cargoEnabled;
+    }
+
+    if (data.hub !== undefined) {
+      window.LAST_ZERO_OUT_HUB = data.hub;
+      const hubEl = document.getElementById('compact_route_hub');
+      if (hubEl) hubEl.value = data.hub;
+    }
+    if (data.dst !== undefined) {
+      window.LAST_ZERO_OUT_DST = data.dst;
+      const dstEl = document.getElementById('compact_route_dst');
+      if (dstEl) dstEl.value = data.dst;
+    }
+    if (data.hub || data.dst) {
+      const compactBadge = document.getElementById('compact_route_badge');
+      if (compactBadge) {
+        compactBadge.textContent = `${data.hub || '???'} → ${data.dst || '???'}`;
+      }
+      const routeBadge = document.getElementById('zero_out_active_route_badge');
+      if (routeBadge) {
+        routeBadge.textContent = `${data.hub || 'OSL'} ✈ ${data.dst || '---'}`;
+        routeBadge.classList.remove('hidden');
+      }
     }
 
     CLASSES.forEach(cls => {
@@ -7082,10 +7202,20 @@ function sendAuditToZeroOut(dst) {
     }
   });
 
+  const cHubInput = document.getElementById('compact_route_hub');
+  const cDstInput = document.getElementById('compact_route_dst');
+  if (cHubInput) cHubInput.value = a.hub || '';
+  if (cDstInput) cDstInput.value = dst;
+
   const routeBadge = document.getElementById('zero_out_active_route_badge');
   if (routeBadge) {
     routeBadge.textContent = `${a.hub || 'OSL'} ✈ ${dst}`;
     routeBadge.classList.remove('hidden');
+  }
+
+  const compactBadge = document.getElementById('compact_route_badge');
+  if (compactBadge) {
+    compactBadge.textContent = `${a.hub || 'HUB'} → ${dst}`;
   }
 
   if (typeof updateAllCalculations === 'function') {
@@ -7153,13 +7283,13 @@ function saveZeroOutToAudit() {
   const modal = document.getElementById('audit_editor_modal');
   if (!modal) return;
 
-  // Detect Hub and Destination from saved state or route badges
-  let detectedDst = window.LAST_ZERO_OUT_DST || '';
-  let detectedHub = window.LAST_ZERO_OUT_HUB || '';
+  // Detect Hub and Destination from saved state, inputs or route badges
+  let detectedDst = window.LAST_ZERO_OUT_DST || document.getElementById('compact_route_dst')?.value?.trim().toUpperCase() || '';
+  let detectedHub = window.LAST_ZERO_OUT_HUB || document.getElementById('compact_route_hub')?.value?.trim().toUpperCase() || '';
   if (!detectedDst || !detectedHub) {
     const badgeText = document.getElementById('compact_route_badge')?.textContent ||
                       document.getElementById('zero_out_active_route_badge')?.textContent || '';
-    const parts = badgeText.split('/').map(s => s.trim().toUpperCase());
+    const parts = badgeText.includes('→') ? badgeText.split('→').map(s => s.trim().toUpperCase()) : badgeText.split('/').map(s => s.trim().toUpperCase());
     if (parts.length === 2 && parts[0].length === 3 && parts[1].length === 3) {
       if (!detectedHub) detectedHub = parts[0];
       if (!detectedDst) detectedDst = parts[1];
