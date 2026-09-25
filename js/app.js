@@ -2290,6 +2290,9 @@ function switchTab(tabId, pushHistory = true) {
     if (pulseSeat) pulseSeat.classList.remove('hidden');
     viewSeatConfig.classList.remove('hidden');
     renderCircuitAll();
+    if (typeof window.scSelectCompactTab === 'function') {
+      window.scSelectCompactTab(typeof window.scGetLastCompactTab === 'function' ? window.scGetLastCompactTab() : 'routes');
+    }
   } else {
     navZeroOut.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tab-btn-active border transition shadow-sm';
     if (pulseZero) pulseZero.classList.remove('hidden');

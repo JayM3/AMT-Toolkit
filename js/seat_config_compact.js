@@ -51,10 +51,18 @@
     window.scSelectCompactTab=key=>{
       lastTab=key;
       for(const [name,panel] of Object.entries(panels)) {
-        panel.hidden=name!==key;
-        const button=document.getElementById('sc_layout_tab_'+name);button.setAttribute('aria-selected',String(name===key));button.tabIndex=name===key?0:-1;
+        const isCurrent=name===key;
+        panel.hidden=!isCurrent;
+        panel.classList.toggle('hidden',!isCurrent);
+        panel.style.setProperty('display',isCurrent?'flex':'none','important');
+        const button=document.getElementById('sc_layout_tab_'+name);
+        if(button){
+          button.setAttribute('aria-selected',String(isCurrent));
+          button.tabIndex=isCurrent?0:-1;
+        }
       }
     };
+    window.scGetLastCompactTab=()=>lastTab;
     tabs.addEventListener('keydown',event=>{
       const buttons=[...tabs.children],index=buttons.indexOf(document.activeElement);
       const next={ArrowRight:(index+1)%4,ArrowLeft:(index+3)%4,Home:0,End:3}[event.key];
@@ -82,7 +90,7 @@
       for(const {node,text,className} of hubLabels){node.textContent=text;node.className=className;}
       view.classList.toggle('hidden',visible);
       for(const dialog of dialogs)dialog.remove();
-      delete window.scSelectCompactTab;delete window.scFinancialScope;
+      delete window.scSelectCompactTab;delete window.scFinancialScope;delete window.scGetLastCompactTab;
       document.getElementById('sc_leg_form_title').textContent=editing?'✏️ Edit Route':'➕ Add Route to Circuit';
       document.getElementById('sc_add_leg_btn_label').textContent=editing?'Update Route in Circuit':'Add Route to Circuit';
       document.getElementById('sc_cancel_edit_btn').classList.toggle('hidden',!editing);
