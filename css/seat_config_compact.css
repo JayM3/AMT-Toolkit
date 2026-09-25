@@ -140,5 +140,10 @@
 .sc-empty{padding:20px 10px;text-align:center;font-size:11px;color:#90a5bf}
 :scope [id^="sc_layout_panel_"]{min-width:0}
 @media(max-width:380px){.sc-route-meta{font-size:7px}.sc-route-actions{gap:1px}.sc-route-demand{gap:2px;font-size:7px}.sc-route-demand small{font-size:7px}#view_seat_config .sc-route-actions button{min-width:16px}.sc-field-label label{font-size:8px!important}.sc-manual{font-size:7px!important}.sc-finance-matrix th:first-child{width:76px}.sc-kpis strong{font-size:10px}.sc-finance-matrix td{font-size:8px}.sc-topline{gap:3px}.sc-topline > button{font-size:8px!important;padding:4px!important}}
-
 }
+
+body.amt-compact-mode #view_seat_config.hidden,
+#view_seat_config.hidden {
+  display: none !important;
+}
+

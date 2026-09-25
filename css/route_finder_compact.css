@@ -79,6 +79,10 @@
     box-sizing: border-box !important;
   }
 
+  #view_route_finder.hidden {
+    display: none !important;
+  }
+
   #view_route_finder > *,
   #route_finder_compact_container > * {
     margin: 0 !important;
@@ -929,8 +933,8 @@ body:has(#view_route_finder.rf-compact:not(.hidden)) > main {
   box-sizing: border-box !important;
 }
 
-body.amt-compact-mode #view_route_finder,
-#view_route_finder.rf-compact {
+body.amt-compact-mode #view_route_finder:not(.hidden),
+#view_route_finder.rf-compact:not(.hidden) {
   margin: 0 !important;
   padding: 0 !important;
   width: 100% !important;
@@ -941,15 +945,20 @@ body.amt-compact-mode #view_route_finder,
   box-sizing: border-box !important;
 }
 
-body.amt-compact-mode #view_route_finder > *,
-#view_route_finder.rf-compact > *,
-body.amt-compact-mode #route_finder_compact_container > * {
+body.amt-compact-mode #view_route_finder.hidden,
+#view_route_finder.hidden {
+  display: none !important;
+}
+
+body.amt-compact-mode #view_route_finder:not(.hidden) > *,
+#view_route_finder.rf-compact:not(.hidden) > *,
+body.amt-compact-mode:has(#view_route_finder:not(.hidden)) #route_finder_compact_container > * {
   margin: 0 !important;
   min-width: 0;
 }
 
-body.amt-compact-mode #route_finder_compact_container,
-#view_route_finder.rf-compact #route_finder_compact_container {
+body.amt-compact-mode:has(#view_route_finder:not(.hidden)) #route_finder_compact_container,
+#view_route_finder.rf-compact:not(.hidden) #route_finder_compact_container {
   display: flex !important;
   flex-direction: column !important;
   gap: 6px;
@@ -958,5 +967,10 @@ body.amt-compact-mode #route_finder_compact_container,
   max-width: 100% !important;
   margin: 0 !important;
   box-sizing: border-box !important;
+}
+
+#view_route_finder.hidden #route_finder_compact_container,
+#route_finder_compact_container[hidden] {
+  display: none !important;
 }
 

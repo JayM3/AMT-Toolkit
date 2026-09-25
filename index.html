@@ -47,8 +47,8 @@
     }
   </script>
   <link rel="stylesheet" href="css/styles.css?v=3.6">
-  <link rel="stylesheet" href="css/seat_config_compact.css?v=4">
-  <link rel="stylesheet" href="css/route_finder_compact.css?v=2">
+  <link rel="stylesheet" href="css/seat_config_compact.css?v=5">
+  <link rel="stylesheet" href="css/route_finder_compact.css?v=3">
   <link rel="stylesheet" href="css/homepage.css?v=3.6">
   <style>
     body.amt-compact-mode #zero_out_standard_container { display: none !important; }
@@ -57,8 +57,17 @@
 
     /* Route Finder Compact Mode (extension sidebar / docked side panel only) */
     body.amt-compact-mode #route_finder_standard_container { display: none !important; }
-    body.amt-compact-mode #route_finder_compact_container { display: flex !important; flex-direction: column !important; }
-    body:not(.amt-compact-mode) #route_finder_compact_container { display: none !important; }
+    body.amt-compact-mode:has(#view_route_finder:not(.hidden)) #route_finder_compact_container { display: flex !important; flex-direction: column !important; }
+    body:not(.amt-compact-mode) #route_finder_compact_container,
+    #view_route_finder.hidden #route_finder_compact_container,
+    #route_finder_compact_container[hidden] { display: none !important; }
+
+    /* Enforce hidden views across all tabs */
+    #view_route_finder.hidden,
+    #view_seat_config.hidden,
+    #view_zero_out.hidden,
+    #view_circuit_finder.hidden,
+    #view_home.hidden { display: none !important; }
 
     /* The full-size floating circuit dock is replaced by the compact action bar */
     body.amt-compact-mode #rf_floating_circuit_actions { display: none !important; }

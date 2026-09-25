@@ -610,7 +610,7 @@ window.setUIMode = function(mode) {
     rfStdCont.style.setProperty('display', isCompact ? 'none' : 'block', 'important');
   }
   if (rfCompCont) {
-    rfCompCont.style.setProperty('display', isCompact ? 'block' : 'none', 'important');
+    rfCompCont.style.setProperty('display', isCompact ? 'flex' : 'none', 'important');
   }
   // The full-size floating circuit dock is replaced by the compact action bar.
   const rfDock = document.getElementById('rf_floating_circuit_actions');
