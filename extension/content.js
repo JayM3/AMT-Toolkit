@@ -19,8 +19,8 @@
   const APP_URL = 'https://jaym3.github.io/AMT-Toolkit/';
   const APP_IFRAME_URL = 'https://jaym3.github.io/AMT-Toolkit/?sidebar=true';
 
-  // Compact-capable tools keep their saved width and the mode switch enabled.
-  const EXPANDED_TABS = ['circuit-finder'];
+  // All core tools (zero-out, seat-config, route-finder, circuit-finder) support compact mode.
+  const EXPANDED_TABS = [];
 
   function getExpandedWidth() {
     const computed = Math.round(window.innerWidth * 0.58);
@@ -207,7 +207,7 @@
       btnStandard.title = 'Coming soon';
 
     } else if (!EXPANDED_TABS.includes(tabId)) {
-      // Any compact-capable tab (Zero-Out, Home, Route Finder, Seat Config) leaves the auto-expanded
+      // Any compact-capable tab (Zero-Out, Home, Route Finder, Seat Config, Circuit Finder) leaves the auto-expanded
       // state, gets its saved width back and re-enables the Compact/Standard toggle.
       if (isAutoExpanded) {
         isAutoExpanded = false;

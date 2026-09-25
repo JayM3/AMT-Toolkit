@@ -276,8 +276,8 @@
       setTimeout(() => sendModeToIframe(currentMode), 800);
     });
 
-    // Only Circuit Finder still requires standard mode.
-    const EXPANDED_TABS = ['circuit-finder'];
+    // All core tools (zero-out, seat-config, route-finder, circuit-finder) support compact mode.
+    const EXPANDED_TABS = [];
     let savedModeBeforeAutoExpand = currentMode;
     let isAutoExpanded = false;
 
@@ -301,7 +301,7 @@
           btnCompact.title = 'Coming soon';
           btnStandard.title = 'Coming soon';
         } else if (!EXPANDED_TABS.includes(tabId)) {
-          // Zero-Out, Home, Route Finder and Seat Config support compact mode.
+          // Zero-Out, Home, Route Finder, Seat Config and Circuit Finder support compact mode.
           if (isAutoExpanded) {
             isAutoExpanded = false;
             if (modeToggle) {
