@@ -83,18 +83,30 @@
     <div id="amt-sidebar-resizer" title="Drag to resize"></div>
     <div class="amt-sidebar-header">
       <div class="amt-header-title">
-        <span>✈ AMT Toolkit</span>
-        <span class="amt-badge">SIDEBAR</span>
+        <div class="amt-icon-badge" title="AMT Toolkit (Airlines Manager Tycoon)">
+          <img src="${chrome.runtime.getURL('icons/icon32.png')}" alt="AMT Icon" class="amt-icon-img" width="20" height="20">
+          <span class="amt-status-light" title="Connected to AM4"></span>
+        </div>
+        <div class="amt-brand-meta">
+          <span class="amt-title-text">AMT Toolkit</span>
+          <span class="amt-sub-text">AM4 · CONNECTED</span>
+        </div>
       </div>
       
-      <!-- Compact / Standard Mode Toggle Slider -->
+      <!-- Icon-Assisted Compact / Standard Mode Toggle Slider -->
       <div class="amt-mode-toggle" id="amt-mode-toggle" title="Toggle Compact / Standard View">
-        <button type="button" class="amt-mode-btn ${currentMode === 'compact' ? 'active' : ''}" id="amt-btn-compact" data-mode="compact">Compact</button>
-        <button type="button" class="amt-mode-btn ${currentMode === 'standard' ? 'active' : ''}" id="amt-btn-standard" data-mode="standard">Standard</button>
+        <button type="button" class="amt-mode-btn ${currentMode === 'compact' ? 'active' : ''}" id="amt-btn-compact" data-mode="compact">
+          <svg class="amt-tab-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+          <span>Compact</span>
+        </button>
+        <button type="button" class="amt-mode-btn ${currentMode === 'standard' ? 'active' : ''}" id="amt-btn-standard" data-mode="standard">
+          <svg class="amt-tab-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path></svg>
+          <span>Standard</span>
+        </button>
       </div>
 
       <div class="amt-header-actions">
-        <button type="button" class="amt-btn-icon" id="amt-btn-refresh" title="Reload Calculator">
+        <button type="button" class="amt-btn-icon" id="amt-btn-refresh" title="Reload Calculator (Ctrl+R)">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path>
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
@@ -292,8 +304,14 @@
     } catch (e) {}
   });
 
-  // Reload iframe
+  // Reload iframe with spin feedback
   btnRefresh.addEventListener('click', () => {
+    const icon = btnRefresh.querySelector('svg');
+    if (icon) {
+      icon.classList.remove('amt-spin-anim');
+      void icon.offsetWidth;
+      icon.classList.add('amt-spin-anim');
+    }
     if (spinner) {
       spinner.style.display = 'flex';
       spinner.style.opacity = '1';

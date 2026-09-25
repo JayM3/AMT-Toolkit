@@ -23,44 +23,103 @@
     }
 
     .header {
-      height: 40px;
-      background: #0f172a;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      height: 46px;
+      background: linear-gradient(180deg, #0e1526 0%, #080d19 100%);
+      border-bottom: 1px solid #1e293b;
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 12px;
       flex-shrink: 0;
       user-select: none;
+      position: relative;
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 12px;
+      right: 12px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.45), transparent);
+      pointer-events: none;
     }
 
     .title {
       display: flex;
       align-items: center;
-      gap: 8px;
-      color: #f8fafc;
-      font-size: 13px;
-      font-weight: 700;
+      gap: 9px;
+      min-width: 0;
     }
 
-    .badge {
-      font-size: 10px;
-      padding: 1px 6px;
-      border-radius: 9999px;
-      background: rgba(6, 182, 212, 0.15);
-      color: #22d3ee;
-      border: 1px solid rgba(6, 182, 212, 0.3);
-      font-weight: 600;
+    .icon-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: radial-gradient(circle at 30% 30%, #1e293b, #090d16);
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .icon-img {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .status-light {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      border: 1.5px solid #080d19;
+      box-shadow: 0 0 6px #10b981;
+    }
+
+    .brand-meta {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .title-text {
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+      line-height: 1.15;
+      white-space: nowrap;
+    }
+
+    .sub-text {
+      font-size: 9px;
+      color: #64748b;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      margin-top: 1px;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
     }
 
     .mode-toggle {
       display: flex;
       align-items: center;
-      background: rgba(2, 6, 23, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 9999px;
+      background: #020617;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
       padding: 2px;
       gap: 2px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
     }
 
     .mode-btn {
@@ -69,22 +128,32 @@
       color: #94a3b8;
       font-size: 10px;
       font-weight: 600;
-      padding: 3px 9px;
-      border-radius: 9999px;
+      padding: 3.5px 8px;
+      border-radius: 6px;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
       transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
       user-select: none;
       line-height: 1.2;
     }
 
     .mode-btn:hover {
-      color: #f8fafc;
+      color: #f1f5f9;
     }
 
     .mode-btn.active {
-      background: #0891b2;
+      background: linear-gradient(135deg, #0891b2, #0e7490);
       color: #ffffff;
-      box-shadow: 0 1px 4px rgba(6, 182, 212, 0.3);
+      font-weight: 700;
+      box-shadow: 0 1px 4px rgba(6, 182, 212, 0.35);
+    }
+
+    .tab-svg {
+      width: 12px;
+      height: 12px;
+      flex-shrink: 0;
     }
 
     /* Disabled Mode Toggle (Coming Soon) */
@@ -128,15 +197,15 @@
     .actions {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
     }
 
     .btn-icon {
-      width: 26px;
-      height: 26px;
+      width: 27px;
+      height: 27px;
       border-radius: 6px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid #1e293b;
       color: #94a3b8;
       display: flex;
       align-items: center;
@@ -144,19 +213,21 @@
       cursor: pointer;
       text-decoration: none;
       transition: all 0.15s ease;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     }
 
     .btn-icon:hover {
-      background: rgba(255, 255, 255, 0.12);
-      color: #f8fafc;
-      border-color: rgba(255, 255, 255, 0.2);
+      background: #1e293b;
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.4);
+      transform: translateY(-0.5px);
     }
 
     .frame-container {
       position: relative;
       flex: 1;
       width: 100%;
-      height: calc(100% - 40px);
+      height: calc(100% - 46px);
       background-color: #020617;
     }
 
@@ -200,15 +271,26 @@
 <body>
   <div class="header">
     <div class="title">
-      <img src="icons/icon16.png" alt="AMT Icon" width="16" height="16" style="border-radius: 3px;">
-      <span>AMT Toolkit</span>
-      <span class="badge">PANEL</span>
+      <div class="icon-badge" title="AMT Toolkit (Side Panel)">
+        <img src="icons/icon32.png" alt="AMT Icon" class="icon-img" width="20" height="20">
+        <span class="status-light" title="Connected"></span>
+      </div>
+      <div class="brand-meta">
+        <span class="title-text">AMT Toolkit</span>
+        <span class="sub-text">PANEL · CONNECTED</span>
+      </div>
     </div>
 
-    <!-- Mode Toggle Slider -->
+    <!-- Icon-Assisted Compact / Standard Mode Toggle Slider -->
     <div class="mode-toggle" id="mode-toggle" title="Toggle Compact / Standard View">
-      <button type="button" class="mode-btn" id="btn-compact">Compact</button>
-      <button type="button" class="mode-btn" id="btn-standard">Standard</button>
+      <button type="button" class="mode-btn" id="btn-compact">
+        <svg class="tab-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        <span>Compact</span>
+      </button>
+      <button type="button" class="mode-btn" id="btn-standard">
+        <svg class="tab-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path></svg>
+        <span>Standard</span>
+      </button>
     </div>
 
     <div class="actions">
