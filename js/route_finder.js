@@ -495,6 +495,13 @@ function initRouteFinder() {
   });
 
   // Draw the compact (sidebar) layout, and keep its default pane sensible.
+  if (!currentHub && window.CIRCUIT_HUB) {
+    const defaultAp = findAirport(window.CIRCUIT_HUB);
+    if (defaultAp) {
+      rf_setHubByIata(defaultAp.iata);
+      rf_refreshAll();
+    }
+  }
   if (!currentHub) rfCompact.tab = 'criteria';
   rf_renderCompact();
 }
@@ -863,10 +870,10 @@ document.addEventListener('DOMContentLoaded', () => {
         rf_clearHub();
         return;
       }
-      if (val.length === 3) {
+      if (val.length >= 3) {
         const found = findAirport(val);
         if (found) {
-          rf_setHubByIata(val);
+          rf_setHubByIata(found.iata);
           rf_refreshAll();
         } else {
           document.getElementById('rf_hub_valid_icon').innerHTML = `<span class="text-rose-400 font-bold">&times;</span>`;
@@ -942,8 +949,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const found = findAirport(iata);
       if (!found) return;
       currentHub = found;
+      window.CIRCUIT_HUB = found.iata;
 
-      document.getElementById('rf_hub_iata_input').value = found.iata;
+      const stdInput = document.getElementById('rf_hub_iata_input');
+      if (stdInput) stdInput.value = found.iata;
+      const cInput = document.getElementById('rf_c_hub_input');
+      if (cInput && document.activeElement !== cInput) cInput.value = found.iata;
+      const scHub = document.getElementById('sc_circuit_hub');
+      if (scHub) scHub.value = found.iata;
       document.getElementById('rf_hub_valid_icon').innerHTML = `<svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
 
       const hubBadge = document.getElementById('header_hub_badge');
@@ -2862,7 +2875,9 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
     window.rf_compactSetAcSearch = rf_compactSetAcSearch;
     window.rf_compactSetHaul = rf_compactSetHaul;
     window.rf_compactPickAircraft = rf_compactPickAircraft;
-    window.rf_compactSetHubInput = rf_compactSetHubInput;
+    window.rf_compactOnHubInput = rf_compactOnHubInput;
+    window.rf_compactOnHubChange = rf_compactOnHubChange;
+    window.rf_compactSetHubInput = rf_compactOnHubInput;
     window.rf_compactSetHubCountry = rf_compactSetHubCountry;
     window.rf_compactSetHubAirport = rf_compactSetHubAirport;
     window.rf_compactSetCat = rf_compactSetCat;
@@ -2996,11 +3011,11 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       const mismatch = hub && ac && hub.cat < ac.category;
 
       return `
-        <!-- Topline: Hub Input + Aircraft Combobox (Quick hubs & info button removed) -->
-        <div class="sc-topline" id="rf_c_topline">
-          <input type="text" id="rf_c_hub_input" maxlength="3" value="${hub ? hub.iata : ''}" oninput="rf_compactSetHubInput(this.value)" placeholder="HUB" title="Departure Hub (3-letter IATA code, e.g. DXB, LHR, JFK)" style="width: 48px; min-width: 48px; text-align: center; font-weight: 700; font-family: ui-monospace, monospace; text-transform: uppercase;">
+        <!-- Topline: Hub Input + Aircraft Combobox -->
+        <div class="sc-topline ${rfCompact.acOpen ? 'is-open' : ''}" id="rf_c_topline">
+          <input type="text" id="rf_c_hub_input" list="airports_datalist" placeholder="e.g. OSL or DWC" value="${hub ? hub.iata : (window.CIRCUIT_HUB || '')}" oninput="rf_compactOnHubInput(this.value)" onchange="rf_compactOnHubChange(this)" title="Departure Hub (Fixed Departure)" aria-label="Circuit hub">
 
-          <div class="sc-combobox-root" id="rf_c_ac_root" style="flex: 1; min-width: 0;">
+          <div class="sc-combobox-root ${rfCompact.acOpen ? 'is-open' : ''}" id="rf_c_ac_root" style="flex: 1; min-width: 0;">
             <button type="button" class="sc-combobox-trigger" onclick="rf_compactToggleAircraft()" id="rf_c_ac_trigger" title="Select aircraft model">
               <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ac ? ac.name : 'Select Plane'}</span>
               <span class="sc-tag" style="color: var(--sc-cyan); border-color: rgba(34, 211, 238, 0.3);">${ac ? 'Cat ' + ac.category : 'Cat —'}</span>
@@ -3580,7 +3595,10 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
 
       const active = document.activeElement;
       const focusId = active && active.id ? active.id : null;
+      const isHubInput = focusId === 'rf_c_hub_input';
+      const hubVal = isHubInput ? active.value : null;
       const selStart = (focusId && active.selectionStart != null) ? active.selectionStart : null;
+      const selEnd = (focusId && active.selectionEnd != null) ? active.selectionEnd : null;
       const scrollY = window.scrollY;
 
       const paneHTML = rfCompact.tab === 'criteria' ? rf_compactCriteriaHTML()
@@ -3596,9 +3614,12 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       if (focusId) {
         const el = document.getElementById(focusId);
         if (el && el.focus) {
+          if (isHubInput && hubVal !== null && (!currentHub || currentHub.iata !== hubVal.toUpperCase().trim())) {
+            el.value = hubVal;
+          }
           el.focus();
           if (selStart != null && el.setSelectionRange) {
-            try { el.setSelectionRange(selStart, selStart); } catch (e) {}
+            try { el.setSelectionRange(selStart, selEnd ?? selStart); } catch (e) {}
           }
         }
       }
@@ -3643,11 +3664,52 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       showToast(`Selected ${currentAircraft ? currentAircraft.name : id}`, 'success');
     }
 
+    function rf_compactOnHubInput(value) {
+      const clean = (value || '').trim().toUpperCase();
+      const stdInput = document.getElementById('rf_hub_iata_input');
+      if (stdInput) stdInput.value = clean;
+
+      if (!clean) {
+        rf_clearHub();
+        rf_refreshAll();
+        return;
+      }
+
+      // Check if this matches a valid airport (by exact 3-letter IATA code or datalist selection)
+      const airport = findAirport(clean);
+      if (airport && (clean === airport.iata || clean.length >= 3)) {
+        window.CIRCUIT_HUB = airport.iata;
+        rf_setHubByIata(airport.iata);
+        rf_refreshAll();
+      }
+    }
+
+    function rf_compactOnHubChange(input) {
+      const clean = (input ? input.value : '').trim().toUpperCase();
+      if (!clean) {
+        rf_clearHub();
+        rf_refreshAll();
+        return;
+      }
+      const airport = findAirport(clean);
+      if (airport) {
+        input.value = airport.iata;
+        window.CIRCUIT_HUB = airport.iata;
+        rf_setHubByIata(airport.iata);
+        rf_refreshAll();
+      } else if (currentHub) {
+        input.value = currentHub.iata;
+      } else if (window.CIRCUIT_HUB) {
+        input.value = window.CIRCUIT_HUB;
+      } else {
+        input.value = '';
+        rf_clearHub();
+        rf_refreshAll();
+      }
+    }
+
     function rf_compactSetHubInput(value) {
-      const input = document.getElementById('rf_hub_iata_input');
-      if (input) input.value = (value || '').toUpperCase().replace(/[^A-Za-z]/g, '').slice(0, 3);
-      rf_onHubIataInput();
-      rf_renderCompact();
+      rf_compactOnHubInput(value);
     }
 
     function rf_compactSetHubCountry(country) {

@@ -48,7 +48,7 @@
   </script>
   <link rel="stylesheet" href="css/styles.css?v=3.6">
   <link rel="stylesheet" href="css/seat_config_compact.css?v=7">
-  <link rel="stylesheet" href="css/route_finder_compact.css?v=3">
+  <link rel="stylesheet" href="css/route_finder_compact.css?v=4">
   <link rel="stylesheet" href="css/circuit_finder_compact.css?v=1">
   <link rel="stylesheet" href="css/zero_out_compact.css?v=1">
   <link rel="stylesheet" href="css/homepage.css?v=3.6">
@@ -2276,7 +2276,7 @@
           <div id="hub_entry_quick_container">
             <label class="block text-[11px] font-semibold text-slate-300 mb-1">Airport IATA Code</label>
             <div class="relative">
-              <input type="text" id="rf_hub_iata_input" maxlength="3" value="" placeholder="Please enter hub (e.g. DXB, LHR)" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono uppercase font-bold text-sm tracking-wider focus:ring-2 focus:ring-cyan-500 focus:outline-none" oninput="rf_onHubIataInput()">
+              <input type="text" id="rf_hub_iata_input" list="airports_datalist" value="" placeholder="e.g. OSL or DWC" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono uppercase font-bold text-sm tracking-wider focus:ring-2 focus:ring-cyan-500 focus:outline-none" oninput="rf_onHubIataInput()">
               <span id="rf_hub_valid_icon" class="absolute right-3 top-2.5 text-emerald-400"></span>
             </div>
           </div>
@@ -4520,7 +4520,7 @@
   <script src="data/aircraft.js?v=2.3"></script>
   <script src="data/airports.js?v=2.3"></script>
   <script src="js/app.js?v=3.7"></script>
-  <script src="js/route_finder.js?v=2.3"></script>
+  <script src="js/route_finder.js?v=2.4"></script>
   <script src="js/circuit_finder.js?v=2.3"></script>
   <script src="js/circuit_finder_compact.js?v=1"></script>
   <script src="js/seat_config_compact.js?v=5"></script>

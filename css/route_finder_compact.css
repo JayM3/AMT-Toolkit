@@ -110,6 +110,8 @@
 
   /* Topline: Departure Hub input + Aircraft Combobox */
   .sc-topline {
+    position: relative;
+    z-index: 45;
     display: flex;
     align-items: center;
     gap: 4px;
@@ -117,6 +119,10 @@
     border: 1px solid var(--sc-border-panel);
     border-radius: 8px;
     padding: 5px 7px;
+  }
+  .sc-topline:has(.sc-combobox-popover),
+  .sc-topline.is-open {
+    z-index: 70;
   }
   .sc-topline input,
   .sc-topline select {
@@ -133,6 +139,17 @@
   .sc-topline select:focus {
     border-color: var(--sc-cyan-bright);
     outline: 2px solid rgba(34, 211, 238, 0.2);
+  }
+
+  #rf_c_hub_input {
+    width: 44px;
+    min-width: 44px;
+    padding: 3px 5px;
+    text-align: center;
+    min-height: 25px;
+    font-weight: 700;
+    font-family: ui-monospace, monospace;
+    text-transform: uppercase;
   }
 
   /* Statusline Strip (Matches Seat Config .sc-statusline) */
@@ -172,7 +189,7 @@
     padding: 2px;
     gap: 2px;
     user-select: none;
-    z-index: 35;
+    z-index: 10;
   }
   .sc_layout_tabs button {
     background: transparent;
@@ -829,6 +846,11 @@
     position: relative;
     flex: 1;
     min-width: 0;
+    z-index: 50;
+  }
+  .sc-combobox-root:has(.sc-combobox-popover),
+  .sc-combobox-root.is-open {
+    z-index: 70;
   }
   .sc-combobox-trigger {
     width: 100%;
@@ -855,7 +877,7 @@
     top: calc(100% + 4px);
     left: 0;
     right: 0;
-    z-index: 50;
+    z-index: 100;
     background: #091322;
     border: 1px solid #273e5c;
     border-radius: 7px;
