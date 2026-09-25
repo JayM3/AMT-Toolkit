@@ -5538,6 +5538,8 @@ function toggleAircraftCombobox() {
   if (popover.classList.contains('hidden')) {
     positionAircraftCombobox();
     popover.classList.remove('hidden');
+    document.getElementById('sc_layout_setup')?.classList.add('is-open');
+    document.getElementById('sc_aircraft_combobox_root')?.classList.add('is-open');
     if (chevron) chevron.classList.add('rotate-180');
     renderAircraftComboboxList();
     setTimeout(() => {
@@ -5564,6 +5566,8 @@ function closeAircraftCombobox() {
   const popover = document.getElementById('sc_combobox_popover');
   const chevron = document.getElementById('sc_combobox_chevron');
   if (popover) popover.classList.add('hidden');
+  document.getElementById('sc_layout_setup')?.classList.remove('is-open');
+  document.getElementById('sc_aircraft_combobox_root')?.classList.remove('is-open');
   if (chevron) chevron.classList.remove('rotate-180');
 }
 window.closeAircraftCombobox = closeAircraftCombobox;
