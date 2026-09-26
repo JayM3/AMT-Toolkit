@@ -648,6 +648,9 @@ window.clearAllInputs = window.clearTable;
  */
 window.isSidebarMode = function() {
   try {
+    if (typeof window !== 'undefined' && window.location) {
+      if (new URLSearchParams(window.location.search).get('fullweb') === 'true') return false;
+    }
     if (window.self !== window.top) return true;
   } catch (e) {
     return true;
@@ -2486,6 +2489,16 @@ document.addEventListener('DOMContentLoaded', () => {
             : (hash === '#home' ? 'home' : (savedTab || 'home')))));
   }
   switchTab(initialTab, false);
+
+  const initUrlParams = new URLSearchParams(window.location.search);
+  if (initUrlParams.has('preset') && typeof window.loadPreset === 'function') {
+    window.loadPreset(initUrlParams.get('preset'));
+  }
+  if (initUrlParams.get('example') === '168h' && typeof window.loadExample168hCircuit === 'function') {
+    window.loadExample168hCircuit();
+  } else if (initUrlParams.get('example') === '24h' && typeof window.loadExample24hCircuit === 'function') {
+    window.loadExample24hCircuit();
+  }
 
   // Popstate listener for browser Back and Forward buttons
   window.addEventListener('popstate', (e) => {

@@ -2842,6 +2842,15 @@
       cf_renderExcludeAirportsChips();
     }
 
+    const cfUrlParams = new URLSearchParams(window.location.search);
+    if (cfUrlParams.has('cf_hub')) {
+      setTimeout(() => {
+        cf_setActiveHub(cfUrlParams.get('cf_hub'));
+        if (typeof cf_setRouteType === 'function') cf_setRouteType('all');
+        cf_closeAllDropdowns();
+      }, 150);
+    }
+
     // Click outside aircraft combobox popover or dropdowns to close
     document.addEventListener('click', (e) => {
       const root = document.getElementById('cf_aircraft_combobox_root');

@@ -13,9 +13,12 @@
   <script>
     (function() {
       try {
-        var isSidebar = (window.self !== window.top) ||
-          (new URLSearchParams(window.location.search).has('sidebar')) ||
-          (new URLSearchParams(window.location.search).get('mode') === 'sidebar');
+        var params = new URLSearchParams(window.location.search);
+        var isSidebar = (params.get('fullweb') !== 'true') && (
+          (window.self !== window.top) ||
+          params.has('sidebar') ||
+          (params.get('mode') === 'sidebar')
+        );
         if (isSidebar) {
           document.documentElement.classList.add('amt-extension');
         }

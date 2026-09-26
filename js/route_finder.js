@@ -504,6 +504,13 @@ function initRouteFinder() {
   }
   if (!currentHub) rfCompact.tab = 'criteria';
   rf_renderCompact();
+
+  const rfUrlParams = new URLSearchParams(window.location.search);
+  if (rfUrlParams.get('rf_example') === '24h' && typeof rf_compactLoad24h === 'function') {
+    setTimeout(rf_compactLoad24h, 100);
+  } else if (rfUrlParams.get('rf_example') === '168h' && typeof rf_compactLoad168h === 'function') {
+    setTimeout(rf_compactLoad168h, 100);
+  }
 }
 window.initRouteFinder = initRouteFinder;
 document.addEventListener('DOMContentLoaded', () => {
