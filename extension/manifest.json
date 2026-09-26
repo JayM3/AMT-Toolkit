@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AMT Toolkit - Airlines Manager Tycoon",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Side-by-side toolkit for Airlines Manager: Tycoon with zero-out price calculator, seat optimizer, and route tools.",
   "icons": {
     "16": "icons/icon16.png",
