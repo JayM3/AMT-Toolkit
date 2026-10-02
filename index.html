@@ -4,7 +4,52 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AMT Toolkit - Airlines Manager Tycoon Toolkit</title>
-  <meta name="description" content="Airlines Manager Tycoon Toolkit (AMT Toolkit) - Zero-out route price calculator and airline management tools.">
+  <meta name="description" content="Airlines Manager Tycoon Toolkit (AMT Toolkit) - Zero-out route price calculator, multi-class cabin optimizer, global route directory, and 168h circuit scheduler.">
+  <meta name="keywords" content="Airlines Manager Tycoon, AMT Toolkit, zero-out price calculator, airline seat config, 168h circuit finder, route finder, airlines manager extension">
+  <meta name="author" content="JayM3">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#020617">
+  <link rel="canonical" href="https://jaym3.github.io/AMT-Toolkit/">
+
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://jaym3.github.io/AMT-Toolkit/">
+  <meta property="og:title" content="AMT Toolkit - Airlines Manager Tycoon Toolkit">
+  <meta property="og:description" content="Client-side route price calculator, seat optimizer, airport directory, and 168-hour circuit scheduler for Airlines Manager Tycoon.">
+  <meta property="og:image" content="https://jaym3.github.io/AMT-Toolkit/icons/icon128.png">
+  <meta property="og:site_name" content="AMT Toolkit">
+
+  <!-- Twitter Cards -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:url" content="https://jaym3.github.io/AMT-Toolkit/">
+  <meta name="twitter:title" content="AMT Toolkit - Airlines Manager Tycoon Toolkit">
+  <meta name="twitter:description" content="Client-side route price calculator, seat optimizer, airport directory, and 168-hour circuit scheduler for Airlines Manager Tycoon.">
+  <meta name="twitter:image" content="https://jaym3.github.io/AMT-Toolkit/icons/icon128.png">
+
+  <!-- Schema.org JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "AMT Toolkit",
+    "alternateName": "Airlines Manager Tycoon Toolkit",
+    "url": "https://jaym3.github.io/AMT-Toolkit/",
+    "applicationCategory": "GameApplication, UtilityApplication",
+    "operatingSystem": "All modern browsers (Chrome, Edge, Brave, Opera, Firefox, Safari)",
+    "description": "Zero-out route price calculator, multi-class aircraft seat optimizer, global airport directory, and 168h circuit scheduler for Airlines Manager: Tycoon.",
+    "author": {
+      "@type": "Person",
+      "name": "JayM3",
+      "url": "https://github.com/JayM3"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
   <link rel="icon" type="image/png" sizes="32x32" href="icons/icon32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="icons/icon16.png">
   <link rel="apple-touch-icon" sizes="128x128" href="icons/icon128.png">
@@ -188,23 +233,23 @@
 
       <!-- Navigation for Tools -->
       <nav class="flex items-center gap-1.5 sm:gap-2">
-        <button id="nav_home" onclick="switchTab('home')" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tab-btn-active border transition shadow-sm">
+        <button id="nav_home" onclick="switchTab('home')" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tab-btn-active border transition shadow-sm active:scale-95">
           <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
           <span>Home</span>
         </button>
-        <button id="nav_zero_out" onclick="switchTab('zero-out')" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium tab-btn-inactive border transition shadow-sm">
+        <button id="nav_zero_out" onclick="switchTab('zero-out')" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium tab-btn-inactive border transition shadow-sm active:scale-95">
           <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse hidden"></span>
           <span>Zero-Out Price</span>
         </button>
-        <button id="nav_seat_config" onclick="switchTab('seat-config')" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium tab-btn-inactive border transition shadow-sm">
+        <button id="nav_seat_config" onclick="switchTab('seat-config')" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium tab-btn-inactive border transition shadow-sm active:scale-95">
           <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse hidden"></span>
           <span>Seat Config</span>
         </button>
-        <button id="nav_route_finder" onclick="switchTab('route-finder')" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium tab-btn-inactive border transition shadow-sm">
+        <button id="nav_route_finder" onclick="switchTab('route-finder')" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium tab-btn-inactive border transition shadow-sm active:scale-95">
           <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse hidden"></span>
           <span>Route Finder</span>
         </button>
-        <button id="nav_circuit_finder" onclick="switchTab('circuit-finder')" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium tab-btn-inactive border transition shadow-sm">
+        <button id="nav_circuit_finder" onclick="switchTab('circuit-finder')" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium tab-btn-inactive border transition shadow-sm active:scale-95">
           <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse hidden"></span>
           <span>Circuit Finder</span>
         </button>
@@ -212,14 +257,14 @@
       
       <!-- Right Header Actions -->
       <div class="flex items-center gap-2">
-        <button id="btn_open_sync_modal" onclick="openSyncModal()" type="button" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/90 hover:bg-slate-800 text-cyan-300 hover:text-cyan-200 border border-slate-700/80 hover:border-cyan-500/50 transition shadow-sm" title="Sync data between tabs or backup">
+        <button id="btn_open_sync_modal" onclick="openSyncModal()" type="button" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/90 hover:bg-slate-800 text-cyan-300 hover:text-cyan-200 border border-slate-700/80 hover:border-cyan-500/50 transition shadow-sm active:scale-95" title="Sync data between tabs or backup">
           <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
           </svg>
           <span class="hidden md:inline">Sync & Backup</span>
           <span class="md:hidden">Sync</span>
         </button>
-        <a href="https://github.com/JayM3/AMT-Toolkit/releases/tag/v1.0.1" id="header_get_addon" target="_blank" rel="noopener noreferrer" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white transition shadow-sm shadow-cyan-600/20">
+        <a href="https://github.com/JayM3/AMT-Toolkit/releases/tag/v1.0.1" id="header_get_addon" target="_blank" rel="noopener noreferrer" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white transition shadow-sm shadow-cyan-600/20 active:scale-95">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
           </svg>
@@ -252,27 +297,25 @@
                 <span>IN-GAME BROWSER EXTENSION</span>
               </div>
 
-              <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-snug">
+              <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight">
                 Play inside Airlines Manager with the <span class="cyan">AMT Addon</span>
-              </h2>
+              </h1>
 
-              <p class="text-slate-400 text-xs leading-relaxed">
-                No more switching tabs or manually writing down numbers. The AMT Addon embeds a smart, resizable sidebar directly into your game screen with 1-click automatic data scraping and instant price exporting.
+              <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">
+                Smart docked sidebar for Airlines Manager with 1-click route data scraping, audit calculations, and instant ticket price injection.
               </p>
 
-              <div class="flex items-center gap-2 pt-1 text-xs">
-                <span class="text-slate-400 text-[11px]">Quick Toggle:</span>
-                <kbd class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-cyan-300 font-mono font-bold text-xs shadow-sm">Alt + A</kbd>
-              </div>
-
-              <div class="flex flex-wrap items-center gap-2 pt-2">
-                <a href="#install-guide" onclick="const el = document.getElementById('install-guide'); if(el) el.scrollIntoView({behavior:'smooth'}); return false;" class="px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs shadow-sm shadow-cyan-600/20 transition flex items-center gap-1.5">
+              <div class="flex flex-wrap items-center gap-2.5 pt-2">
+                <a href="#install-guide" onclick="const el = document.getElementById('install-guide'); if(el) el.scrollIntoView({behavior:'smooth'}); return false;" class="px-3.5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-semibold text-xs shadow-sm shadow-cyan-600/20 transition flex items-center gap-1.5">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                   <span>Install Extension</span>
                 </a>
-                <button type="button" onclick="switchTab('zero-out')" class="px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-800 text-slate-300 text-xs border border-slate-700 transition">
+                <button type="button" onclick="switchTab('zero-out')" class="px-3.5 py-2 rounded-lg bg-slate-800/90 hover:bg-slate-800 active:scale-95 text-slate-300 hover:text-white text-xs border border-slate-700 transition">
                   <span>Use on Web</span>
                 </button>
+                <div class="inline-flex items-center gap-1.5 ml-1 text-xs">
+                  <kbd class="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-cyan-300 font-mono font-bold text-[11px] shadow-sm" title="Toggle Sidebar">Alt + A</kbd>
+                </div>
               </div>
             </div>
 
@@ -428,26 +471,25 @@
           <div class="grid grid-cols-1 lg:grid-cols-12 min-h-[380px]">
             
             <!-- Slide 2 Copy (Left) -->
-            <div class="lg:col-span-6 p-6 sm:p-8 flex flex-col justify-center z-10">
-              <span class="section-kicker"><span class="line"></span> PLAN SMARTER. FLY FURTHER.</span>
-              <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mt-4 mb-3 leading-tight">
-                Your next great route<br>starts here<span class="cyan">.</span>
+            <div class="lg:col-span-6 p-6 sm:p-8 flex flex-col justify-center z-10 space-y-3">
+              <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-800/60 text-[10px] font-semibold text-cyan-300 w-max">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12h18M12 3c3 4 3 14 0 18M12 3c-3 4-3 14 0 18"/></svg>
+                <span>PLAN SMARTER. FLY FURTHER.</span>
+              </div>
+              <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight">
+                Your next great route starts here<span class="cyan">.</span>
               </h2>
               <p class="text-slate-400 text-xs sm:text-sm max-w-md leading-relaxed">
-                Find the right destinations, fine-tune your fleet, and turn every hour in the air into opportunity.
+                Find optimal destinations, balance multi-class cabin layouts, and turn every flight hour into maximum airline profit.
               </p>
-              <div class="hero-actions mt-6 flex flex-wrap gap-2.5">
-                <a class="button primary text-xs" href="#route-finder" onclick="switchTab('route-finder'); return false;">
+              <div class="flex flex-wrap items-center gap-2.5 pt-2">
+                <a class="px-3.5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-semibold text-xs shadow-sm shadow-cyan-600/20 transition flex items-center gap-1.5" href="#route-finder" onclick="switchTab('route-finder'); return false;">
                   <span>Explore routes</span>
-                  <svg class="icon"><use href="#arrow"/></svg>
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                 </a>
-                <a class="button secondary text-xs" href="#circuit-finder" onclick="switchTab('circuit-finder'); return false;">
+                <a class="px-3.5 py-2 rounded-lg bg-slate-800/90 hover:bg-slate-800 active:scale-95 text-slate-300 hover:text-white text-xs border border-slate-700 transition flex items-center gap-1.5" href="#circuit-finder" onclick="switchTab('circuit-finder'); return false;">
                   <span>Build a circuit</span>
                 </a>
-              </div>
-              <div class="hero-note mt-5 flex items-center gap-1.5 text-xs text-slate-500">
-                <svg class="icon"><use href="#check"/></svg>
-                <span>Four connected tools. One better airline.</span>
               </div>
             </div>
 
@@ -534,20 +576,17 @@
 
       <!-- Interactive Planning Toolkit Cards Grid -->
       <section aria-labelledby="tools-title" class="tool-section">
-        <div class="section-heading">
-          <div>
-            <h2 id="tools-title">Your complete planning toolkit</h2>
-            <p>From the first route to the last available seat.</p>
-          </div>
-          <span class="subtle">Built for Airlines Manager Tycoon</span>
+        <div class="mb-5 space-y-1">
+          <h2 id="tools-title" class="text-xl sm:text-2xl font-bold tracking-tight text-white">Your complete planning toolkit</h2>
+          <p class="text-xs sm:text-sm text-slate-400">From the first route to the last available seat, built for Airlines Manager Tycoon.</p>
         </div>
         
         <div class="tools-grid">
-          <!-- 01 / PRICING: Zero-Out Price -->
+          <!-- Pricing Engine: Zero-Out Price -->
           <a href="#zero-out" onclick="switchTab('zero-out'); return false;" class="tool-card glass-panel" style="--tool-color:#22d3ee;--tool-rgb:34,211,238">
             <div class="tool-top">
               <span class="tool-icon"><svg class="icon"><use href="#price"/></svg></span>
-              <span class="tool-number">01 / PRICING</span>
+              <span class="tool-category text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-semibold">Pricing Engine</span>
             </div>
             <h3>Zero-Out Price</h3>
             <p>Find the ticket price that fills your seats and captures remaining demand.</p>
@@ -561,11 +600,11 @@
             </div>
           </a>
 
-          <!-- 02 / FLEET: Seat Config -->
+          <!-- Fleet Layout: Seat Config -->
           <a href="#seat-config" onclick="switchTab('seat-config'); return false;" class="tool-card glass-panel" style="--tool-color:#60a5fa;--tool-rgb:96,165,250">
             <div class="tool-top">
               <span class="tool-icon"><svg class="icon"><use href="#seat"/></svg></span>
-              <span class="tool-number">02 / FLEET</span>
+              <span class="tool-category text-[10px] font-mono uppercase tracking-wider text-blue-400 font-semibold">Fleet Layout</span>
             </div>
             <h3>Seat Config</h3>
             <p>Balance economy, premium cabins, and cargo to get more from every aircraft.</p>
@@ -579,11 +618,11 @@
             </div>
           </a>
 
-          <!-- 03 / NETWORK: Route Finder -->
+          <!-- Route Network: Route Finder -->
           <a href="#route-finder" onclick="switchTab('route-finder'); return false;" class="tool-card glass-panel" style="--tool-color:#a78bfa;--tool-rgb:167,139,250">
             <div class="tool-top">
               <span class="tool-icon"><svg class="icon"><use href="#globe"/></svg></span>
-              <span class="tool-number">03 / NETWORK</span>
+              <span class="tool-category text-[10px] font-mono uppercase tracking-wider text-purple-400 font-semibold">Route Network</span>
             </div>
             <h3>Route Finder</h3>
             <p>Discover destinations that match your hub, aircraft, and growth strategy.</p>
@@ -597,11 +636,11 @@
             </div>
           </a>
 
-          <!-- 04 / SCHEDULE: Circuit Finder -->
+          <!-- Circuit Schedule: Circuit Finder -->
           <a href="#circuit-finder" onclick="switchTab('circuit-finder'); return false;" class="tool-card glass-panel" style="--tool-color:#fbbf24;--tool-rgb:251,191,36">
             <div class="tool-top">
               <span class="tool-icon"><svg class="icon"><use href="#circuit"/></svg></span>
-              <span class="tool-number">04 / SCHEDULE</span>
+              <span class="tool-category text-[10px] font-mono uppercase tracking-wider text-amber-400 font-semibold">Circuit Schedule</span>
             </div>
             <h3>Circuit Finder</h3>
             <p>Build balanced 168-hour rotations that keep your fleet flying all week.</p>
@@ -620,7 +659,7 @@
       <!-- ADDON INSTALL METHOD: HOW TO INSTALL THE EXTENSION IN 60 SECONDS -->
       <section id="install-guide" class="space-y-6 pt-4">
         <div class="text-center max-w-2xl mx-auto space-y-2">
-          <span class="text-xs font-mono uppercase text-cyan-400 font-bold tracking-wider">FAST &amp; EASY SETUP</span>
+          <span class="text-[10px] font-mono uppercase text-cyan-400 font-semibold tracking-wider">QUICK SETUP</span>
           <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             How to Install the Extension in 60 Seconds
           </h2>
@@ -631,7 +670,7 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <!-- Step 1 -->
-          <div class="glass-card rounded-2xl p-6 border border-slate-800/90 space-y-3.5 flex flex-col justify-between">
+          <div class="glass-card rounded-xl p-5 sm:p-6 border border-slate-800/90 space-y-3.5 flex flex-col justify-between">
             <div class="space-y-3">
               <div class="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-400 font-mono font-bold text-sm">
                 1
@@ -647,7 +686,7 @@
           </div>
 
           <!-- Step 2 -->
-          <div class="glass-card rounded-2xl p-6 border border-slate-800/90 space-y-3.5 flex flex-col justify-between">
+          <div class="glass-card rounded-xl p-5 sm:p-6 border border-slate-800/90 space-y-3.5 flex flex-col justify-between">
             <div class="space-y-3">
               <div class="w-8 h-8 rounded-lg bg-blue-950 border border-blue-800 flex items-center justify-center text-blue-400 font-mono font-bold text-sm">
                 2
@@ -665,7 +704,7 @@
           </div>
 
           <!-- Step 3 -->
-          <div class="glass-card rounded-2xl p-6 border border-slate-800/90 space-y-3.5 flex flex-col justify-between">
+          <div class="glass-card rounded-xl p-5 sm:p-6 border border-slate-800/90 space-y-3.5 flex flex-col justify-between">
             <div class="space-y-3">
               <div class="w-8 h-8 rounded-lg bg-emerald-950 border border-emerald-800 flex items-center justify-center text-emerald-400 font-mono font-bold text-sm">
                 3
@@ -687,7 +726,7 @@
       <!-- HOMEPAGE GITHUB COMMIT CHANGELOG (OPTION 1: COMPACT GLASS FEED)            -->
       <!-- ========================================================================= -->
       <section id="homepage_changelog_section" class="pt-2 pb-2 space-y-4">
-        <div id="changelog_view_feed" class="glass-panel rounded-2xl p-5 sm:p-6 border border-slate-800/90 shadow-xl space-y-4">
+        <div id="changelog_view_feed" class="glass-panel rounded-xl p-5 sm:p-6 border border-slate-800/90 shadow-xl space-y-4">
           
           <!-- Header Row -->
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/70 pb-3.5">
@@ -917,10 +956,10 @@
               <!-- Eco Result -->
               <tr id="compact_res_row_eco">
                 <td><span class="sc-class-tag eco">Eco</span></td>
-                <td id="compact_res_eco_c">—</td>
-                <td id="compact_res_eco_target" style="font-weight: 700; color: var(--sc-cyan, #67e8f9); font-size: 11px;">$—</td>
-                <td id="compact_res_eco_deltap" class="font-mono-num">—</td>
-                <td id="compact_res_eco_gain" class="font-mono-num" style="font-weight: 600;">—</td>
+                <td id="compact_res_eco_c">-</td>
+                <td id="compact_res_eco_target" style="font-weight: 700; color: var(--sc-cyan, #67e8f9); font-size: 11px;">$-</td>
+                <td id="compact_res_eco_deltap" class="font-mono-num">-</td>
+                <td id="compact_res_eco_gain" class="font-mono-num" style="font-weight: 600;">-</td>
                 <td>
                   <button type="button" onclick="copyTargetPrice('eco')" id="compact_copy_btn_eco" class="sc-copy-btn" title="Copy Economy Target Price">
                     <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
@@ -931,10 +970,10 @@
               <!-- Bus Result -->
               <tr id="compact_res_row_bus">
                 <td><span class="sc-class-tag bus">Bus</span></td>
-                <td id="compact_res_bus_c">—</td>
-                <td id="compact_res_bus_target" style="font-weight: 700; color: var(--sc-cyan, #67e8f9); font-size: 11px;">$—</td>
-                <td id="compact_res_bus_deltap" class="font-mono-num">—</td>
-                <td id="compact_res_bus_gain" class="font-mono-num" style="font-weight: 600;">—</td>
+                <td id="compact_res_bus_c">-</td>
+                <td id="compact_res_bus_target" style="font-weight: 700; color: var(--sc-cyan, #67e8f9); font-size: 11px;">$-</td>
+                <td id="compact_res_bus_deltap" class="font-mono-num">-</td>
+                <td id="compact_res_bus_gain" class="font-mono-num" style="font-weight: 600;">-</td>
                 <td>
                   <button type="button" onclick="copyTargetPrice('bus')" id="compact_copy_btn_bus" class="sc-copy-btn" title="Copy Business Target Price">
                     <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
@@ -945,10 +984,10 @@
               <!-- First Result -->
               <tr id="compact_res_row_first">
                 <td><span class="sc-class-tag first">First</span></td>
-                <td id="compact_res_first_c">—</td>
-                <td id="compact_res_first_target" style="font-weight: 700; color: var(--sc-cyan, #67e8f9); font-size: 11px;">$—</td>
-                <td id="compact_res_first_deltap" class="font-mono-num">—</td>
-                <td id="compact_res_first_gain" class="font-mono-num" style="font-weight: 600;">—</td>
+                <td id="compact_res_first_c">-</td>
+                <td id="compact_res_first_target" style="font-weight: 700; color: var(--sc-cyan, #67e8f9); font-size: 11px;">$-</td>
+                <td id="compact_res_first_deltap" class="font-mono-num">-</td>
+                <td id="compact_res_first_gain" class="font-mono-num" style="font-weight: 600;">-</td>
                 <td>
                   <button type="button" onclick="copyTargetPrice('first')" id="compact_copy_btn_first" class="sc-copy-btn" title="Copy First Target Price">
                     <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
@@ -959,10 +998,10 @@
               <!-- Cargo Result -->
               <tr id="compact_res_row_cargo">
                 <td><span class="sc-class-tag cargo">Cargo</span></td>
-                <td id="compact_res_cargo_c">—</td>
-                <td id="compact_res_cargo_target" style="font-weight: 700; color: var(--sc-cyan, #67e8f9); font-size: 11px;">$—</td>
-                <td id="compact_res_cargo_deltap" class="font-mono-num">—</td>
-                <td id="compact_res_cargo_gain" class="font-mono-num" style="font-weight: 600;">—</td>
+                <td id="compact_res_cargo_c">-</td>
+                <td id="compact_res_cargo_target" style="font-weight: 700; color: var(--sc-cyan, #67e8f9); font-size: 11px;">$-</td>
+                <td id="compact_res_cargo_deltap" class="font-mono-num">-</td>
+                <td id="compact_res_cargo_gain" class="font-mono-num" style="font-weight: 600;">-</td>
                 <td>
                   <button type="button" onclick="copyTargetPrice('cargo')" id="compact_copy_btn_cargo" class="sc-copy-btn" title="Copy Cargo Target Price">
                     <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
@@ -1143,13 +1182,13 @@
           <!-- Results Pill on the Right -->
           <div class="flex items-center gap-3 border-t md:border-t-0 md:border-l border-slate-800 pt-2 md:pt-0 md:pl-4 min-w-[210px] justify-between">
             <div>
-              <div class="text-[10px] text-slate-400 uppercase">Offer: <span class="font-mono-num font-bold text-white" id="eco_card_c">—</span></div>
-              <div class="text-[10px] text-emerald-400 font-mono-num" id="eco_card_deltap">—</div>
+              <div class="text-[10px] text-slate-400 uppercase">Offer: <span class="font-mono-num font-bold text-white" id="eco_card_c">-</span></div>
+              <div class="text-[10px] text-emerald-400 font-mono-num" id="eco_card_deltap">-</div>
             </div>
             <div class="text-right">
               <span class="text-[9px] uppercase font-semibold text-slate-400 block">Target Price</span>
               <div class="flex items-center gap-1.5">
-                <span class="font-mono-num font-bold text-cyan-300 text-sm" id="eco_card_target">$—</span>
+                <span class="font-mono-num font-bold text-cyan-300 text-sm" id="eco_card_target">$-</span>
                 <button onclick="copyTargetPrice('eco')" id="copy_btn_eco_strip" type="button" title="Copy Target Price" class="p-1 rounded bg-slate-800 hover:bg-cyan-600 text-slate-300 hover:text-white transition">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
                 </button>
@@ -1193,13 +1232,13 @@
           <!-- Results Pill on the Right -->
           <div class="flex items-center gap-3 border-t md:border-t-0 md:border-l border-slate-800 pt-2 md:pt-0 md:pl-4 min-w-[210px] justify-between">
             <div>
-              <div class="text-[10px] text-slate-400 uppercase">Offer: <span class="font-mono-num font-bold text-white" id="bus_card_c">—</span></div>
-              <div class="text-[10px] text-emerald-400 font-mono-num" id="bus_card_deltap">—</div>
+              <div class="text-[10px] text-slate-400 uppercase">Offer: <span class="font-mono-num font-bold text-white" id="bus_card_c">-</span></div>
+              <div class="text-[10px] text-emerald-400 font-mono-num" id="bus_card_deltap">-</div>
             </div>
             <div class="text-right">
               <span class="text-[9px] uppercase font-semibold text-slate-400 block">Target Price</span>
               <div class="flex items-center gap-1.5">
-                <span class="font-mono-num font-bold text-blue-300 text-sm" id="bus_card_target">$—</span>
+                <span class="font-mono-num font-bold text-blue-300 text-sm" id="bus_card_target">$-</span>
                 <button onclick="copyTargetPrice('bus')" id="copy_btn_bus_strip" type="button" title="Copy Target Price" class="p-1 rounded bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white transition">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
                 </button>
@@ -1243,13 +1282,13 @@
           <!-- Results Pill on the Right -->
           <div class="flex items-center gap-3 border-t md:border-t-0 md:border-l border-slate-800 pt-2 md:pt-0 md:pl-4 min-w-[210px] justify-between">
             <div>
-              <div class="text-[10px] text-slate-400 uppercase">Offer: <span class="font-mono-num font-bold text-white" id="first_card_c">—</span></div>
-              <div class="text-[10px] text-emerald-400 font-mono-num" id="first_card_deltap">—</div>
+              <div class="text-[10px] text-slate-400 uppercase">Offer: <span class="font-mono-num font-bold text-white" id="first_card_c">-</span></div>
+              <div class="text-[10px] text-emerald-400 font-mono-num" id="first_card_deltap">-</div>
             </div>
             <div class="text-right">
               <span class="text-[9px] uppercase font-semibold text-slate-400 block">Target Price</span>
               <div class="flex items-center gap-1.5">
-                <span class="font-mono-num font-bold text-amber-300 text-sm" id="first_card_target">$—</span>
+                <span class="font-mono-num font-bold text-amber-300 text-sm" id="first_card_target">$-</span>
                 <button onclick="copyTargetPrice('first')" id="copy_btn_first_strip" type="button" title="Copy Target Price" class="p-1 rounded bg-slate-800 hover:bg-amber-600 text-slate-300 hover:text-white transition">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
                 </button>
@@ -1293,13 +1332,13 @@
           <!-- Results Pill on the Right -->
           <div class="flex items-center gap-3 border-t md:border-t-0 md:border-l border-slate-800 pt-2 md:pt-0 md:pl-4 min-w-[210px] justify-between">
             <div>
-              <div class="text-[10px] text-slate-400 uppercase">Offer: <span class="font-mono-num font-bold text-white" id="cargo_card_c">—</span></div>
-              <div class="text-[10px] text-emerald-400 font-mono-num" id="cargo_card_deltap">—</div>
+              <div class="text-[10px] text-slate-400 uppercase">Offer: <span class="font-mono-num font-bold text-white" id="cargo_card_c">-</span></div>
+              <div class="text-[10px] text-emerald-400 font-mono-num" id="cargo_card_deltap">-</div>
             </div>
             <div class="text-right">
               <span class="text-[9px] uppercase font-semibold text-slate-400 block">Target Price</span>
               <div class="flex items-center gap-1.5">
-                <span class="font-mono-num font-bold text-purple-300 text-sm" id="cargo_card_target">$—</span>
+                <span class="font-mono-num font-bold text-purple-300 text-sm" id="cargo_card_target">$-</span>
                 <button onclick="copyTargetPrice('cargo')" id="copy_btn_cargo_strip" type="button" title="Copy Target Price" class="p-1 rounded bg-slate-800 hover:bg-purple-600 text-slate-300 hover:text-white transition">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
                 </button>
@@ -1350,16 +1389,16 @@
                   <span>Economy (Y)</span>
                 </div>
               </td>
-              <td class="py-3.5 px-3 text-right text-slate-300" id="table_eco_paudit">—</td>
-              <td class="py-3.5 px-3 text-right text-slate-300" id="table_eco_dsim">—</td>
-              <td class="py-3.5 px-3 text-right font-medium text-white" id="table_eco_c">—</td>
-              <td class="py-3.5 px-3 text-right text-cyan-400 font-semibold" id="table_eco_r">—</td>
+              <td class="py-3.5 px-3 text-right text-slate-300" id="table_eco_paudit">-</td>
+              <td class="py-3.5 px-3 text-right text-slate-300" id="table_eco_dsim">-</td>
+              <td class="py-3.5 px-3 text-right font-medium text-white" id="table_eco_c">-</td>
+              <td class="py-3.5 px-3 text-right text-cyan-400 font-semibold" id="table_eco_r">-</td>
               <td class="py-3.5 px-4 text-right">
-                <div class="font-bold text-base text-cyan-300" id="table_eco_target">—</div>
+                <div class="font-bold text-base text-cyan-300" id="table_eco_target">-</div>
                 <div class="text-[10px] text-slate-500 font-normal" id="table_eco_exact"></div>
               </td>
-              <td class="py-3.5 px-3 text-right" id="table_eco_delta_p">—</td>
-              <td class="py-3.5 px-4 text-right" id="table_eco_delta_rev">—</td>
+              <td class="py-3.5 px-3 text-right" id="table_eco_delta_p">-</td>
+              <td class="py-3.5 px-4 text-right" id="table_eco_delta_rev">-</td>
               <td class="py-3.5 px-4 text-center font-sans">
                 <button onclick="copyTargetPrice('eco')" id="copy_btn_eco" type="button" title="Copy Target Price to Clipboard" class="p-1.5 rounded-lg bg-slate-800 hover:bg-cyan-600 text-slate-300 hover:text-white transition disabled:opacity-30 disabled:pointer-events-none">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1377,16 +1416,16 @@
                   <span>Business (J)</span>
                 </div>
               </td>
-              <td class="py-3.5 px-3 text-right text-slate-300" id="table_bus_paudit">—</td>
-              <td class="py-3.5 px-3 text-right text-slate-300" id="table_bus_dsim">—</td>
-              <td class="py-3.5 px-3 text-right font-medium text-white" id="table_bus_c">—</td>
-              <td class="py-3.5 px-3 text-right text-blue-400 font-semibold" id="table_bus_r">—</td>
+              <td class="py-3.5 px-3 text-right text-slate-300" id="table_bus_paudit">-</td>
+              <td class="py-3.5 px-3 text-right text-slate-300" id="table_bus_dsim">-</td>
+              <td class="py-3.5 px-3 text-right font-medium text-white" id="table_bus_c">-</td>
+              <td class="py-3.5 px-3 text-right text-blue-400 font-semibold" id="table_bus_r">-</td>
               <td class="py-3.5 px-4 text-right">
-                <div class="font-bold text-base text-blue-300" id="table_bus_target">—</div>
+                <div class="font-bold text-base text-blue-300" id="table_bus_target">-</div>
                 <div class="text-[10px] text-slate-500 font-normal" id="table_bus_exact"></div>
               </td>
-              <td class="py-3.5 px-3 text-right" id="table_bus_delta_p">—</td>
-              <td class="py-3.5 px-4 text-right" id="table_bus_delta_rev">—</td>
+              <td class="py-3.5 px-3 text-right" id="table_bus_delta_p">-</td>
+              <td class="py-3.5 px-4 text-right" id="table_bus_delta_rev">-</td>
               <td class="py-3.5 px-4 text-center font-sans">
                 <button onclick="copyTargetPrice('bus')" id="copy_btn_bus" type="button" title="Copy Target Price to Clipboard" class="p-1.5 rounded-lg bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white transition disabled:opacity-30 disabled:pointer-events-none">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1404,16 +1443,16 @@
                   <span>First Class (F)</span>
                 </div>
               </td>
-              <td class="py-3.5 px-3 text-right text-slate-300" id="table_first_paudit">—</td>
-              <td class="py-3.5 px-3 text-right text-slate-300" id="table_first_dsim">—</td>
-              <td class="py-3.5 px-3 text-right font-medium text-white" id="table_first_c">—</td>
-              <td class="py-3.5 px-3 text-right text-amber-400 font-semibold" id="table_first_r">—</td>
+              <td class="py-3.5 px-3 text-right text-slate-300" id="table_first_paudit">-</td>
+              <td class="py-3.5 px-3 text-right text-slate-300" id="table_first_dsim">-</td>
+              <td class="py-3.5 px-3 text-right font-medium text-white" id="table_first_c">-</td>
+              <td class="py-3.5 px-3 text-right text-amber-400 font-semibold" id="table_first_r">-</td>
               <td class="py-3.5 px-4 text-right">
-                <div class="font-bold text-base text-amber-300" id="table_first_target">—</div>
+                <div class="font-bold text-base text-amber-300" id="table_first_target">-</div>
                 <div class="text-[10px] text-slate-500 font-normal" id="table_first_exact"></div>
               </td>
-              <td class="py-3.5 px-3 text-right" id="table_first_delta_p">—</td>
-              <td class="py-3.5 px-4 text-right" id="table_first_delta_rev">—</td>
+              <td class="py-3.5 px-3 text-right" id="table_first_delta_p">-</td>
+              <td class="py-3.5 px-4 text-right" id="table_first_delta_rev">-</td>
               <td class="py-3.5 px-4 text-center font-sans">
                 <button onclick="copyTargetPrice('first')" id="copy_btn_first" type="button" title="Copy Target Price to Clipboard" class="p-1.5 rounded-lg bg-slate-800 hover:bg-amber-600 text-slate-300 hover:text-white transition disabled:opacity-30 disabled:pointer-events-none">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1431,16 +1470,16 @@
                   <span>Cargo (C)</span>
                 </div>
               </td>
-              <td class="py-3.5 px-3 text-right text-slate-300" id="table_cargo_paudit">—</td>
-              <td class="py-3.5 px-3 text-right text-slate-300" id="table_cargo_dsim">—</td>
-              <td class="py-3.5 px-3 text-right font-medium text-white" id="table_cargo_c">—</td>
-              <td class="py-3.5 px-3 text-right text-purple-400 font-semibold" id="table_cargo_r">—</td>
+              <td class="py-3.5 px-3 text-right text-slate-300" id="table_cargo_paudit">-</td>
+              <td class="py-3.5 px-3 text-right text-slate-300" id="table_cargo_dsim">-</td>
+              <td class="py-3.5 px-3 text-right font-medium text-white" id="table_cargo_c">-</td>
+              <td class="py-3.5 px-3 text-right text-purple-400 font-semibold" id="table_cargo_r">-</td>
               <td class="py-3.5 px-4 text-right">
-                <div class="font-bold text-base text-purple-300" id="table_cargo_target">—</div>
+                <div class="font-bold text-base text-purple-300" id="table_cargo_target">-</div>
                 <div class="text-[10px] text-slate-500 font-normal" id="table_cargo_exact"></div>
               </td>
-              <td class="py-3.5 px-3 text-right" id="table_cargo_delta_p">—</td>
-              <td class="py-3.5 px-4 text-right" id="table_cargo_delta_rev">—</td>
+              <td class="py-3.5 px-3 text-right" id="table_cargo_delta_p">-</td>
+              <td class="py-3.5 px-4 text-right" id="table_cargo_delta_rev">-</td>
               <td class="py-3.5 px-4 text-center font-sans">
                 <button onclick="copyTargetPrice('cargo')" id="copy_btn_cargo" type="button" title="Copy Target Price to Clipboard" class="p-1.5 rounded-lg bg-slate-800 hover:bg-purple-600 text-slate-300 hover:text-white transition disabled:opacity-30 disabled:pointer-events-none">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1694,7 +1733,7 @@
               </div>
             </div>
             <select id="sc_aircraft_select" class="hidden" onchange="onAircraftSelectChange()"></select>
-            <div id="sc_aircraft_specs_summary" class="text-[11px] text-slate-400 truncate">Speed: — | Range: — | Seats: — | Payload: — | Price: —</div>
+            <div id="sc_aircraft_specs_summary" class="text-[11px] text-slate-400 truncate">Speed: - | Range: - | Seats: - | Payload: - | Price: -</div>
           </div>
 
           <!-- Circuit Status Summary (4 cols on lg) -->
@@ -2022,7 +2061,7 @@
           </div>
         </button>
 
-        <!-- Strategy & Aircraft Selection Strip — always visible, outside the collapsible body -->
+        <!-- Strategy & Aircraft Selection Strip - always visible, outside the collapsible body -->
         <div class="px-4 py-2.5 border-t border-slate-800/60 bg-slate-950/60 flex flex-wrap items-center gap-3 sm:gap-4">
           <div class="flex items-center gap-2 shrink-0">
             <span class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold shrink-0">Strategy:</span>
@@ -2045,8 +2084,8 @@
             <span class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold shrink-0">Aircraft:</span>
             <button type="button" id="sc_aircraft_details_btn" onclick="toggleAircraftDetailsPopover(event)" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500/70 text-slate-200 hover:text-white transition flex items-center gap-2 shadow-sm text-xs font-semibold group focus:outline-none focus:ring-2 focus:ring-cyan-500/50" title="Click to view aircraft specifications &amp; details">
               <span class="text-cyan-400 group-hover:scale-110 transition-transform text-xs">✈️</span>
-              <span id="sc_strategy_aircraft_name" class="font-bold text-white group-hover:text-cyan-300 font-mono-num">—</span>
-              <span id="sc_strategy_aircraft_cat" class="text-[10px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/80 font-mono">Cat. —</span>
+              <span id="sc_strategy_aircraft_name" class="font-bold text-white group-hover:text-cyan-300 font-mono-num">-</span>
+              <span id="sc_strategy_aircraft_cat" class="text-[10px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/80 font-mono">Cat. -</span>
               <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -2372,11 +2411,11 @@
           <div id="rf_hub_info_card" class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 space-y-1 text-[11px]">
             <div class="flex items-center justify-between">
               <span id="rf_hub_display_name" class="font-bold text-white truncate">Please enter hub</span>
-              <span id="rf_hub_display_cat" class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-mono font-bold text-[10px]">Cat —</span>
+              <span id="rf_hub_display_cat" class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-mono font-bold text-[10px]">Cat -</span>
             </div>
             <div class="flex items-center justify-between text-slate-400">
               <span id="rf_hub_display_location">Enter an IATA code or pick a Quick Hub below</span>
-              <span id="rf_hub_display_tax" class="text-slate-300 font-mono">—</span>
+              <span id="rf_hub_display_tax" class="text-slate-300 font-mono">-</span>
             </div>
           </div>
 
@@ -3636,7 +3675,7 @@
       <!-- Modal Footer -->
       <div class="px-5 py-3 border-t border-slate-800 bg-slate-950/90 flex items-center justify-between text-xs text-slate-400">
         <div>
-          Active selection: <strong class="text-white" id="ac_modal_footer_active">—</strong>
+          Active selection: <strong class="text-white" id="ac_modal_footer_active">-</strong>
           <span class="ml-2 text-emerald-400 font-mono font-semibold" id="ac_modal_footer_price"></span>
         </div>
         <button type="button" onclick="closeAircraftModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold transition">
@@ -3830,8 +3869,8 @@
           </div>
           <div class="flex items-center justify-between text-xs flex-wrap gap-2">
             <div>
-              <span class="font-bold text-white" id="import_circuit_preview_name">—</span>
-              <span class="text-slate-400 ml-2" id="import_circuit_preview_details">—</span>
+              <span class="font-bold text-white" id="import_circuit_preview_name">-</span>
+              <span class="text-slate-400 ml-2" id="import_circuit_preview_details">-</span>
             </div>
             <div class="flex items-center gap-2">
               <button type="button" onclick="confirmImportCircuit(false)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition">
@@ -3881,7 +3920,7 @@
 
         <!-- Circuit Summary Card -->
         <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-          <div class="flex justify-between"><span class="text-slate-400">Departure Hub:</span> <span id="rf_save_summary_hub" class="font-mono font-bold text-cyan-400">—</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Departure Hub:</span> <span id="rf_save_summary_hub" class="font-mono font-bold text-cyan-400">-</span></div>
           <div class="flex justify-between"><span class="text-slate-400">Aircraft Model:</span> <span id="rf_save_summary_ac" class="font-mono text-emerald-400">A380-800</span></div>
           <div class="flex justify-between"><span class="text-slate-400">Total Duration:</span> <span id="rf_save_summary_dur" class="font-mono text-white">0h 00m</span></div>
           <div class="flex justify-between"><span class="text-slate-400">Total Destinations:</span> <span id="rf_save_summary_routes" class="font-mono text-slate-200">0 routes</span></div>

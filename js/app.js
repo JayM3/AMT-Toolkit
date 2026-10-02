@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Airlines Manager Tycoon Toolkit (AMT Toolkit)
  * Zero-Out Price Calculator - Real-time calculation engine & reactive UI management
  */
@@ -40,7 +40,7 @@ let state = {
 
 // Format numbers with commas
 function formatNumber(val, decimals = 0) {
-  if (val === null || val === undefined || isNaN(val) || val === '') return '—';
+  if (val === null || val === undefined || isNaN(val) || val === '') return '-';
   return Number(val).toLocaleString('en-US', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals
@@ -49,7 +49,7 @@ function formatNumber(val, decimals = 0) {
 
 // Format currency
 function formatCurrency(val, decimals = 0) {
-  if (val === null || val === undefined || isNaN(val) || val === '') return '—';
+  if (val === null || val === undefined || isNaN(val) || val === '') return '-';
   const prefix = val < 0 ? '-$' : '$';
   return prefix + Math.abs(val).toLocaleString('en-US', {
     minimumFractionDigits: decimals,
@@ -290,7 +290,7 @@ function updateClassUI(classId, calc, isVisible) {
     if (calc && calc.hasData) {
       compactTargetEl.textContent = formatCurrency(calc.pTargetRounded);
     } else {
-      compactTargetEl.textContent = '$—';
+      compactTargetEl.textContent = '$-';
     }
   }
 
@@ -302,11 +302,11 @@ function updateClassUI(classId, calc, isVisible) {
 
   if (compResC) {
     const rInput = document.getElementById(`${classId}_r`);
-    compResC.textContent = calc && (!isNaN(calc.c) && (calc.dSim > 0 || calc.r > 0) && rInput && rInput.value.trim() !== '') ? formatNumber(calc.c) : '—';
+    compResC.textContent = calc && (!isNaN(calc.c) && (calc.dSim > 0 || calc.r > 0) && rInput && rInput.value.trim() !== '') ? formatNumber(calc.c) : '-';
   }
 
   if (compResTarget) {
-    compResTarget.textContent = calc && calc.hasData ? formatCurrency(calc.pTargetRounded) : '—';
+    compResTarget.textContent = calc && calc.hasData ? formatCurrency(calc.pTargetRounded) : '-';
   }
 
   if (compResDeltaP) {
@@ -319,7 +319,7 @@ function updateClassUI(classId, calc, isVisible) {
           ? 'py-1.5 px-2 text-right text-[10px] text-rose-400 font-mono-num font-semibold' 
           : 'py-1.5 px-2 text-right text-[10px] text-slate-400 font-mono-num';
     } else {
-      compResDeltaP.textContent = '—';
+      compResDeltaP.textContent = '-';
       compResDeltaP.className = 'py-1.5 px-2 text-right text-[10px] text-slate-500 font-mono-num';
     }
   }
@@ -332,7 +332,7 @@ function updateClassUI(classId, calc, isVisible) {
         ? 'py-1.5 px-2.5 text-right font-semibold text-emerald-400 font-mono-num' 
         : 'py-1.5 px-2.5 text-right font-semibold text-rose-400 font-mono-num';
     } else {
-      compResGain.textContent = '—';
+      compResGain.textContent = '-';
       compResGain.className = 'py-1.5 px-2.5 text-right font-semibold text-slate-500 font-mono-num';
     }
   }
@@ -343,7 +343,7 @@ function updateClassUI(classId, calc, isVisible) {
     if (calc && (!isNaN(calc.c) && (calc.dSim > 0 || calc.r > 0))) {
       cardCEl.textContent = formatNumber(calc.c);
     } else {
-      cardCEl.textContent = '—';
+      cardCEl.textContent = '-';
     }
   }
 
@@ -353,7 +353,7 @@ function updateClassUI(classId, calc, isVisible) {
     if (calc && calc.hasData) {
       cardPriceEl.textContent = formatCurrency(calc.pTargetRounded);
     } else {
-      cardPriceEl.textContent = '$—';
+      cardPriceEl.textContent = '$-';
     }
   }
 
@@ -369,7 +369,7 @@ function updateClassUI(classId, calc, isVisible) {
           ? 'text-[10px] text-rose-400 font-mono-num font-semibold' 
           : 'text-[10px] text-slate-400 font-mono-num';
     } else {
-      cardDeltaEl.textContent = '—';
+      cardDeltaEl.textContent = '-';
       cardDeltaEl.className = 'text-[10px] text-slate-500 font-mono-num';
     }
   }
@@ -387,22 +387,22 @@ function updateClassUI(classId, calc, isVisible) {
 
   // Populate Audit Price, Demand, and Remaining in Table
   if (tablePAudit) {
-    tablePAudit.textContent = calc && calc.pAudit > 0 ? formatCurrency(calc.pAudit) : '—';
+    tablePAudit.textContent = calc && calc.pAudit > 0 ? formatCurrency(calc.pAudit) : '-';
   }
   if (tableDSim) {
-    tableDSim.textContent = calc && calc.dSim > 0 ? formatNumber(calc.dSim) : '—';
+    tableDSim.textContent = calc && calc.dSim > 0 ? formatNumber(calc.dSim) : '-';
   }
   if (tableR) {
     const rInput = document.getElementById(`${classId}_r`);
-    tableR.textContent = rInput && rInput.value.trim() !== '' && !isNaN(calc.r) ? formatNumber(calc.r) : '—';
+    tableR.textContent = rInput && rInput.value.trim() !== '' && !isNaN(calc.r) ? formatNumber(calc.r) : '-';
   }
   if (tableC) {
     const rInput = document.getElementById(`${classId}_r`);
-    tableC.textContent = calc && (!isNaN(calc.c) && (calc.dSim > 0 || calc.r > 0) && rInput && rInput.value.trim() !== '') ? formatNumber(calc.c) : '—';
+    tableC.textContent = calc && (!isNaN(calc.c) && (calc.dSim > 0 || calc.r > 0) && rInput && rInput.value.trim() !== '') ? formatNumber(calc.c) : '-';
   }
 
   if (tableTarget) {
-    tableTarget.textContent = calc && calc.hasData ? formatCurrency(calc.pTargetRounded) : '—';
+    tableTarget.textContent = calc && calc.hasData ? formatCurrency(calc.pTargetRounded) : '-';
   }
 
   if (tableExact) {
@@ -419,7 +419,7 @@ function updateClassUI(classId, calc, isVisible) {
           ? 'font-mono-num text-xs font-semibold text-rose-400' 
           : 'font-mono-num text-xs text-slate-400';
     } else {
-      tableDeltaP.textContent = '—';
+      tableDeltaP.textContent = '-';
       tableDeltaP.className = 'font-mono-num text-xs text-slate-500';
     }
   }
@@ -432,7 +432,7 @@ function updateClassUI(classId, calc, isVisible) {
         ? 'font-mono-num text-sm font-semibold text-emerald-400'
         : 'font-mono-num text-sm font-semibold text-rose-400';
     } else {
-      tableDeltaRev.textContent = '—';
+      tableDeltaRev.textContent = '-';
       tableDeltaRev.className = 'font-mono-num text-sm text-slate-500';
     }
   }
@@ -2372,7 +2372,7 @@ function initSeatConfigurator() {
   const datalist = document.getElementById('airports_datalist');
   if (datalist && typeof AIRPORTS_DATABASE !== 'undefined') {
     datalist.innerHTML = AIRPORTS_DATABASE.map(a => 
-      `<option value="${a.iata}">${a.iata} — ${a.name}, ${a.city} (${a.country})</option>`
+      `<option value="${a.iata}">${a.iata} - ${a.name}, ${a.city} (${a.country})</option>`
     ).join('');
   }
 
@@ -3113,7 +3113,7 @@ function renderCircuitTable() {
   legs.forEach((leg, idx) => {
     const dstAp = leg.dstAirport || findAirport(leg.dst);
     const flag = getCountryFlag(dstAp?.country);
-    const cat = dstAp ? `Cat. ${dstAp.cat}` : 'Cat. —';
+    const cat = dstAp ? `Cat. ${dstAp.cat}` : 'Cat. -';
     const city = dstAp ? `${dstAp.city}, ${dstAp.country}` : leg.dst;
     const flights = leg.flightsPerDay || 1;
     const totalLegTime = formatHoursMinutes(leg.durationHours * flights);
@@ -5657,7 +5657,7 @@ window.restoreSeatConfigFromLocalStorage = restoreSeatConfigFromLocalStorage;
 
 function formatAircraftPriceShort(price, showSign = false) {
   if (price === 0) return showSign ? '+0' : '$0';
-  if (price === null || price === undefined || isNaN(price)) return '—';
+  if (price === null || price === undefined || isNaN(price)) return '-';
 
   const isNeg = price < 0;
   const abs = Math.abs(price);
@@ -6019,7 +6019,7 @@ function renderAircraftModalContent() {
   // Update Footer Active Plane
   const footerActiveEl = document.getElementById('ac_modal_footer_active');
   const footerPriceEl = document.getElementById('ac_modal_footer_price');
-  if (footerActiveEl) footerActiveEl.textContent = activePlane ? activePlane.name : '—';
+  if (footerActiveEl) footerActiveEl.textContent = activePlane ? activePlane.name : '-';
   if (footerPriceEl) footerPriceEl.textContent = activePlane ? `• ${formatAircraftPriceShort(activePlane.price)} (${formatCurrency(activePlane.price)})` : '';
 
   // Filter
@@ -6156,7 +6156,7 @@ function renderAircraftModalContent() {
             </div>
             <div class="bg-slate-900/60 p-1 rounded">
               <div class="text-[9px] text-slate-400 uppercase">Payload</div>
-              <div class="text-xs font-bold text-slate-300">${ac.payload_ton || '—'}T</div>
+              <div class="text-xs font-bold text-slate-300">${ac.payload_ton || '-'}T</div>
             </div>
           </div>
 
@@ -6712,7 +6712,7 @@ function renderSavedCircuitsList() {
             ${routeChips}
           </div>
           <div class="flex items-center gap-3 text-slate-400 text-[11px] font-mono-num shrink-0">
-            <span>⏱️ Total Time: <strong class="text-amber-400">${c.summary?.totalDurationText || '—'}</strong></span>
+            <span>⏱️ Total Time: <strong class="text-amber-400">${c.summary?.totalDurationText || '-'}</strong></span>
             <span>🛣️ <strong class="text-cyan-400">${c.legs?.length || 0} Routes</strong></span>
           </div>
         </div>
@@ -7185,7 +7185,7 @@ function renderSavedAuditsTable() {
           </div>
         </td>
         <td class="py-2.5 px-2 text-center text-[10px]">
-          <div>${a.date || '—'}</div>
+          <div>${a.date || '-'}</div>
           <div class="mt-1">${ageTag}</div>
         </td>
         <td class="py-2.5 px-3 text-right">

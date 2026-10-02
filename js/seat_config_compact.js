@@ -1,4 +1,4 @@
-/* Compact Seat Config: same inputs, state and solver; reversible presentation only. */
+﻿/* Compact Seat Config: same inputs, state and solver; reversible presentation only. */
 (() => {
   let mounted = false, restoreStandard = null, lastTab = 'routes';
   const hookNames = ['toggleLegCargo','addOrUpdateLeg','cancelLegEdit','clearLegForm','editLeg','addAuditToSeatConfig','handleLegDragOver','handleLegDragEnd','renderCircuitStatus','renderCircuitTable','renderActivePlanDetails','renderCircuitSchedule','renderFinancialOverview','toggleSeatConfigComparator'];
@@ -194,7 +194,7 @@
     $('sc_circuit_table_container').innerHTML=legs.length?legs.map((leg,i)=>{
       const ap=leg.dstAirport||findAirport(leg.dst);
       return `<div class="sc-route" draggable="true" ondragstart="handleLegDragStart(event,${i})" ondragover="handleLegDragOver(event)" ondrop="handleLegDrop(event,${i})" ondragend="handleLegDragEnd(event)">
-      <div class="sc-route-top"><span class="sc-route-code" title="${esc(leg.hub+' → '+leg.dst+' · '+(ap?.name||'')+' · '+(ap?.country||'')+' · Cat '+(ap?.cat||'—'))}" style="border-color:${esc(leg.color)}">${esc(leg.dst)}</span><span class="sc-route-meta">${num(leg.distanceKm)} km · <b>${duration(leg.durationHours)}</b></span>
+      <div class="sc-route-top"><span class="sc-route-code" title="${esc(leg.hub+' → '+leg.dst+' · '+(ap?.name||'')+' · '+(ap?.country||'')+' · Cat '+(ap?.cat||'-'))}" style="border-color:${esc(leg.color)}">${esc(leg.dst)}</span><span class="sc-route-meta">${num(leg.distanceKm)} km · <b>${duration(leg.durationHours)}</b></span>
       <span class="sc-route-actions">${stats.type==='24h'?`<span class="sc-stepper">${btn('−',`updateLegFlights(${i},-1)`,'Decrease '+leg.dst+' flights')}<b>${leg.flightsPerDay||1}×</b>${btn('+',`updateLegFlights(${i},1)`,'Increase '+leg.dst+' flights')}</span>`:''}${btn('↑',`moveLegUp(${i})`,'Move '+leg.dst+' up',i===0?'disabled':'')}${btn('↓',`moveLegDown(${i})`,'Move '+leg.dst+' down',i===legs.length-1?'disabled':'')}${btn('✎',`editLeg('${esc(leg.id)}')`,'Edit '+leg.dst)}${btn('×',`deleteLeg('${esc(leg.id)}')`,'Remove '+leg.dst)}</span></div>
       <div class="sc-route-demand">${classes.map((c,j)=>`<span class="sc-class-${c}" title="${esc(labels[j]+': daily demand '+leg.demand[c]+'; audit price '+money(leg.prices[c]))}">${labels[j]} <b>${c==='cargo'&&!leg.cargoEnabled?'off':num(leg.demand[c])}</b> <small>/ ${num(leg.prices[c])}</small></span>`).join('')}</div></div>`;
     }).join(''):empty;

@@ -1,4 +1,4 @@
-/* =========================================================================
+﻿/* =========================================================================
  * AMT Toolkit - Route Finder & Circuit Builder Module
  * ========================================================================= */
 (function() {
@@ -609,11 +609,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const acBadge = document.getElementById('header_ac_badge');
       if (acBadge) acBadge.textContent = `${currentAircraft.name} (${Number(currentAircraft.range_km).toLocaleString()} km)`;
 
-      document.getElementById('rf_ac_det_make').textContent = currentAircraft.manufacturer || '—';
+      document.getElementById('rf_ac_det_make').textContent = currentAircraft.manufacturer || '-';
       document.getElementById('rf_ac_det_payload').textContent = `${currentAircraft.payload_ton || 0} T`;
       document.getElementById('rf_ac_det_price').textContent = `$${Number(currentAircraft.price || 0).toLocaleString()}`;
-      document.getElementById('rf_ac_det_fuel').textContent = `${currentAircraft.fuel_consumption || '—'} L/100km`;
-      document.getElementById('rf_ac_det_wear').textContent = `${currentAircraft.wear_rate || '—'}% / 100h`;
+      document.getElementById('rf_ac_det_fuel').textContent = `${currentAircraft.fuel_consumption || '-'} L/100km`;
+      document.getElementById('rf_ac_det_wear').textContent = `${currentAircraft.wear_rate || '-'}% / 100h`;
 
       const minCatSelect = document.getElementById('rf_cat_min');
       minCatSelect.value = Math.max(1, currentAircraft.category);
@@ -885,9 +885,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           document.getElementById('rf_hub_valid_icon').innerHTML = `<span class="text-rose-400 font-bold">&times;</span>`;
           document.getElementById('rf_hub_display_name').textContent = 'Airport not found';
-          document.getElementById('rf_hub_display_cat').textContent = 'Cat —';
+          document.getElementById('rf_hub_display_cat').textContent = 'Cat -';
           document.getElementById('rf_hub_display_location').textContent = 'Check spelling or enter a valid 3-letter IATA code';
-          document.getElementById('rf_hub_display_tax').textContent = '—';
+          document.getElementById('rf_hub_display_tax').textContent = '-';
         }
       } else {
         document.getElementById('rf_hub_valid_icon').innerHTML = '';
@@ -925,13 +925,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (nameEl) nameEl.textContent = 'Please enter hub';
 
       const catEl = document.getElementById('rf_hub_display_cat');
-      if (catEl) catEl.textContent = 'Cat —';
+      if (catEl) catEl.textContent = 'Cat -';
 
       const locEl = document.getElementById('rf_hub_display_location');
       if (locEl) locEl.textContent = 'Enter an IATA code or pick a Quick Hub below';
 
       const taxEl = document.getElementById('rf_hub_display_tax');
-      if (taxEl) taxEl.textContent = '—';
+      if (taxEl) taxEl.textContent = '-';
 
       const countrySelect = document.getElementById('rf_hub_country_select');
       if (countrySelect) countrySelect.value = '';
@@ -2154,7 +2154,7 @@ document.addEventListener('DOMContentLoaded', () => {
           `<span class="px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 text-[10px] font-bold">24h Fit</span>` :
           c.fits168h ?
           `<span class="px-2 py-0.5 rounded-full bg-blue-950 text-blue-300 border border-blue-800 text-[10px] font-semibold">168h Fit</span>` :
-          `<span class="text-slate-500 text-[10px]">—</span>`;
+          `<span class="text-slate-500 text-[10px]">-</span>`;
 
         return `
           <tr class="hover:bg-slate-800/40 transition-colors ${inCircuit ? 'bg-cyan-950/20' : ''}">
@@ -2163,7 +2163,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span>${c.dstIata}</span>
                 <span class="font-normal text-slate-300 text-xs truncate max-w-[180px]">${c.name}</span>
               </div>
-              <div class="text-[10px] text-slate-400 font-sans truncate max-w-[220px]">${c.city || '—'}</div>
+              <div class="text-[10px] text-slate-400 font-sans truncate max-w-[220px]">${c.city || '-'}</div>
             </td>
             <td class="p-3">
               <div class="text-slate-300 truncate max-w-[140px] font-sans font-medium">${c.country}</div>
@@ -2474,7 +2474,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   <span>&bull;</span>
                   <span>Plane: <strong class="text-emerald-400 font-mono">${c.acName}</strong></span>
                   <span>&bull;</span>
-                  <span>Duration: <strong class="text-white font-mono">${c.summary?.totalDurationText || '—'}</strong></span>
+                  <span>Duration: <strong class="text-white font-mono">${c.summary?.totalDurationText || '-'}</strong></span>
                 </div>
               </div>
 
@@ -2681,7 +2681,7 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       }
     }
 
-    // Shared circuit maths — used by the full page, the gap filler and the compact sidebar view.
+    // Shared circuit maths - used by the full page, the gap filler and the compact sidebar view.
     function rf_circuitMath() {
       const baseSingleSum = currentCircuitLegs.reduce((acc, l) => acc + l.durationHours, 0);
       const is24hCircuit = baseSingleSum <= 24;
@@ -2703,7 +2703,7 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       };
     }
 
-    // Gap filler candidates — extracted so the compact view offers the exact same picks.
+    // Gap filler candidates - extracted so the compact view offers the exact same picks.
     function rf_computeGapSuggestions() {
       const math = rf_circuitMath();
       const freeHours = math.free;
@@ -2914,7 +2914,7 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
        COMPACT (SIDEBAR) LAYOUT
        ---------------------------------------------------------------------
        Rendered into #route_finder_compact_container and only ever visible
-       while body.amt-compact-mode is set — app.js applies that class from
+       while body.amt-compact-mode is set - app.js applies that class from
        initUIMode() only when window.isSidebarMode() is true, exactly like the
        Zero-Out compact calculator. On the public site the mode is forced to
        standard, so this markup never shows up outside the extension sidebar.
@@ -3155,7 +3155,7 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
             <span class="sc-route-code">${c.dstIata}</span>
             <span class="sc-route-name" title="${c.name} · ${c.city}">${c.name}</span>
             <span class="sc-route-stars" title="Demand ${demand.avgFormatted}">${demand.starsText}</span>
-            <button type="button" class="sc-btn-add ${leg ? 'in-circuit' : ''}" onclick="rf_addRouteToCircuit('${c.dstIata}')" title="${leg ? `In circuit at ${leg.flightsPerDay}x — tap to add another run` : `Add ${c.dstIata} to circuit`}">
+            <button type="button" class="sc-btn-add ${leg ? 'in-circuit' : ''}" onclick="rf_addRouteToCircuit('${c.dstIata}')" title="${leg ? `In circuit at ${leg.flightsPerDay}x - tap to add another run` : `Add ${c.dstIata} to circuit`}">
               ${leg ? '✓ ' + leg.flightsPerDay + '×' : '＋'}
             </button>
           </div>
@@ -3522,24 +3522,24 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
         <div class="sc-card">
           <div class="sc-section-title">
             <strong>Active Aircraft Specifications</strong>
-            <span class="sc-muted">${ac ? ac.type : '—'}</span>
+            <span class="sc-muted">${ac ? ac.type : '-'}</span>
           </div>
           <div class="sc-kpis">
             <div>
               <small>Range</small>
-              <strong>${ac ? Number(ac.range_km).toLocaleString() + ' km' : '—'}</strong>
+              <strong>${ac ? Number(ac.range_km).toLocaleString() + ' km' : '-'}</strong>
             </div>
             <div>
               <small>Cruise</small>
-              <strong>${ac ? ac.speed_kmh + ' km/h' : '—'}</strong>
+              <strong>${ac ? ac.speed_kmh + ' km/h' : '-'}</strong>
             </div>
             <div>
               <small>Runway Req</small>
-              <strong>${ac ? 'Cat ' + ac.category : '—'}</strong>
+              <strong>${ac ? 'Cat ' + ac.category : '-'}</strong>
             </div>
             <div>
               <small>Seats</small>
-              <strong>${ac ? Number(ac.seats).toLocaleString() : '—'}</strong>
+              <strong>${ac ? Number(ac.seats).toLocaleString() : '-'}</strong>
             </div>
           </div>
           <div style="font-size: 9px; color: var(--sc-text-muted); display: flex; justify-content: space-between;">
@@ -3771,10 +3771,10 @@ window.rf_exportAllCircuitsJson = rf_exportAllCircuitsJson;
       rf_setDurationPreset(wasOn ? 'any' : '24h_divisors');
       showToast(wasOn
         ? 'Showing all matching routes again'
-        : '24h divisors only — round trips that fill the day exactly', wasOn ? 'info' : 'success');
+        : '24h divisors only - round trips that fill the day exactly', wasOn ? 'info' : 'success');
     }
 
-    // Criteria only — keeps the aircraft and hub the user picked.
+    // Criteria only - keeps the aircraft and hub the user picked.
     function rf_compactResetFilters() {
       if (currentAircraft) {
         const catMin = document.getElementById('rf_cat_min');
