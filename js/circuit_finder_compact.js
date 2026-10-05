@@ -89,6 +89,11 @@
     includedCountries: [],
     excludedAirports: [],
     excludedCountries: [],
+    excludedAirportsSet: new Set(),
+    excludedCountriesSet: new Set(),
+    includedAirportsSet: new Set(),
+    includedCountriesSet: new Set(),
+    isExcludeExpanded: false,
     discoveredCircuits: [],
     savedCircuits: [],
     activeTab: 'criteria',
@@ -99,6 +104,16 @@
     currentHaulFilter: 'all',
     isMounted: false
   };
+
+  function syncExcludeSets() {
+    state.excludedAirportsSet = new Set(state.excludedAirports);
+    state.excludedCountriesSet = new Set(state.excludedCountries);
+  }
+
+  function syncIncludeSets() {
+    state.includedAirportsSet = new Set(state.includedAirports);
+    state.includedCountriesSet = new Set(state.includedCountries);
+  }
 
   function isCompactMode() {
     return document.body.classList.contains('amt-compact-mode') || 
@@ -286,8 +301,8 @@
       const continent = CF_C_CONTINENT_MAP[ap.country] || 'Other';
       if (state.continent !== 'all' && continent !== state.continent) continue;
 
-      if (state.excludedAirports.includes(ap.iata)) continue;
-      if (state.excludedCountries.includes(ap.country)) continue;
+      if (state.excludedAirportsSet.has(ap.iata)) continue;
+      if (state.excludedCountriesSet.has(ap.country)) continue;
 
       const dist = haversineDistance(hub.lat, hub.lon, ap.lat, ap.lon);
       if (dist > ac.range_km) continue;
@@ -339,7 +354,7 @@
 
     const mustFlyIatas = new Set([
       ...state.includedAirports,
-      ...candidateLegs.filter(l => state.includedCountries.includes(l.country)).map(l => l.dstIata)
+      ...candidateLegs.filter(l => state.includedCountriesSet.has(l.country)).map(l => l.dstIata)
     ]);
 
     const mustFlyLegs = candidateLegs.filter(l => mustFlyIatas.has(l.dstIata));
@@ -395,7 +410,8 @@
 
     // Heuristic randomized greedy generation if backtracking found few
     if (allCircuits.length < 15 && pool.length >= 4) {
-      for (let attempt = 0; attempt < 800 && allCircuits.length < 40; attempt++) {
+      const maxAttempts = Math.min(200, pool.length * 15);
+      for (let attempt = 0; attempt < maxAttempts && allCircuits.length < 40; attempt++) {
         const chosen = [...mustFlyLegs];
         let ticks = initTicks;
         const shuffled = [...pool].sort(() => Math.random() - 0.45);
@@ -507,6 +523,7 @@
     for (const dst of airports) {
       if (dst.iata === hub.iata) continue;
       if (currentIatas.has(dst.iata)) continue;
+      if (state.excludedAirportsSet.has(dst.iata)) continue;
       if (state.requireCatMatch && dst.cat < ac.category) continue;
 
       const dist = haversineDistance(hub.lat, hub.lon, dst.lat, dst.lon);
@@ -1280,17 +1297,27 @@
         renderIncludeDropdown(incInput.value);
       });
 
+      let incDebounceTimer = null;
       incInput.addEventListener('focus', () => renderIncludeDropdown(incInput.value));
       incInput.addEventListener('input', (e) => {
         const val = e.target.value;
         const multi = detectMultiIata(val);
-        if (multi && state.includeMode === 'ap') {
+        if (multi && multi.length > 1 && state.includeMode === 'ap') {
+          let count = 0;
           multi.forEach(code => {
-            if (getAirport(code)) addIncludeAirport(code);
+            if (getAirport(code)) {
+              addIncludeAirport(code, true);
+              count++;
+            }
           });
+          incInput.value = '';
+          if (incDropdown) incDropdown.style.display = 'none';
+          renderIncludeChips();
+          if (count > 0) toast(`Added ${count} airports to Must-Fly`, 'success');
           return;
         }
-        renderIncludeDropdown(val);
+        clearTimeout(incDebounceTimer);
+        incDebounceTimer = setTimeout(() => renderIncludeDropdown(val), 60);
       });
 
       incInput.addEventListener('keydown', (e) => {
@@ -1314,8 +1341,18 @@
 
       if (state.includeMode === 'ap') {
         const multi = detectMultiIata(val);
-        if (multi) {
-          multi.forEach(code => { if (getAirport(code)) addIncludeAirport(code); });
+        if (multi && multi.length > 1) {
+          let count = 0;
+          multi.forEach(code => {
+            if (getAirport(code)) {
+              addIncludeAirport(code, true);
+              count++;
+            }
+          });
+          incInput.value = '';
+          if (incDropdown) incDropdown.style.display = 'none';
+          renderIncludeChips();
+          if (count > 0) toast(`Added ${count} airports to Must-Fly`, 'success');
           return;
         }
         const match = getAirports().find(a => a.iata.toLowerCase() === val.toLowerCase() || (a.city && a.city.toLowerCase() === val.toLowerCase()));
@@ -1352,17 +1389,27 @@
         renderExcludeDropdown(excInput.value);
       });
 
+      let excDebounceTimer = null;
       excInput.addEventListener('focus', () => renderExcludeDropdown(excInput.value));
       excInput.addEventListener('input', (e) => {
         const val = e.target.value;
         const multi = detectMultiIata(val);
-        if (multi && state.excludeMode === 'ap') {
+        if (multi && multi.length > 1 && state.excludeMode === 'ap') {
+          let count = 0;
           multi.forEach(code => {
-            if (getAirport(code)) addExcludeAirport(code);
+            if (getAirport(code)) {
+              addExcludeAirport(code, true);
+              count++;
+            }
           });
+          excInput.value = '';
+          if (excDropdown) excDropdown.style.display = 'none';
+          renderExcludeChips();
+          if (count > 0) toast(`Avoided ${count} airports`, 'info');
           return;
         }
-        renderExcludeDropdown(val);
+        clearTimeout(excDebounceTimer);
+        excDebounceTimer = setTimeout(() => renderExcludeDropdown(val), 60);
       });
 
       excInput.addEventListener('keydown', (e) => {
@@ -1386,8 +1433,18 @@
 
       if (state.excludeMode === 'ap') {
         const multi = detectMultiIata(val);
-        if (multi) {
-          multi.forEach(code => { if (getAirport(code)) addExcludeAirport(code); });
+        if (multi && multi.length > 1) {
+          let count = 0;
+          multi.forEach(code => {
+            if (getAirport(code)) {
+              addExcludeAirport(code, true);
+              count++;
+            }
+          });
+          excInput.value = '';
+          if (excDropdown) excDropdown.style.display = 'none';
+          renderExcludeChips();
+          if (count > 0) toast(`Avoided ${count} airports`, 'info');
           return;
         }
         const match = getAirports().find(a => a.iata.toLowerCase() === val.toLowerCase() || (a.city && a.city.toLowerCase() === val.toLowerCase()));
@@ -1397,6 +1454,37 @@
         const match = getCountries().find(c => c.name.toLowerCase() === val.toLowerCase() || c.name.toLowerCase().startsWith(val.toLowerCase()));
         if (match) addExcludeCountry(match.name);
       }
+    }
+
+    // Delegated click listeners for chips
+    const incChipsContainer = document.getElementById('cf_c_inc_chips');
+    if (incChipsContainer) {
+      incChipsContainer.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-type]');
+        if (!btn) return;
+        const type = btn.dataset.type;
+        const val = btn.dataset.val;
+        if (type === 'ap') removeIncludeAirport(val);
+        else if (type === 'ct') removeIncludeCountry(val);
+      });
+    }
+
+    const excChipsContainer = document.getElementById('cf_c_exc_chips');
+    if (excChipsContainer) {
+      excChipsContainer.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-type]');
+        if (!btn) return;
+        const type = btn.dataset.type;
+        const val = btn.dataset.val;
+        if (type === 'toggle-expand') {
+          state.isExcludeExpanded = !state.isExcludeExpanded;
+          renderExcludeChips();
+        } else if (type === 'ap') {
+          removeExcludeAirport(val);
+        } else if (type === 'ct') {
+          removeExcludeCountry(val);
+        }
+      });
     }
 
     // Close autocomplete on click outside
@@ -1457,6 +1545,9 @@
         state.includedCountries = [];
         state.excludedAirports = [];
         state.excludedCountries = [];
+        state.isExcludeExpanded = false;
+        syncIncludeSets();
+        syncExcludeSets();
 
         if (targetDurSelect) targetDurSelect.value = '168';
         if (slackSelect) slackSelect.value = '0';
@@ -1511,7 +1602,7 @@
       const airports = getAirports();
       const matches = airports.filter(ap => {
         if (ap.iata === state.hub) return false;
-        if (state.includedAirports.includes(ap.iata)) return false;
+        if (state.includedAirportsSet.has(ap.iata)) return false;
         if (!q) return true;
         return ap.iata.toLowerCase().includes(q) ||
                (ap.city && ap.city.toLowerCase().includes(q)) ||
@@ -1554,7 +1645,7 @@
       // Country mode
       const countries = getCountries();
       const matches = countries.filter(c => {
-        if (state.includedCountries.includes(c.name)) return false;
+        if (state.includedCountriesSet.has(c.name)) return false;
         if (!q) return true;
         return c.name.toLowerCase().includes(q) || (c.continent && c.continent.toLowerCase().includes(q));
       }).slice(0, 15);
@@ -1594,7 +1685,7 @@
       const airports = getAirports();
       const matches = airports.filter(ap => {
         if (ap.iata === state.hub) return false;
-        if (state.excludedAirports.includes(ap.iata)) return false;
+        if (state.excludedAirportsSet.has(ap.iata)) return false;
         if (!q) return true;
         return ap.iata.toLowerCase().includes(q) ||
                (ap.city && ap.city.toLowerCase().includes(q)) ||
@@ -1624,7 +1715,7 @@
       // Country mode
       const countries = getCountries();
       const matches = countries.filter(c => {
-        if (state.excludedCountries.includes(c.name)) return false;
+        if (state.excludedCountriesSet.has(c.name)) return false;
         if (!q) return true;
         return c.name.toLowerCase().includes(q) || (c.continent && c.continent.toLowerCase().includes(q));
       }).slice(0, 15);
@@ -1652,59 +1743,111 @@
     excDropdown.style.display = 'flex';
   }
 
-  function addIncludeAirport(code) {
+  function addIncludeAirport(code, skipRender = false) {
     const iata = (code || '').toUpperCase().trim();
-    if (iata && !state.includedAirports.includes(iata)) {
+    if (iata && !state.includedAirportsSet.has(iata)) {
       state.includedAirports.push(iata);
-      state.excludedAirports = state.excludedAirports.filter(x => x !== iata);
-      toast(`Added ${iata} to Must-Fly`, 'success');
+      state.includedAirportsSet.add(iata);
+      if (state.excludedAirportsSet.has(iata)) {
+        state.excludedAirportsSet.delete(iata);
+        state.excludedAirports = state.excludedAirports.filter(x => x !== iata);
+        if (!skipRender) renderExcludeChips();
+      }
+      if (!skipRender) toast(`Added ${iata} to Must-Fly`, 'success');
     }
-    const inp = document.getElementById('cf_c_inc_input');
-    if (inp) inp.value = '';
-    const dd = document.getElementById('cf_c_inc_dropdown');
-    if (dd) dd.style.display = 'none';
-    renderIncludeChips();
+    if (!skipRender) {
+      const inp = document.getElementById('cf_c_inc_input');
+      if (inp) inp.value = '';
+      const dd = document.getElementById('cf_c_inc_dropdown');
+      if (dd) dd.style.display = 'none';
+      renderIncludeChips();
+    }
   }
 
-  function addIncludeCountry(country) {
+  function addIncludeCountry(country, skipRender = false) {
     const c = (country || '').trim();
-    if (c && !state.includedCountries.includes(c)) {
+    if (c && !state.includedCountriesSet.has(c)) {
       state.includedCountries.push(c);
-      state.excludedCountries = state.excludedCountries.filter(x => x !== c);
-      toast(`Added ${c} to Must-Fly Countries`, 'success');
+      state.includedCountriesSet.add(c);
+      if (state.excludedCountriesSet.has(c)) {
+        state.excludedCountriesSet.delete(c);
+        state.excludedCountries = state.excludedCountries.filter(x => x !== c);
+        if (!skipRender) renderExcludeChips();
+      }
+      if (!skipRender) toast(`Added ${c} to Must-Fly Countries`, 'success');
     }
-    const inp = document.getElementById('cf_c_inc_input');
-    if (inp) inp.value = '';
-    const dd = document.getElementById('cf_c_inc_dropdown');
-    if (dd) dd.style.display = 'none';
+    if (!skipRender) {
+      const inp = document.getElementById('cf_c_inc_input');
+      if (inp) inp.value = '';
+      const dd = document.getElementById('cf_c_inc_dropdown');
+      if (dd) dd.style.display = 'none';
+      renderIncludeChips();
+    }
+  }
+
+  function addExcludeAirport(code, skipRender = false) {
+    const iata = (code || '').toUpperCase().trim();
+    if (iata && !state.excludedAirportsSet.has(iata)) {
+      state.excludedAirports.push(iata);
+      state.excludedAirportsSet.add(iata);
+      if (state.includedAirportsSet.has(iata)) {
+        state.includedAirportsSet.delete(iata);
+        state.includedAirports = state.includedAirports.filter(x => x !== iata);
+        if (!skipRender) renderIncludeChips();
+      }
+      if (!skipRender) toast(`Added ${iata} to Avoid list`, 'info');
+    }
+    if (!skipRender) {
+      const inp = document.getElementById('cf_c_exc_input');
+      if (inp) inp.value = '';
+      const dd = document.getElementById('cf_c_exc_dropdown');
+      if (dd) dd.style.display = 'none';
+      renderExcludeChips();
+    }
+  }
+
+  function addExcludeCountry(country, skipRender = false) {
+    const c = (country || '').trim();
+    if (c && !state.excludedCountriesSet.has(c)) {
+      state.excludedCountries.push(c);
+      state.excludedCountriesSet.add(c);
+      if (state.includedCountriesSet.has(c)) {
+        state.includedCountriesSet.delete(c);
+        state.includedCountries = state.includedCountries.filter(x => x !== c);
+        if (!skipRender) renderIncludeChips();
+      }
+      if (!skipRender) toast(`Excluded ${c}`, 'info');
+    }
+    if (!skipRender) {
+      const inp = document.getElementById('cf_c_exc_input');
+      if (inp) inp.value = '';
+      const dd = document.getElementById('cf_c_exc_dropdown');
+      if (dd) dd.style.display = 'none';
+      renderExcludeChips();
+    }
+  }
+
+  function removeIncludeAirport(code) {
+    state.includedAirports = state.includedAirports.filter(x => x !== code);
+    state.includedAirportsSet.delete(code);
     renderIncludeChips();
   }
 
-  function addExcludeAirport(code) {
-    const iata = (code || '').toUpperCase().trim();
-    if (iata && !state.excludedAirports.includes(iata)) {
-      state.excludedAirports.push(iata);
-      state.includedAirports = state.includedAirports.filter(x => x !== iata);
-      toast(`Added ${iata} to Avoid list`, 'info');
-    }
-    const inp = document.getElementById('cf_c_exc_input');
-    if (inp) inp.value = '';
-    const dd = document.getElementById('cf_c_exc_dropdown');
-    if (dd) dd.style.display = 'none';
+  function removeIncludeCountry(country) {
+    state.includedCountries = state.includedCountries.filter(x => x !== country);
+    state.includedCountriesSet.delete(country);
+    renderIncludeChips();
+  }
+
+  function removeExcludeAirport(code) {
+    state.excludedAirports = state.excludedAirports.filter(x => x !== code);
+    state.excludedAirportsSet.delete(code);
     renderExcludeChips();
   }
 
-  function addExcludeCountry(country) {
-    const c = (country || '').trim();
-    if (c && !state.excludedCountries.includes(c)) {
-      state.excludedCountries.push(c);
-      state.includedCountries = state.includedCountries.filter(x => x !== c);
-      toast(`Excluded ${c}`, 'info');
-    }
-    const inp = document.getElementById('cf_c_exc_input');
-    if (inp) inp.value = '';
-    const dd = document.getElementById('cf_c_exc_dropdown');
-    if (dd) dd.style.display = 'none';
+  function removeExcludeCountry(country) {
+    state.excludedCountries = state.excludedCountries.filter(x => x !== country);
+    state.excludedCountriesSet.delete(country);
     renderExcludeChips();
   }
 
@@ -1729,24 +1872,25 @@
       `;
     });
     c.innerHTML = html;
-    c.querySelectorAll('button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const { type, val } = btn.dataset;
-        if (type === 'ap') {
-          state.includedAirports = state.includedAirports.filter(x => x !== val);
-        } else {
-          state.includedCountries = state.includedCountries.filter(x => x !== val);
-        }
-        renderIncludeChips();
-      });
-    });
   }
 
   function renderExcludeChips() {
     const c = document.getElementById('cf_c_exc_chips');
     if (!c) return;
+
+    const totalExc = state.excludedAirports.length + state.excludedCountries.length;
+    if (totalExc === 0) {
+      c.innerHTML = '';
+      state.isExcludeExpanded = false;
+      return;
+    }
+
+    const MAX_VISIBLE = 25;
+    const shouldWindow = !state.isExcludeExpanded && (state.excludedAirports.length > MAX_VISIBLE);
+    const visibleAirports = shouldWindow ? state.excludedAirports.slice(0, MAX_VISIBLE) : state.excludedAirports;
+
     let html = '';
-    state.excludedAirports.forEach(code => {
+    visibleAirports.forEach(code => {
       html += `
         <span class="cf-tag-chip exc">
           <span>🚫 ${code}</span>
@@ -1762,18 +1906,23 @@
         </span>
       `;
     });
+
+    if (shouldWindow) {
+      const hiddenCount = state.excludedAirports.length - MAX_VISIBLE;
+      html += `
+        <span class="cf-tag-chip exc" style="cursor: pointer; background: #1e293b; border-color: #475569;" title="Click to view all ${state.excludedAirports.length} exclusions">
+          <button type="button" data-type="toggle-expand" style="color: #94a3b8; font-size: 8.5px; font-weight: 600;">+${hiddenCount} more...</button>
+        </span>
+      `;
+    } else if (state.isExcludeExpanded && state.excludedAirports.length > MAX_VISIBLE) {
+      html += `
+        <span class="cf-tag-chip exc" style="cursor: pointer; background: #1e293b; border-color: #475569;">
+          <button type="button" data-type="toggle-expand" style="color: #94a3b8; font-size: 8.5px;">▲ Less</button>
+        </span>
+      `;
+    }
+
     c.innerHTML = html;
-    c.querySelectorAll('button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const { type, val } = btn.dataset;
-        if (type === 'ap') {
-          state.excludedAirports = state.excludedAirports.filter(x => x !== val);
-        } else {
-          state.excludedCountries = state.excludedCountries.filter(x => x !== val);
-        }
-        renderExcludeChips();
-      });
-    });
   }
 
   // =========================================================================
@@ -2135,6 +2284,35 @@
       state.aircraftId = window.cf_activeAircraftId;
     }
 
+    if (typeof window.cf_getExcludedAirports === 'function') {
+      const desktopExc = window.cf_getExcludedAirports();
+      if (Array.isArray(desktopExc) && desktopExc.length > 0 && state.excludedAirports.length === 0) {
+        state.excludedAirports = [...desktopExc];
+        syncExcludeSets();
+      }
+    }
+    if (typeof window.cf_getExcludedCountries === 'function') {
+      const desktopExcCt = window.cf_getExcludedCountries();
+      if (Array.isArray(desktopExcCt) && desktopExcCt.length > 0 && state.excludedCountries.length === 0) {
+        state.excludedCountries = [...desktopExcCt];
+        syncExcludeSets();
+      }
+    }
+    if (typeof window.cf_getIncludedAirports === 'function') {
+      const desktopInc = window.cf_getIncludedAirports();
+      if (Array.isArray(desktopInc) && desktopInc.length > 0 && state.includedAirports.length === 0) {
+        state.includedAirports = [...desktopInc];
+        syncIncludeSets();
+      }
+    }
+    if (typeof window.cf_getIncludedCountries === 'function') {
+      const desktopIncCt = window.cf_getIncludedCountries();
+      if (Array.isArray(desktopIncCt) && desktopIncCt.length > 0 && state.includedCountries.length === 0) {
+        state.includedCountries = [...desktopIncCt];
+        syncIncludeSets();
+      }
+    }
+
     loadPersistedData();
 
     if (!state.isMounted || !cont.firstElementChild) {
@@ -2174,7 +2352,11 @@
     computeAirportDemandStats,
     haversineDistance,
     calculateFlightTimeHours,
-    formatHoursMinutes
+    formatHoursMinutes,
+    renderExcludeChips,
+    renderIncludeChips,
+    renderExcludeDropdown,
+    renderIncludeDropdown
   };
 
   document.addEventListener('DOMContentLoaded', () => {

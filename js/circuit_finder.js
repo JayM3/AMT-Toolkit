@@ -129,11 +129,30 @@
   let cf_includedAirports = [];
   let cf_includedCountries = [];
   let cf_includedContinents = [];
+  let cf_includedAirportsSet = new Set();
+  let cf_includedCountriesSet = new Set();
+  let cf_includedContinentsSet = new Set();
 
   // Precision Exclusions
   let cf_excludedAirports = [];
   let cf_excludedCountries = [];
   let cf_excludedContinents = [];
+  let cf_excludedAirportsSet = new Set();
+  let cf_excludedCountriesSet = new Set();
+  let cf_excludedContinentsSet = new Set();
+  let cf_isExcludeExpanded = false;
+
+  function cf_syncExcludeSets() {
+    cf_excludedAirportsSet = new Set(cf_excludedAirports);
+    cf_excludedCountriesSet = new Set(cf_excludedCountries);
+    cf_excludedContinentsSet = new Set(cf_excludedContinents);
+  }
+
+  function cf_syncIncludeSets() {
+    cf_includedAirportsSet = new Set(cf_includedAirports);
+    cf_includedCountriesSet = new Set(cf_includedCountries);
+    cf_includedContinentsSet = new Set(cf_includedContinents);
+  }
 
   // Cached country lookup list
   let cf_uniqueCountriesList = [];
@@ -880,17 +899,27 @@
     cf_renderIncludeDropdown(document.getElementById('cf_include_airports_input')?.value || '');
   }
 
+  let cf_includeInputDebounceTimer = null;
   function cf_onIncludeInput(val) {
     const multi = cf_detectMultiIata(val);
     if (multi) {
       let added = 0;
+      let removedFromExc = false;
       multi.forEach(code => {
-        if (cf_getAirport(code) && !cf_includedAirports.includes(code)) {
+        if (cf_getAirport(code) && !cf_includedAirportsSet.has(code)) {
           cf_includedAirports.push(code);
-          cf_excludedAirports = cf_excludedAirports.filter(c => c !== code);
+          cf_includedAirportsSet.add(code);
+          if (cf_excludedAirportsSet.has(code)) {
+            cf_excludedAirportsSet.delete(code);
+            removedFromExc = true;
+          }
           added++;
         }
       });
+      if (removedFromExc) {
+        cf_excludedAirports = cf_excludedAirports.filter(c => cf_excludedAirportsSet.has(c));
+        cf_renderExcludeAirportsChips();
+      }
       const input = document.getElementById('cf_include_airports_input');
       if (input) input.value = '';
       cf_closeAllDropdowns();
@@ -900,7 +929,10 @@
       cf_showToast(`Added ${added} pasted airports to Must-Fly`, 'success');
       return;
     }
-    cf_renderIncludeDropdown(val);
+    clearTimeout(cf_includeInputDebounceTimer);
+    cf_includeInputDebounceTimer = setTimeout(() => {
+      cf_renderIncludeDropdown(val);
+    }, 60);
   }
 
   function cf_renderIncludeDropdown(query) {
@@ -916,7 +948,7 @@
       if (typeof AIRPORTS_DATABASE === 'undefined') return;
       const matches = AIRPORTS_DATABASE.filter(ap => {
         if (ap.iata === cf_activeHubIata) return false;
-        if (cf_includedAirports.includes(ap.iata)) return false;
+        if (cf_includedAirportsSet.has(ap.iata)) return false;
         if (!q) return true;
         return ap.iata.toLowerCase().includes(q) ||
                (ap.city && ap.city.toLowerCase().includes(q)) ||
@@ -955,7 +987,7 @@
       }
     } else if (cf_includeMode === 'ct') {
       const matches = cf_uniqueCountriesList.filter(c => {
-        if (cf_includedCountries.includes(c.name)) return false;
+        if (cf_includedCountriesSet.has(c.name)) return false;
         if (!q) return true;
         return c.name.toLowerCase().includes(q) || c.continent.toLowerCase().includes(q);
       }).slice(0, 20);
@@ -976,7 +1008,7 @@
       }
     } else if (cf_includeMode === 'cn') {
       const matches = CF_ALL_CONTINENTS.filter(c => {
-        if (cf_includedContinents.includes(c)) return false;
+        if (cf_includedContinentsSet.has(c)) return false;
         if (!q) return true;
         return c.toLowerCase().includes(q);
       });
@@ -1002,9 +1034,14 @@
   }
 
   function cf_addIncludeAirport(code) {
-    if (!cf_includedAirports.includes(code)) {
+    if (!cf_includedAirportsSet.has(code)) {
       cf_includedAirports.push(code);
-      cf_excludedAirports = cf_excludedAirports.filter(c => c !== code);
+      cf_includedAirportsSet.add(code);
+      if (cf_excludedAirportsSet.has(code)) {
+        cf_excludedAirportsSet.delete(code);
+        cf_excludedAirports = cf_excludedAirports.filter(c => c !== code);
+        cf_renderExcludeAirportsChips();
+      }
     }
     const input = document.getElementById('cf_include_airports_input');
     if (input) input.value = '';
@@ -1015,9 +1052,14 @@
   }
 
   function cf_addIncludeCountry(country) {
-    if (!cf_includedCountries.includes(country)) {
+    if (!cf_includedCountriesSet.has(country)) {
       cf_includedCountries.push(country);
-      cf_excludedCountries = cf_excludedCountries.filter(c => c !== country);
+      cf_includedCountriesSet.add(country);
+      if (cf_excludedCountriesSet.has(country)) {
+        cf_excludedCountriesSet.delete(country);
+        cf_excludedCountries = cf_excludedCountries.filter(c => c !== country);
+        cf_renderExcludeAirportsChips();
+      }
     }
     const input = document.getElementById('cf_include_airports_input');
     if (input) input.value = '';
@@ -1028,9 +1070,14 @@
   }
 
   function cf_addIncludeContinent(cont) {
-    if (!cf_includedContinents.includes(cont)) {
+    if (!cf_includedContinentsSet.has(cont)) {
       cf_includedContinents.push(cont);
-      cf_excludedContinents = cf_excludedContinents.filter(c => c !== cont);
+      cf_includedContinentsSet.add(cont);
+      if (cf_excludedContinentsSet.has(cont)) {
+        cf_excludedContinentsSet.delete(cont);
+        cf_excludedContinents = cf_excludedContinents.filter(c => c !== cont);
+        cf_renderExcludeAirportsChips();
+      }
     }
     const input = document.getElementById('cf_include_airports_input');
     if (input) input.value = '';
@@ -1042,6 +1089,7 @@
 
   function cf_removeIncludeAirport(code) {
     cf_includedAirports = cf_includedAirports.filter(c => c !== code);
+    cf_includedAirportsSet.delete(code);
     cf_renderIncludeAirportsChips();
     cf_saveStateToLocalStorage();
     cf_debouncedFindCircuits();
@@ -1049,6 +1097,7 @@
 
   function cf_removeIncludeCountry(c) {
     cf_includedCountries = cf_includedCountries.filter(x => x !== c);
+    cf_includedCountriesSet.delete(c);
     cf_renderIncludeAirportsChips();
     cf_saveStateToLocalStorage();
     cf_debouncedFindCircuits();
@@ -1056,6 +1105,7 @@
 
   function cf_removeIncludeContinent(cn) {
     cf_includedContinents = cf_includedContinents.filter(x => x !== cn);
+    cf_includedContinentsSet.delete(cn);
     cf_renderIncludeAirportsChips();
     cf_saveStateToLocalStorage();
     cf_debouncedFindCircuits();
@@ -1066,17 +1116,27 @@
     cf_renderExcludeDropdown(document.getElementById('cf_exclude_airports_input')?.value || '');
   }
 
+  let cf_excludeInputDebounceTimer = null;
   function cf_onExcludeInput(val) {
     const multi = cf_detectMultiIata(val);
     if (multi) {
       let added = 0;
+      let removedFromInc = false;
       multi.forEach(code => {
-        if (cf_getAirport(code) && !cf_excludedAirports.includes(code)) {
+        if (cf_getAirport(code) && !cf_excludedAirportsSet.has(code)) {
           cf_excludedAirports.push(code);
-          cf_includedAirports = cf_includedAirports.filter(c => c !== code);
+          cf_excludedAirportsSet.add(code);
+          if (cf_includedAirportsSet.has(code)) {
+            cf_includedAirportsSet.delete(code);
+            removedFromInc = true;
+          }
           added++;
         }
       });
+      if (removedFromInc) {
+        cf_includedAirports = cf_includedAirports.filter(c => cf_includedAirportsSet.has(c));
+        cf_renderIncludeAirportsChips();
+      }
       const input = document.getElementById('cf_exclude_airports_input');
       if (input) input.value = '';
       cf_closeAllDropdowns();
@@ -1086,7 +1146,10 @@
       cf_showToast(`Excluded ${added} pasted airports`, 'info');
       return;
     }
-    cf_renderExcludeDropdown(val);
+    clearTimeout(cf_excludeInputDebounceTimer);
+    cf_excludeInputDebounceTimer = setTimeout(() => {
+      cf_renderExcludeDropdown(val);
+    }, 60);
   }
 
   function cf_renderExcludeDropdown(query) {
@@ -1100,7 +1163,7 @@
       if (typeof AIRPORTS_DATABASE === 'undefined') return;
       const matches = AIRPORTS_DATABASE.filter(ap => {
         if (ap.iata === cf_activeHubIata) return false;
-        if (cf_excludedAirports.includes(ap.iata)) return false;
+        if (cf_excludedAirportsSet.has(ap.iata)) return false;
         if (!q) return true;
         return ap.iata.toLowerCase().includes(q) ||
                (ap.city && ap.city.toLowerCase().includes(q)) ||
@@ -1126,7 +1189,7 @@
       }
     } else if (cf_excludeMode === 'ct') {
       const matches = cf_uniqueCountriesList.filter(c => {
-        if (cf_excludedCountries.includes(c.name)) return false;
+        if (cf_excludedCountriesSet.has(c.name)) return false;
         if (!q) return true;
         return c.name.toLowerCase().includes(q) || c.continent.toLowerCase().includes(q);
       }).slice(0, 20);
@@ -1147,7 +1210,7 @@
       }
     } else if (cf_excludeMode === 'cn') {
       const matches = CF_ALL_CONTINENTS.filter(c => {
-        if (cf_excludedContinents.includes(c)) return false;
+        if (cf_excludedContinentsSet.has(c)) return false;
         if (!q) return true;
         return c.toLowerCase().includes(q);
       });
@@ -1173,9 +1236,14 @@
   }
 
   function cf_addExcludeAirport(code) {
-    if (!cf_excludedAirports.includes(code)) {
+    if (!cf_excludedAirportsSet.has(code)) {
       cf_excludedAirports.push(code);
-      cf_includedAirports = cf_includedAirports.filter(c => c !== code);
+      cf_excludedAirportsSet.add(code);
+      if (cf_includedAirportsSet.has(code)) {
+        cf_includedAirportsSet.delete(code);
+        cf_includedAirports = cf_includedAirports.filter(c => c !== code);
+        cf_renderIncludeAirportsChips();
+      }
     }
     const input = document.getElementById('cf_exclude_airports_input');
     if (input) input.value = '';
@@ -1186,9 +1254,14 @@
   }
 
   function cf_addExcludeCountry(country) {
-    if (!cf_excludedCountries.includes(country)) {
+    if (!cf_excludedCountriesSet.has(country)) {
       cf_excludedCountries.push(country);
-      cf_includedCountries = cf_includedCountries.filter(c => c !== country);
+      cf_excludedCountriesSet.add(country);
+      if (cf_includedCountriesSet.has(country)) {
+        cf_includedCountriesSet.delete(country);
+        cf_includedCountries = cf_includedCountries.filter(c => c !== country);
+        cf_renderIncludeAirportsChips();
+      }
     }
     const input = document.getElementById('cf_exclude_airports_input');
     if (input) input.value = '';
@@ -1199,9 +1272,14 @@
   }
 
   function cf_addExcludeContinent(cont) {
-    if (!cf_excludedContinents.includes(cont)) {
+    if (!cf_excludedContinentsSet.has(cont)) {
       cf_excludedContinents.push(cont);
-      cf_includedContinents = cf_includedContinents.filter(c => c !== cont);
+      cf_excludedContinentsSet.add(cont);
+      if (cf_includedContinentsSet.has(cont)) {
+        cf_includedContinentsSet.delete(cont);
+        cf_includedContinents = cf_includedContinents.filter(c => c !== cont);
+        cf_renderIncludeAirportsChips();
+      }
     }
     const input = document.getElementById('cf_exclude_airports_input');
     if (input) input.value = '';
@@ -1213,6 +1291,7 @@
 
   function cf_removeExcludeAirport(code) {
     cf_excludedAirports = cf_excludedAirports.filter(c => c !== code);
+    cf_excludedAirportsSet.delete(code);
     cf_renderExcludeAirportsChips();
     cf_saveStateToLocalStorage();
     cf_debouncedFindCircuits();
@@ -1220,6 +1299,7 @@
 
   function cf_removeExcludeCountry(c) {
     cf_excludedCountries = cf_excludedCountries.filter(x => x !== c);
+    cf_excludedCountriesSet.delete(c);
     cf_renderExcludeAirportsChips();
     cf_saveStateToLocalStorage();
     cf_debouncedFindCircuits();
@@ -1227,6 +1307,7 @@
 
   function cf_removeExcludeContinent(cn) {
     cf_excludedContinents = cf_excludedContinents.filter(x => x !== cn);
+    cf_excludedContinentsSet.delete(cn);
     cf_renderExcludeAirportsChips();
     cf_saveStateToLocalStorage();
     cf_debouncedFindCircuits();
@@ -1307,38 +1388,67 @@
     if (totalExc === 0) {
       container.innerHTML = '';
       if (statusLine) statusLine.textContent = '';
+      cf_isExcludeExpanded = false;
       return;
     }
 
+    const MAX_VISIBLE = 35;
+    const shouldWindow = !cf_isExcludeExpanded && (cf_excludedAirports.length > MAX_VISIBLE);
+    const visibleAirports = shouldWindow ? cf_excludedAirports.slice(0, MAX_VISIBLE) : cf_excludedAirports;
+
     let html = '';
     cf_excludedContinents.forEach(cn => {
-      html += `<span class="badge-pill bg-amber-950 text-amber-300 border-amber-800"><span>🌍 ${cn}</span><button type="button" onclick="cf_removeExcludeContinent('${cn}')" class="text-amber-400 hover:text-white font-bold ml-1">×</button></span>`;
+      html += `<span class="badge-pill bg-amber-950 text-amber-300 border-amber-800"><span>🌍 ${cn}</span><button type="button" data-action="remove-cn" data-code="${cn}" onclick="cf_removeExcludeContinent('${cn}')" class="text-amber-400 hover:text-white font-bold ml-1">×</button></span>`;
     });
     cf_excludedCountries.forEach(ct => {
-      html += `<span class="badge-pill bg-purple-950 text-purple-300 border-purple-700"><span>🏳 ${ct}</span><button type="button" onclick="cf_removeExcludeCountry('${ct.replace(/'/g, "\\'")}')" class="text-purple-400 hover:text-white font-bold ml-1">×</button></span>`;
+      html += `<span class="badge-pill bg-purple-950 text-purple-300 border-purple-700"><span>🏳 ${ct}</span><button type="button" data-action="remove-ct" data-code="${ct.replace(/"/g, '&quot;')}" onclick="cf_removeExcludeCountry('${ct.replace(/'/g, "\\'")}')" class="text-purple-400 hover:text-white font-bold ml-1">×</button></span>`;
     });
-    cf_excludedAirports.forEach(code => {
+    visibleAirports.forEach(code => {
       const ap = cf_getAirport(code);
       const name = ap ? ap.city : 'Unknown';
       html += `
         <span class="badge-pill bg-rose-950/80 text-rose-300 border-rose-800 font-mono shadow-sm" title="${ap ? ap.name : code}">
           <span>✈ ${code}</span>
           <span class="font-sans font-normal text-[10px] text-slate-400 hidden sm:inline">(${name})</span>
-          <button type="button" onclick="cf_removeExcludeAirport('${code}')" class="text-rose-400 hover:text-white font-bold ml-1 transition">×</button>
+          <button type="button" data-action="remove-ap" data-code="${code}" onclick="cf_removeExcludeAirport('${code}')" class="text-rose-400 hover:text-white font-bold ml-1 transition">×</button>
         </span>
       `;
     });
 
+    if (shouldWindow) {
+      const hiddenCount = cf_excludedAirports.length - MAX_VISIBLE;
+      html += `
+        <button type="button" data-action="toggle-expand" onclick="cf_toggleExcludeExpand()" class="badge-pill bg-slate-900 hover:bg-slate-800 text-rose-300 border border-rose-900/70 font-mono text-[10px] cursor-pointer transition select-none shadow-sm" title="Click to view all ${cf_excludedAirports.length} excluded airports">
+          +${hiddenCount.toLocaleString()} more...
+        </button>
+      `;
+    } else if (cf_isExcludeExpanded && cf_excludedAirports.length > MAX_VISIBLE) {
+      html += `
+        <button type="button" data-action="toggle-expand" onclick="cf_toggleExcludeExpand()" class="badge-pill bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700 font-mono text-[10px] cursor-pointer transition select-none shadow-sm">
+          ▲ Show less
+        </button>
+      `;
+    }
+
     container.innerHTML = html;
     if (statusLine) {
-      statusLine.innerHTML = `<span class="text-rose-400 font-semibold">⊘ Avoid:</span> ${totalExc} active rule(s)`;
+      statusLine.innerHTML = `<span class="text-rose-400 font-semibold">⊘ Avoid:</span> ${totalExc.toLocaleString()} active rule(s)`;
     }
+  }
+
+  function cf_toggleExcludeExpand() {
+    cf_isExcludeExpanded = !cf_isExcludeExpanded;
+    cf_renderExcludeAirportsChips();
   }
 
   function cf_clearExcludedAirports() {
     cf_excludedAirports = [];
     cf_excludedCountries = [];
     cf_excludedContinents = [];
+    cf_excludedAirportsSet.clear();
+    cf_excludedCountriesSet.clear();
+    cf_excludedContinentsSet.clear();
+    cf_isExcludeExpanded = false;
     const input = document.getElementById('cf_exclude_airports_input');
     if (input) input.value = '';
     cf_renderExcludeAirportsChips();
@@ -1530,15 +1640,14 @@
       }
     }
 
-    const incAirportsSet = new Set(cf_includedAirports);
-    const excAirportsSet = new Set([
-      ...cf_excludedAirports,
-      ...(excludeOwned ? cf_ownedHubs : [])
-    ]);
-    const incCountriesSet = new Set(cf_includedCountries);
-    const excCountriesSet = new Set(cf_excludedCountries);
-    const incContinentsSet = new Set(cf_includedContinents);
-    const excContinentsSet = new Set(cf_excludedContinents);
+    const incAirportsSet = cf_includedAirportsSet;
+    const excAirportsSet = (excludeOwned && cf_ownedHubs && cf_ownedHubs.length > 0)
+      ? new Set([...cf_excludedAirportsSet, ...cf_ownedHubs])
+      : cf_excludedAirportsSet;
+    const incCountriesSet = cf_includedCountriesSet;
+    const excCountriesSet = cf_excludedCountriesSet;
+    const incContinentsSet = cf_includedContinentsSet;
+    const excContinentsSet = cf_excludedContinentsSet;
 
     const allFoundCircuits = [];
 
@@ -2105,7 +2214,20 @@
   // =========================================================================
   // LOCALSTORAGE PERSISTENCE ENGINE (amt_circuit_finder_state_v1)
   // =========================================================================
-  function cf_saveStateToLocalStorage() {
+  let cf_saveStateDebounceTimer = null;
+  function cf_saveStateToLocalStorage(immediate = false) {
+    if (isRestoringCircuitFinderState || isResettingCircuitFinder || typeof localStorage === 'undefined') return;
+    if (immediate) {
+      cf_executeSaveStateToLocalStorage();
+      return;
+    }
+    clearTimeout(cf_saveStateDebounceTimer);
+    cf_saveStateDebounceTimer = setTimeout(() => {
+      cf_executeSaveStateToLocalStorage();
+    }, 200);
+  }
+
+  function cf_executeSaveStateToLocalStorage() {
     if (isRestoringCircuitFinderState || isResettingCircuitFinder || typeof localStorage === 'undefined') return;
 
     try {
@@ -2365,6 +2487,8 @@
         cf_excludedContinents = [];
       }
 
+      cf_syncIncludeSets();
+      cf_syncExcludeSets();
       cf_setIncludeMode(data.includeMode || 'ap');
       cf_setExcludeMode(data.excludeMode || 'ap');
       cf_renderIncludeAirportsChips();
@@ -2487,6 +2611,9 @@
     cf_excludedAirports = [];
     cf_excludedCountries = [];
     cf_excludedContinents = [];
+    cf_syncIncludeSets();
+    cf_syncExcludeSets();
+    cf_isExcludeExpanded = false;
     cf_setExcludeMode('ap');
     cf_renderExcludeAirportsChips();
     cf_closeAllDropdowns();
@@ -2693,6 +2820,7 @@
       for (const dst of AIRPORTS_DATABASE) {
         if (dst.iata === currentLeg.dstIata || dst.iata === hub.iata) continue;
         if (circuit.legs.some(l => l.dstIata === dst.iata)) continue;
+        if (cf_excludedAirportsSet.has(dst.iata)) continue;
         if (dst.cat < aircraft.category) continue;
         if (isNaN(dst.lat) || isNaN(dst.lon)) continue;
 
@@ -2823,6 +2951,8 @@
     }
 
     const restored = cf_restoreStateFromLocalStorage();
+    cf_syncIncludeSets();
+    cf_syncExcludeSets();
 
     if (!restored) {
       cf_updateHubInfoDisplay();
@@ -2927,6 +3057,11 @@
   window.cf_removeExcludeCountry = cf_removeExcludeCountry;
   window.cf_removeExcludeContinent = cf_removeExcludeContinent;
   window.cf_clearExcludedAirports = cf_clearExcludedAirports;
+  window.cf_toggleExcludeExpand = cf_toggleExcludeExpand;
+  window.cf_getExcludedAirports = () => cf_excludedAirports;
+  window.cf_getExcludedCountries = () => cf_excludedCountries;
+  window.cf_getIncludedAirports = () => cf_includedAirports;
+  window.cf_getIncludedCountries = () => cf_includedCountries;
   window.cf_closeAllDropdowns = cf_closeAllDropdowns;
   window.cf_closeIncludeDropdown = cf_closeIncludeDropdown;
   window.cf_closeExcludeDropdown = cf_closeExcludeDropdown;
