@@ -1749,9 +1749,10 @@
 
       // Recursive combinatorial solver with branch-and-bound pruning
       const validTemplates = [];
+      const tickUsage = {};
 
       function solveTemplates(remTicks, kRoutes, minTickIdx, currentTicks) {
-        if (validTemplates.length >= 250) return;
+        if (validTemplates.length >= 350) return;
 
         if (kRoutes === 0) {
           const usedTicks = targetTicks - remTicks;
@@ -1771,9 +1772,16 @@
           if (t * kRoutes < (minTicks - (targetTicks - remTicks))) break;
           if (t > remTicks) continue;
 
+          // Prune: Do not use duration tick 't' more times than available airports in grouped[t]
+          const usedSoFar = tickUsage[t] || 0;
+          const maxAvailable = grouped[t] ? grouped[t].length : 0;
+          if (usedSoFar >= maxAvailable) continue;
+
+          tickUsage[t] = usedSoFar + 1;
           currentTicks.push(t);
           solveTemplates(remTicks - t, kRoutes - 1, i, currentTicks);
           currentTicks.pop();
+          tickUsage[t] = usedSoFar;
         }
       }
 
@@ -1783,6 +1791,7 @@
       mustIncludeItems.forEach(mi => {
         seedTicksSum += mi.ticks;
         seedTicks.push(mi.ticks);
+        tickUsage[mi.ticks] = (tickUsage[mi.ticks] || 0) + 1;
       });
 
       if (seedTicksSum > targetTicks) continue;
@@ -3062,6 +3071,7 @@
   window.cf_getExcludedCountries = () => cf_excludedCountries;
   window.cf_getIncludedAirports = () => cf_includedAirports;
   window.cf_getIncludedCountries = () => cf_includedCountries;
+  window.cf_getDiscoveredCircuits = () => cf_discoveredCircuits;
   window.cf_closeAllDropdowns = cf_closeAllDropdowns;
   window.cf_closeIncludeDropdown = cf_closeIncludeDropdown;
   window.cf_closeExcludeDropdown = cf_closeExcludeDropdown;
