@@ -228,6 +228,128 @@
   margin-bottom: 0;
 }
 
+/* A quiet, first-party support link beside the planning section heading. */
+.tool-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.tool-section-header > .space-y-1 {
+  min-width: 0;
+}
+
+.kofi-support {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  padding: 13px 15px;
+  border: 1px solid rgba(251, 113, 133, 0.24);
+  border-radius: 12px;
+  background: radial-gradient(ellipse at 0% 50%, rgba(251, 113, 133, 0.10), transparent 75%), #0f172a;
+  color: #f8fafc;
+  text-decoration: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.kofi-support:hover {
+  border-color: rgba(251, 113, 133, 0.6);
+  box-shadow: 0 6px 24px rgba(251, 113, 133, 0.10);
+  transform: translateY(-2px);
+}
+
+.kofi-support:focus-visible {
+  outline: 2px solid #fda4af;
+  outline-offset: 4px;
+}
+
+.kofi-support-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border: 1px solid rgba(251, 113, 133, 0.18);
+  border-radius: 10px;
+  background: rgba(251, 113, 133, 0.08);
+  color: #fda4af;
+}
+
+.kofi-support-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.kofi-support-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kofi-support-title {
+  font-size: 13px;
+  line-height: 1.3;
+  font-weight: 650;
+  letter-spacing: -0.15px;
+}
+
+.kofi-support-description {
+  color: #94a3b8;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.kofi-support-cta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+  color: #fda4af;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.kofi-support-cta svg {
+  width: 13px;
+  height: 13px;
+}
+
+@media (max-width: 1000px) {
+  .tool-section-header {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 580px) {
+  .kofi-support {
+    width: 100%;
+    gap: 10px;
+    padding: 12px;
+  }
+  .kofi-support-cta {
+    margin-left: auto;
+    font-size: 10px;
+  }
+  .kofi-support-description {
+    max-width: 155px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kofi-support {
+    transition: none;
+  }
+  .kofi-support:hover {
+    transform: none;
+  }
+}
+
 .tools-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
