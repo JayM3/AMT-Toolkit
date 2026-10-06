@@ -245,9 +245,58 @@
     } catch (e) {}
   }
 
+  function parseBatchInput(str, mode) {
+    if (!str || typeof str !== 'string') return [];
+    const trimmed = str.trim();
+    if (!trimmed) return [];
+
+    if (mode === 'ct') {
+      const rawTokens = trimmed.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
+      const results = [];
+      const allCountries = getCountries();
+      rawTokens.forEach(t => {
+        const lower = t.toLowerCase();
+        const match = allCountries.find(c => c.name.toLowerCase() === lower || c.name.toLowerCase().startsWith(lower));
+        if (match && !results.includes(match.name)) {
+          results.push(match.name);
+        }
+      });
+      return results;
+    }
+
+    // Default: Airport mode ('ap')
+    let tokens = trimmed.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
+    if (tokens.length === 1 && /\s+/.test(tokens[0])) {
+      const spaceTokens = tokens[0].split(/\s+/).map(s => s.trim()).filter(Boolean);
+      if (spaceTokens.every(t => /^[A-Za-z]{3}$/.test(t))) {
+        tokens = spaceTokens;
+      }
+    }
+
+    const results = [];
+    tokens.forEach(t => {
+      const upper = t.toUpperCase();
+      if (/^[A-Z]{3}$/.test(upper)) {
+        const ap = getAirport(upper);
+        if (ap && !results.includes(upper)) results.push(upper);
+        else if (!results.includes(upper)) results.push(upper);
+      } else {
+        const lower = t.toLowerCase();
+        const ap = getAirports().find(a => 
+          a.iata.toLowerCase() === lower || 
+          (a.city && a.city.toLowerCase() === lower) || 
+          (a.name && a.name.toLowerCase() === lower)
+        );
+        if (ap && !results.includes(ap.iata)) results.push(ap.iata);
+      }
+    });
+
+    return results;
+  }
+
   function detectMultiIata(str) {
     if (!str) return null;
-    const tokens = str.toUpperCase().match(/[A-Z]{3}/g);
+    const tokens = parseBatchInput(str, 'ap');
     if (tokens && tokens.length > 1) return tokens;
     return null;
   }
@@ -961,7 +1010,8 @@
             <div id="cf_c_inc_box_wrapper" style="padding: 5px 6px; background: #060c18; border: 1px solid var(--sc-border-input); border-radius: 5px; display: flex; flex-direction: column; gap: 4px; position: relative;">
               <div style="display: flex; align-items: center; justify-content: space-between;">
                 <span style="font-size: 9px; font-weight: 700; color: #6ee7b7;">✈ Must-Include Routes (Must-Fly)</span>
-                <div style="display: flex; gap: 2px;">
+                <div style="display: flex; gap: 4px; align-items: center;">
+                  <button type="button" id="cf_c_btn_clear_inc" class="sc-chip" style="display:none; color: #f87171; border-color: #ef444455; background: rgba(239, 68, 68, 0.1); padding: 1px 5px; font-size: 8px;">✕ Clear</button>
                   <button type="button" class="sc-chip active" id="cf_c_btn_inc_ap">Airports</button>
                   <button type="button" class="sc-chip" id="cf_c_btn_inc_ct">Country</button>
                 </div>
@@ -978,7 +1028,8 @@
             <div id="cf_c_exc_box_wrapper" style="padding: 5px 6px; background: #060c18; border: 1px solid var(--sc-border-input); border-radius: 5px; display: flex; flex-direction: column; gap: 4px; position: relative;">
               <div style="display: flex; align-items: center; justify-content: space-between;">
                 <span style="font-size: 9px; font-weight: 700; color: #fca5a5;">🚫 Avoid / Exclude</span>
-                <div style="display: flex; gap: 2px;">
+                <div style="display: flex; gap: 4px; align-items: center;">
+                  <button type="button" id="cf_c_btn_clear_exc" class="sc-chip" style="display:none; color: #f87171; border-color: #ef444455; background: rgba(239, 68, 68, 0.1); padding: 1px 5px; font-size: 8px;">✕ Clear</button>
                   <button type="button" class="sc-chip active" id="cf_c_btn_exc_ap">Airports</button>
                   <button type="button" class="sc-chip" id="cf_c_btn_exc_ct">Country</button>
                 </div>
@@ -1070,6 +1121,33 @@
           <div class="cf-modal-footer">
             <span>Preserves rotation timing 100%</span>
             <button type="button" class="sc-chip" id="cf_c_btn_cancel_swap">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROUTE PICK MODAL (Compact Option B) -->
+      <div id="cf_c_pick_modal_backdrop" class="cf-modal-backdrop" hidden>
+        <div class="cf-modal-dialog">
+          <div class="cf-modal-header">
+            <div class="cf-modal-title">
+              <span>⊘ Exclude Routes from Circuit</span>
+              <span id="cf_c_pick_modal_badge" class="badge-pill" style="background:#2d1519; color:#fca5a5; border:1px solid #7f1d1d;">0 selected</span>
+            </div>
+            <button type="button" class="cf-modal-close" id="cf_c_btn_close_pick">✕</button>
+          </div>
+          <div class="cf-modal-body">
+            <p style="font-size: 9px; color: var(--sc-text-muted); margin-bottom: 6px;">
+              Select destination routes from this circuit to add to your Exclude list:
+            </p>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span style="font-size: 8px; color: var(--sc-text-muted);">Circuit legs:</span>
+              <button type="button" id="cf_c_pick_toggle_all_btn" style="background:none; border:none; color:var(--sc-cyan); font-size:9px; cursor:pointer; text-decoration:underline;">Select All</button>
+            </div>
+            <div id="cf_c_pick_routes_list" style="display: flex; flex-direction: column; gap: 3px; max-height: 240px; overflow-y: auto;"></div>
+          </div>
+          <div class="cf-modal-footer">
+            <button type="button" class="sc-chip" id="cf_c_btn_cancel_pick">Cancel</button>
+            <button type="button" id="cf_c_btn_confirm_pick" style="padding: 3px 8px; font-size: 9px; font-weight: 700; background: #7f1d1d; border: 1px solid #b91c1c; color: #fecaca; border-radius: 4px; cursor: pointer;">Exclude Selected</button>
           </div>
         </div>
       </div>
@@ -1301,19 +1379,8 @@
       incInput.addEventListener('focus', () => renderIncludeDropdown(incInput.value));
       incInput.addEventListener('input', (e) => {
         const val = e.target.value;
-        const multi = detectMultiIata(val);
-        if (multi && multi.length > 1 && state.includeMode === 'ap') {
-          let count = 0;
-          multi.forEach(code => {
-            if (getAirport(code)) {
-              addIncludeAirport(code, true);
-              count++;
-            }
-          });
-          incInput.value = '';
-          if (incDropdown) incDropdown.style.display = 'none';
-          renderIncludeChips();
-          if (count > 0) toast(`Added ${count} airports to Must-Fly`, 'success');
+        if (/[,;\n]/.test(val) || (val.trim().split(/\s+/).length > 1 && val.trim().split(/\s+/).every(t => /^[A-Za-z]{3}$/.test(t)))) {
+          handleAddInc();
           return;
         }
         clearTimeout(incDebounceTimer);
@@ -1339,22 +1406,34 @@
       const val = incInput.value.trim();
       if (!val) return;
 
-      if (state.includeMode === 'ap') {
-        const multi = detectMultiIata(val);
-        if (multi && multi.length > 1) {
-          let count = 0;
-          multi.forEach(code => {
-            if (getAirport(code)) {
+      const tokens = parseBatchInput(val, state.includeMode);
+      if (tokens && tokens.length > 0) {
+        let addedCount = 0;
+        tokens.forEach(code => {
+          if (state.includeMode === 'ap') {
+            if (!state.includedAirportsSet.has(code)) {
               addIncludeAirport(code, true);
-              count++;
+              addedCount++;
             }
-          });
-          incInput.value = '';
-          if (incDropdown) incDropdown.style.display = 'none';
-          renderIncludeChips();
-          if (count > 0) toast(`Added ${count} airports to Must-Fly`, 'success');
-          return;
+          } else {
+            if (!state.includedCountriesSet.has(code)) {
+              addIncludeCountry(code, true);
+              addedCount++;
+            }
+          }
+        });
+        incInput.value = '';
+        if (incDropdown) incDropdown.style.display = 'none';
+        renderIncludeChips();
+        if (addedCount > 0) {
+          toast(`Added ${addedCount} ${state.includeMode === 'ap' ? 'airport' : 'countr'}${addedCount > 1 ? (state.includeMode === 'ap' ? 's' : 'ies') : (state.includeMode === 'ap' ? '' : 'y')} to Must-Fly`, 'success');
+        } else {
+          toast('Item(s) already included', 'info');
         }
+        return;
+      }
+
+      if (state.includeMode === 'ap') {
         const match = getAirports().find(a => a.iata.toLowerCase() === val.toLowerCase() || (a.city && a.city.toLowerCase() === val.toLowerCase()));
         if (match) addIncludeAirport(match.iata);
         else if (val.length === 3) addIncludeAirport(val.toUpperCase());
@@ -1393,19 +1472,8 @@
       excInput.addEventListener('focus', () => renderExcludeDropdown(excInput.value));
       excInput.addEventListener('input', (e) => {
         const val = e.target.value;
-        const multi = detectMultiIata(val);
-        if (multi && multi.length > 1 && state.excludeMode === 'ap') {
-          let count = 0;
-          multi.forEach(code => {
-            if (getAirport(code)) {
-              addExcludeAirport(code, true);
-              count++;
-            }
-          });
-          excInput.value = '';
-          if (excDropdown) excDropdown.style.display = 'none';
-          renderExcludeChips();
-          if (count > 0) toast(`Avoided ${count} airports`, 'info');
+        if (/[,;\n]/.test(val) || (val.trim().split(/\s+/).length > 1 && val.trim().split(/\s+/).every(t => /^[A-Za-z]{3}$/.test(t)))) {
+          handleAddExc();
           return;
         }
         clearTimeout(excDebounceTimer);
@@ -1431,22 +1499,34 @@
       const val = excInput.value.trim();
       if (!val) return;
 
-      if (state.excludeMode === 'ap') {
-        const multi = detectMultiIata(val);
-        if (multi && multi.length > 1) {
-          let count = 0;
-          multi.forEach(code => {
-            if (getAirport(code)) {
+      const tokens = parseBatchInput(val, state.excludeMode);
+      if (tokens && tokens.length > 0) {
+        let addedCount = 0;
+        tokens.forEach(code => {
+          if (state.excludeMode === 'ap') {
+            if (!state.excludedAirportsSet.has(code)) {
               addExcludeAirport(code, true);
-              count++;
+              addedCount++;
             }
-          });
-          excInput.value = '';
-          if (excDropdown) excDropdown.style.display = 'none';
-          renderExcludeChips();
-          if (count > 0) toast(`Avoided ${count} airports`, 'info');
-          return;
+          } else {
+            if (!state.excludedCountriesSet.has(code)) {
+              addExcludeCountry(code, true);
+              addedCount++;
+            }
+          }
+        });
+        excInput.value = '';
+        if (excDropdown) excDropdown.style.display = 'none';
+        renderExcludeChips();
+        if (addedCount > 0) {
+          toast(`Avoided ${addedCount} ${state.excludeMode === 'ap' ? 'airport' : 'countr'}${addedCount > 1 ? (state.excludeMode === 'ap' ? 's' : 'ies') : (state.excludeMode === 'ap' ? '' : 'y')}`, 'info');
+        } else {
+          toast('Item(s) already excluded', 'info');
         }
+        return;
+      }
+
+      if (state.excludeMode === 'ap') {
         const match = getAirports().find(a => a.iata.toLowerCase() === val.toLowerCase() || (a.city && a.city.toLowerCase() === val.toLowerCase()));
         if (match) addExcludeAirport(match.iata);
         else if (val.length === 3) addExcludeAirport(val.toUpperCase());
@@ -1578,11 +1658,28 @@
     const btnExportJson = document.getElementById('cf_c_btn_export_json');
     if (btnExportJson) btnExportJson.addEventListener('click', exportCircuitsJson);
 
+    // Clear All buttons
+    const btnClearInc = document.getElementById('cf_c_btn_clear_inc');
+    if (btnClearInc) btnClearInc.addEventListener('click', clearInclude);
+
+    const btnClearExc = document.getElementById('cf_c_btn_clear_exc');
+    if (btnClearExc) btnClearExc.addEventListener('click', clearExclude);
+
     // Swap modal close buttons
     const btnCloseSwap = document.getElementById('cf_c_btn_close_swap');
     const btnCancelSwap = document.getElementById('cf_c_btn_cancel_swap');
     if (btnCloseSwap) btnCloseSwap.addEventListener('click', closeSwapModal);
     if (btnCancelSwap) btnCancelSwap.addEventListener('click', closeSwapModal);
+
+    // Pick modal buttons
+    const btnClosePick = document.getElementById('cf_c_btn_close_pick');
+    const btnCancelPick = document.getElementById('cf_c_btn_cancel_pick');
+    const btnConfirmPick = document.getElementById('cf_c_btn_confirm_pick');
+    const btnToggleAllPick = document.getElementById('cf_c_pick_toggle_all_btn');
+    if (btnClosePick) btnClosePick.addEventListener('click', closeCompactPickModal);
+    if (btnCancelPick) btnCancelPick.addEventListener('click', closeCompactPickModal);
+    if (btnConfirmPick) btnConfirmPick.addEventListener('click', confirmCompactPickModal);
+    if (btnToggleAllPick) btnToggleAllPick.addEventListener('click', toggleCompactPickSelectAll);
   }
 
   // =========================================================================
@@ -1851,8 +1948,29 @@
     renderExcludeChips();
   }
 
+  function clearInclude() {
+    state.includedAirports = [];
+    state.includedCountries = [];
+    syncIncludeSets();
+    renderIncludeChips();
+    toast('Cleared all inclusions', 'info');
+  }
+
+  function clearExclude() {
+    state.excludedAirports = [];
+    state.excludedCountries = [];
+    state.isExcludeExpanded = false;
+    syncExcludeSets();
+    renderExcludeChips();
+    toast('Cleared all exclusions', 'info');
+  }
+
   function renderIncludeChips() {
     const c = document.getElementById('cf_c_inc_chips');
+    const clearBtn = document.getElementById('cf_c_btn_clear_inc');
+    if (clearBtn) {
+      clearBtn.style.display = (state.includedAirports.length + state.includedCountries.length > 0) ? 'inline-block' : 'none';
+    }
     if (!c) return;
     let html = '';
     state.includedAirports.forEach(code => {
@@ -1876,9 +1994,13 @@
 
   function renderExcludeChips() {
     const c = document.getElementById('cf_c_exc_chips');
+    const clearBtn = document.getElementById('cf_c_btn_clear_exc');
+    const totalExc = state.excludedAirports.length + state.excludedCountries.length;
+    if (clearBtn) {
+      clearBtn.style.display = totalExc > 0 ? 'inline-block' : 'none';
+    }
     if (!c) return;
 
-    const totalExc = state.excludedAirports.length + state.excludedCountries.length;
     if (totalExc === 0) {
       c.innerHTML = '';
       state.isExcludeExpanded = false;
@@ -1923,6 +2045,146 @@
     }
 
     c.innerHTML = html;
+  }
+
+  // =========================================================================
+  // OPTION B: EXCLUDE ROUTES ON FOUND CIRCUITS (COMPACT)
+  // =========================================================================
+  function excludeCircuitRoutes(circuitIdx) {
+    const circuit = state.discoveredCircuits[circuitIdx];
+    if (!circuit || !circuit.legs) return;
+
+    let addedCount = 0;
+    circuit.legs.forEach(leg => {
+      const iata = leg.dstIata;
+      if (!state.excludedAirportsSet.has(iata)) {
+        state.excludedAirports.push(iata);
+        state.excludedAirportsSet.add(iata);
+        addedCount++;
+        if (state.includedAirportsSet.has(iata)) {
+          state.includedAirportsSet.delete(iata);
+          state.includedAirports = state.includedAirports.filter(x => x !== iata);
+        }
+      }
+    });
+
+    renderIncludeChips();
+    renderExcludeChips();
+    if (addedCount > 0) {
+      toast(`Excluded ${addedCount} route(s) from circuit`, 'info');
+    } else {
+      toast('All routes in circuit are already excluded', 'info');
+    }
+  }
+
+  function excludeSingleRoute(code) {
+    if (!code) return;
+    const iata = code.toUpperCase().trim();
+    if (!state.excludedAirportsSet.has(iata)) {
+      state.excludedAirports.push(iata);
+      state.excludedAirportsSet.add(iata);
+      if (state.includedAirportsSet.has(iata)) {
+        state.includedAirportsSet.delete(iata);
+        state.includedAirports = state.includedAirports.filter(x => x !== iata);
+        renderIncludeChips();
+      }
+      renderExcludeChips();
+      toast(`Excluded ${iata} from searches`, 'info');
+    } else {
+      toast(`${iata} is already excluded`, 'info');
+    }
+  }
+
+  function openCompactPickModal(circuitIdx) {
+    state.activePickCircuitIdx = circuitIdx;
+    const circuit = state.discoveredCircuits[circuitIdx];
+    if (!circuit || !circuit.legs) return;
+
+    const listEl = document.getElementById('cf_c_pick_routes_list');
+    const modal = document.getElementById('cf_c_pick_modal_backdrop');
+    if (!listEl || !modal) return;
+
+    listEl.innerHTML = circuit.legs.map((leg) => {
+      const isAlreadyExcluded = state.excludedAirportsSet.has(leg.dstIata);
+      return `
+        <label style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; background: #0c182b; border: 1px solid #1e293b; border-radius: 4px; cursor: pointer; font-size: 9px; user-select: none;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <input type="checkbox" class="cf-c-pick-leg-cb" data-iata="${leg.dstIata}" ${isAlreadyExcluded ? 'disabled checked' : 'checked'} style="cursor: pointer; width: 12px; height: 12px;">
+            <b style="color: var(--sc-cyan); font-family: ui-monospace, monospace;">${circuit.hubIata} ✈ ${leg.dstIata}</b>
+            <span style="color: var(--sc-text-muted); font-size: 8px;">${leg.city || leg.name} (${leg.country})</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <span style="font-family: ui-monospace, monospace; color: var(--sc-text-bright); font-size: 8.5px;">${formatHoursMinutes(leg.dur)}</span>
+            ${isAlreadyExcluded ? '<span style="color: #f87171; font-size: 8px;">(Excluded)</span>' : ''}
+          </div>
+        </label>
+      `;
+    }).join('');
+
+    listEl.querySelectorAll('.cf-c-pick-leg-cb').forEach(cb => {
+      cb.addEventListener('change', updateCompactPickCount);
+    });
+
+    const toggleBtn = document.getElementById('cf_c_pick_toggle_all_btn');
+    if (toggleBtn) toggleBtn.textContent = 'Deselect All';
+
+    updateCompactPickCount();
+    modal.hidden = false;
+  }
+
+  function closeCompactPickModal() {
+    const modal = document.getElementById('cf_c_pick_modal_backdrop');
+    if (modal) modal.hidden = true;
+    state.activePickCircuitIdx = null;
+  }
+
+  function updateCompactPickCount() {
+    const checked = document.querySelectorAll('.cf-c-pick-leg-cb:checked:not(:disabled)');
+    const badge = document.getElementById('cf_c_pick_modal_badge');
+    if (badge) {
+      badge.textContent = `${checked.length} selected`;
+    }
+  }
+
+  function toggleCompactPickSelectAll() {
+    const cbs = document.querySelectorAll('.cf-c-pick-leg-cb:not(:disabled)');
+    if (cbs.length === 0) return;
+    const allChecked = Array.from(cbs).every(cb => cb.checked);
+    cbs.forEach(cb => { cb.checked = !allChecked; });
+    const toggleBtn = document.getElementById('cf_c_pick_toggle_all_btn');
+    if (toggleBtn) {
+      toggleBtn.textContent = allChecked ? 'Select All' : 'Deselect All';
+    }
+    updateCompactPickCount();
+  }
+
+  function confirmCompactPickModal() {
+    const checked = document.querySelectorAll('.cf-c-pick-leg-cb:checked:not(:disabled)');
+    if (checked.length === 0) {
+      closeCompactPickModal();
+      return;
+    }
+
+    let addedCount = 0;
+    checked.forEach(cb => {
+      const iata = cb.dataset.iata;
+      if (iata && !state.excludedAirportsSet.has(iata)) {
+        state.excludedAirports.push(iata);
+        state.excludedAirportsSet.add(iata);
+        addedCount++;
+        if (state.includedAirportsSet.has(iata)) {
+          state.includedAirportsSet.delete(iata);
+          state.includedAirports = state.includedAirports.filter(x => x !== iata);
+        }
+      }
+    });
+
+    closeCompactPickModal();
+    renderIncludeChips();
+    renderExcludeChips();
+    if (addedCount > 0) {
+      toast(`Excluded ${addedCount} selected route(s)`, 'info');
+    }
   }
 
   // =========================================================================
@@ -2073,7 +2335,10 @@
               <div style="width: ${jBar}%; background: var(--sc-bus); height: 100%;"></div>
               <div style="width: ${fBar}%; background: var(--sc-first); height: 100%;"></div>
             </div>
-            <button type="button" class="cf-leg-swap-btn" data-cidx="${cIdx}" data-lidx="${legIdx}">Swap</button>
+            <div style="display: flex; gap: 2px;">
+              <button type="button" class="cf-leg-swap-btn" data-cidx="${cIdx}" data-lidx="${legIdx}">Swap</button>
+              <button type="button" class="cf-leg-exclude-btn" data-dst="${leg.dstIata}" title="Exclude ${leg.dstIata}">⊘</button>
+            </div>
           </div>
         `;
       }).join('');
@@ -2105,6 +2370,14 @@
             <button type="button" class="cf-btn-seatconfig" data-cidx="${cIdx}" title="Configure aircraft fleet seating for this circuit">
               ✈ Load in Seat Config
             </button>
+            <div style="display: flex; gap: 0; align-items: stretch;">
+              <button type="button" class="cf-btn-exclude" data-cidx="${cIdx}" title="Exclude all ${c.legs.length} destination routes in this circuit">
+                ⊘ Exclude All
+              </button>
+              <button type="button" class="cf-btn-exclude-pick" data-cidx="${cIdx}" title="Pick specific routes to exclude">
+                ▾ Pick
+              </button>
+            </div>
             <div style="display: flex; gap: 4px;">
               <button type="button" class="cf-btn-save" data-cidx="${cIdx}">💾 Save</button>
               <button type="button" class="cf-btn-copy" data-cidx="${cIdx}">📋 Copy</button>
@@ -2123,10 +2396,19 @@
     container.querySelectorAll('.cf-btn-copy').forEach(btn => {
       btn.addEventListener('click', () => copyCircuitSummary(parseInt(btn.dataset.cidx, 10)));
     });
+    container.querySelectorAll('.cf-btn-exclude').forEach(btn => {
+      btn.addEventListener('click', () => excludeCircuitRoutes(parseInt(btn.dataset.cidx, 10)));
+    });
+    container.querySelectorAll('.cf-btn-exclude-pick').forEach(btn => {
+      btn.addEventListener('click', () => openCompactPickModal(parseInt(btn.dataset.cidx, 10)));
+    });
     container.querySelectorAll('.cf-leg-swap-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         openSwapModal(parseInt(btn.dataset.cidx, 10), parseInt(btn.dataset.lidx, 10));
       });
+    });
+    container.querySelectorAll('.cf-leg-exclude-btn').forEach(btn => {
+      btn.addEventListener('click', () => excludeSingleRoute(btn.dataset.dst));
     });
   }
 
@@ -2356,7 +2638,15 @@
     renderExcludeChips,
     renderIncludeChips,
     renderExcludeDropdown,
-    renderIncludeDropdown
+    renderIncludeDropdown,
+    clearInclude,
+    clearExclude,
+    excludeCircuitRoutes,
+    excludeSingleRoute,
+    openCompactPickModal,
+    closeCompactPickModal,
+    confirmCompactPickModal,
+    parseBatchInput
   };
 
   document.addEventListener('DOMContentLoaded', () => {

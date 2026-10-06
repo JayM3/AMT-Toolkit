@@ -991,3 +991,74 @@ select.sc-input option {
 .cf-bg-5 { background: #f43f5e; }
 .cf-bg-6 { background: #6366f1; }
 .cf-bg-7 { background: #14b8a6; }
+
+/* Compact Exclude Buttons & Route Picker Modal */
+.cf-btn-exclude {
+  padding: 3px 6px;
+  background: #3f121b;
+  border: 1px solid #881337;
+  border-radius: 4px 0 0 4px;
+  color: #fca5a5;
+  font-size: 9px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.15s ease;
+}
+.cf-btn-exclude:hover {
+  background: #5b1726;
+  border-color: #be123c;
+  color: #fff;
+}
+
+.cf-btn-exclude-pick {
+  padding: 3px 5px;
+  background: #4c1d24;
+  border: 1px solid #881337;
+  border-left: none;
+  border-radius: 0 4px 4px 0;
+  color: #fca5a5;
+  font-size: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cf-btn-exclude-pick:hover {
+  background: #6b1f2e;
+  border-color: #be123c;
+  color: #fff;
+}
+
+.cf-leg-exclude-btn {
+  padding: 1px 4px;
+  font-size: 8px;
+  font-weight: 600;
+  background: #2a1217;
+  border: 1px solid #5c1d24;
+  border-radius: 3px;
+  color: #fca5a5;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.cf-leg-exclude-btn:hover {
+  background: #4c1d24;
+  border-color: #991b1b;
+  color: #fff;
+}
+
+#cf_c_pick_modal_backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.85);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+#cf_c_pick_modal_backdrop[hidden] {
+  display: none !important;
+}

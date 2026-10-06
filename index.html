@@ -3346,10 +3346,13 @@
             <!-- LEFT COLUMN: MUST INCLUDE (MUST-FLY) -->
             <div class="space-y-1.5 relative z-30" id="cf_inc_root">
               <div class="flex items-center justify-between">
-                <label class="block text-[11px] font-semibold text-emerald-400 flex items-center gap-1.5">
-                  <span>Must Include (Must-Fly)</span>
-                  <span id="cf_inc_badge" class="hidden text-[9px] px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">0</span>
-                </label>
+                <div class="flex items-center gap-1.5">
+                  <label class="block text-[11px] font-semibold text-emerald-400 flex items-center gap-1.5">
+                    <span>Must Include (Must-Fly)</span>
+                    <span id="cf_inc_badge" class="hidden text-[9px] px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">0</span>
+                  </label>
+                  <button type="button" id="cf_clear_include_btn" onclick="cf_clearIncludedAirports()" class="hidden text-[10px] text-slate-400 hover:text-emerald-300 transition">Clear All</button>
+                </div>
                 <!-- Ultra-Compact Scope Switcher Pills -->
                 <div class="inline-flex p-0.5 bg-slate-950 rounded border border-slate-800 text-[10px]">
                   <button type="button" id="cf_inc_btn_ap" onclick="cf_setIncludeMode('ap')" class="px-2 py-0.5 rounded font-semibold bg-emerald-600 text-white transition">✈ Air</button>
@@ -3358,12 +3361,17 @@
                 </div>
               </div>
 
-              <!-- Dropdown Input -->
-              <div class="relative">
-                <input type="text" id="cf_include_airports_input" placeholder="Search airport (e.g. CPH, BKK, Tokyo) or paste IATAs..." autocomplete="off" oninput="cf_onIncludeInput(this.value)" onfocus="cf_onIncludeFocus()" class="w-full pl-3 pr-8 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs placeholder-slate-500 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none">
-                <button type="button" id="cf_inc_dropdown_arrow" onclick="cf_toggleIncludeDropdown(event)" class="absolute right-0 top-0 bottom-0 px-2.5 flex items-center justify-center text-slate-500 hover:text-slate-300 text-[10px] cursor-pointer transition select-none focus:outline-none" title="Toggle include dropdown">▼</button>
+              <!-- Dropdown Input Row with + Add Button -->
+              <div class="flex items-center gap-1.5">
+                <div class="relative flex-1">
+                  <input type="text" id="cf_include_airports_input" placeholder="Search airport (e.g. CPH, BKK, Tokyo) or paste IATAs..." autocomplete="off" oninput="cf_onIncludeInput(this.value)" onfocus="cf_onIncludeFocus()" class="w-full pl-3 pr-8 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs placeholder-slate-500 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none">
+                  <button type="button" id="cf_inc_dropdown_arrow" onclick="cf_toggleIncludeDropdown(event)" class="absolute right-0 top-0 bottom-0 px-2.5 flex items-center justify-center text-slate-500 hover:text-slate-300 text-[10px] cursor-pointer transition select-none focus:outline-none" title="Toggle include dropdown">▼</button>
 
-                <div id="cf_inc_dropdown" class="hidden absolute top-full left-0 right-0 mt-1 max-h-[180px] overflow-y-auto bg-slate-950 border border-emerald-800/90 rounded-xl shadow-2xl z-50 p-1 space-y-0.5"></div>
+                  <div id="cf_inc_dropdown" class="hidden absolute top-full left-0 right-0 mt-1 max-h-[180px] overflow-y-auto bg-slate-950 border border-emerald-800/90 rounded-xl shadow-2xl z-50 p-1 space-y-0.5"></div>
+                </div>
+                <button type="button" id="cf_add_include_btn" onclick="cf_submitIncludeInput()" class="px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-semibold text-xs transition shrink-0 shadow-sm" title="Add entered items">
+                  + Add
+                </button>
               </div>
 
               <!-- Dynamic Chips -->
@@ -3379,7 +3387,7 @@
                     <span>Exclude (Avoid Destinations)</span>
                     <span id="cf_exc_badge" class="hidden text-[9px] px-1 py-0.2 rounded bg-rose-950 text-rose-300 border border-rose-800 font-mono">0</span>
                   </label>
-                  <button type="button" onclick="cf_clearExcludedAirports()" class="text-[10px] text-slate-400 hover:text-rose-300 transition">Clear All</button>
+                  <button type="button" id="cf_clear_exclude_btn" onclick="cf_clearExcludedAirports()" class="hidden text-[10px] text-slate-400 hover:text-rose-300 transition">Clear All</button>
                 </div>
 
                 <!-- Ultra-Compact Scope Switcher Pills -->
@@ -3390,12 +3398,17 @@
                 </div>
               </div>
 
-              <!-- Dropdown Input -->
-              <div class="relative">
-                <input type="text" id="cf_exclude_airports_input" placeholder="Search airport to avoid (e.g. BAX, OVB, Moscow) or paste IATAs..." autocomplete="off" oninput="cf_onExcludeInput(this.value)" onfocus="cf_onExcludeFocus()" class="w-full pl-3 pr-8 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs placeholder-slate-500 focus:ring-1 focus:ring-rose-500 focus:border-rose-500 focus:outline-none">
-                <button type="button" id="cf_exc_dropdown_arrow" onclick="cf_toggleExcludeDropdown(event)" class="absolute right-0 top-0 bottom-0 px-2.5 flex items-center justify-center text-slate-500 hover:text-slate-300 text-[10px] cursor-pointer transition select-none focus:outline-none" title="Toggle exclude dropdown">▼</button>
+              <!-- Dropdown Input Row with + Add Button -->
+              <div class="flex items-center gap-1.5">
+                <div class="relative flex-1">
+                  <input type="text" id="cf_exclude_airports_input" placeholder="Search airport to avoid (e.g. BAX, OVB, Moscow) or paste IATAs..." autocomplete="off" oninput="cf_onExcludeInput(this.value)" onfocus="cf_onExcludeFocus()" class="w-full pl-3 pr-8 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs placeholder-slate-500 focus:ring-1 focus:ring-rose-500 focus:border-rose-500 focus:outline-none">
+                  <button type="button" id="cf_exc_dropdown_arrow" onclick="cf_toggleExcludeDropdown(event)" class="absolute right-0 top-0 bottom-0 px-2.5 flex items-center justify-center text-slate-500 hover:text-slate-300 text-[10px] cursor-pointer transition select-none focus:outline-none" title="Toggle exclude dropdown">▼</button>
 
-                <div id="cf_exc_dropdown" class="hidden absolute top-full left-0 right-0 mt-1 max-h-[180px] overflow-y-auto bg-slate-950 border border-rose-800/90 rounded-xl shadow-2xl z-50 p-1 space-y-0.5"></div>
+                  <div id="cf_exc_dropdown" class="hidden absolute top-full left-0 right-0 mt-1 max-h-[180px] overflow-y-auto bg-slate-950 border border-rose-800/90 rounded-xl shadow-2xl z-50 p-1 space-y-0.5"></div>
+                </div>
+                <button type="button" id="cf_add_exclude_btn" onclick="cf_submitExcludeInput()" class="px-2.5 py-1.5 rounded-lg bg-rose-700 hover:bg-rose-600 text-white font-semibold text-xs transition shrink-0 shadow-sm" title="Add entered items">
+                  + Add
+                </button>
               </div>
 
               <!-- Dynamic Chips -->
@@ -4466,6 +4479,50 @@
       <!-- Footer -->
       <div class="flex items-center justify-end pt-3 border-t border-slate-800 text-xs shrink-0">
         <button type="button" onclick="cf_closeRouteSwapModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold transition">Cancel</button>
+      </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: CIRCUIT FINDER EXCLUDE ROUTE SELECTION (OPTION B)                 -->
+  <!-- ========================================================================= -->
+  <div id="cf_route_pick_modal_backdrop" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-5" onclick="cf_closePickRoutesModal()">
+    <div class="glass-panel max-w-lg w-full rounded-2xl border border-slate-700/80 shadow-2xl p-5 space-y-4 max-h-[85vh] flex flex-col" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-rose-950 border border-rose-800 text-rose-400 flex items-center justify-center text-sm font-bold">
+            🚫
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <span>Exclude Routes in Circuit</span>
+              <span id="cf_pick_modal_circuit_badge" class="text-[10px] px-2 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-800 font-mono">Circuit #1</span>
+            </h3>
+            <p class="text-[11px] text-slate-400">Choose which destination routes from this circuit to add to your avoidance list.</p>
+          </div>
+        </div>
+        <button type="button" onclick="cf_closePickRoutesModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition" title="Close (Esc)">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Route Checkboxes List -->
+      <div id="cf_pick_legs_list" class="flex-grow overflow-y-auto max-h-[50vh] space-y-2 p-1">
+        <!-- Dynamically rendered -->
+      </div>
+
+      <!-- Footer -->
+      <div class="flex items-center justify-between pt-3 border-t border-slate-800 text-xs shrink-0">
+        <button type="button" onclick="cf_toggleSelectAllPickRoutesModal()" id="cf_pick_select_all_btn" class="text-xs text-cyan-400 hover:underline">
+          Select All / Deselect All
+        </button>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="cf_closePickRoutesModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold transition">Cancel</button>
+          <button type="button" onclick="cf_confirmPickRoutesModal()" class="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold transition shadow-md shadow-rose-950/50">
+            Exclude Selected (<span id="cf_pick_checked_count">0</span>)
+          </button>
+        </div>
       </div>
     </div>
   </div>
