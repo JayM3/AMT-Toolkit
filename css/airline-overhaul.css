@@ -1,0 +1,936 @@
+/*
+ * AMT Toolkit — Airline Operations visual overhaul
+ *
+ * Visual-only layer. The existing DOM, IDs, copy, data attributes and event
+ * handlers remain untouched so the calculators, saved-state flows and compact
+ * extension layouts keep working as before.
+ *
+ * Preview the three art directions with:
+ *   /?design=atlas    (default: Airport Operations)
+ *   /?design=terminal (Departure Board)
+ *   /?design=lounge   (Executive Lounge)
+ */
+
+:root,
+html[data-design="atlas"] {
+  --amt-bg: #06101b;
+  --amt-bg-deep: #030812;
+  --amt-panel: #0a1827;
+  --amt-panel-raised: #102337;
+  --amt-panel-soft: rgba(11, 29, 47, 0.88);
+  --amt-panel-glass: rgba(7, 18, 31, 0.84);
+  --amt-line: rgba(133, 174, 201, 0.18);
+  --amt-line-strong: rgba(93, 205, 227, 0.38);
+  --amt-text: #eef7fb;
+  --amt-muted: #8ca5b8;
+  --amt-subtle: #607d93;
+  --amt-accent: #39cce3;
+  --amt-accent-strong: #0799bd;
+  --amt-accent-soft: rgba(57, 204, 227, 0.13);
+  --amt-accent-ink: #03131c;
+  --amt-gold: #f3b64b;
+  --amt-positive: #5bd7a1;
+  --amt-danger: #fb858b;
+  --amt-radius: 15px;
+  --amt-radius-sm: 10px;
+  --amt-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
+  --amt-shadow-soft: 0 9px 28px rgba(0, 0, 0, 0.24);
+  --amt-grid: rgba(112, 181, 211, 0.065);
+  --amt-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+html[data-design="terminal"] {
+  --amt-bg: #0b1117;
+  --amt-bg-deep: #070b10;
+  --amt-panel: #111b24;
+  --amt-panel-raised: #172633;
+  --amt-panel-soft: rgba(16, 27, 37, 0.95);
+  --amt-panel-glass: rgba(11, 18, 25, 0.94);
+  --amt-line: rgba(167, 205, 216, 0.18);
+  --amt-line-strong: rgba(255, 181, 76, 0.52);
+  --amt-text: #f6f6ec;
+  --amt-muted: #9aabb0;
+  --amt-subtle: #6c7f86;
+  --amt-accent: #ffb54c;
+  --amt-accent-strong: #d9892c;
+  --amt-accent-soft: rgba(255, 181, 76, 0.12);
+  --amt-accent-ink: #191006;
+  --amt-gold: #c9e77c;
+  --amt-positive: #9be47d;
+  --amt-danger: #ff7f7f;
+  --amt-radius: 9px;
+  --amt-radius-sm: 6px;
+  --amt-shadow: 0 20px 52px rgba(0, 0, 0, 0.42);
+  --amt-shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.3);
+  --amt-grid: rgba(174, 210, 217, 0.075);
+  --amt-display: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+html[data-design="lounge"] {
+  --amt-bg: #0a0b1b;
+  --amt-bg-deep: #070711;
+  --amt-panel: #14152a;
+  --amt-panel-raised: #1c1d37;
+  --amt-panel-soft: rgba(20, 21, 42, 0.91);
+  --amt-panel-glass: rgba(12, 12, 29, 0.86);
+  --amt-line: rgba(190, 183, 226, 0.2);
+  --amt-line-strong: rgba(241, 139, 126, 0.46);
+  --amt-text: #fbf7f2;
+  --amt-muted: #b5afc8;
+  --amt-subtle: #817a9d;
+  --amt-accent: #f28d7f;
+  --amt-accent-strong: #cc625e;
+  --amt-accent-soft: rgba(242, 141, 127, 0.14);
+  --amt-accent-ink: #1f0e12;
+  --amt-gold: #e4c57b;
+  --amt-positive: #86d6b0;
+  --amt-danger: #f28d7f;
+  --amt-radius: 19px;
+  --amt-radius-sm: 12px;
+  --amt-shadow: 0 26px 75px rgba(0, 0, 0, 0.38);
+  --amt-shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.28);
+  --amt-grid: rgba(195, 183, 230, 0.055);
+  --amt-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Global stage                                                                */
+/* -------------------------------------------------------------------------- */
+
+body {
+  background:
+    radial-gradient(circle at 8% -10%, color-mix(in srgb, var(--amt-accent) 18%, transparent), transparent 34rem),
+    radial-gradient(circle at 92% 6%, color-mix(in srgb, var(--amt-gold) 9%, transparent), transparent 30rem),
+    linear-gradient(180deg, var(--amt-bg) 0%, var(--amt-bg-deep) 72%);
+  color: var(--amt-text);
+  font-family: var(--amt-display);
+  letter-spacing: -0.01em;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.72;
+  background-image:
+    linear-gradient(to right, var(--amt-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--amt-grid) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, black, transparent 86%);
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  pointer-events: none;
+  z-index: 4;
+  background: linear-gradient(90deg, transparent, var(--amt-accent), transparent);
+  opacity: 0.28;
+}
+
+body > main,
+body > footer {
+  position: relative;
+  z-index: 1;
+}
+
+body > header {
+  position: sticky !important;
+  z-index: 30;
+}
+
+::selection {
+  background: var(--amt-accent);
+  color: var(--amt-accent-ink);
+}
+
+/* Full web shell: compact extension mode intentionally keeps its dense layout. */
+body:not(.amt-compact-mode) > header {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--amt-bg-deep) 88%, transparent) !important;
+  border-bottom: 1px solid var(--amt-line) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+body:not(.amt-compact-mode) > header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 4%, var(--amt-accent) 42%, var(--amt-gold) 58%, transparent 96%);
+  opacity: 0.45;
+}
+
+body:not(.amt-compact-mode) > header > div {
+  width: min(1440px, calc(100% - 48px));
+  max-width: none !important;
+  padding: 14px 0 !important;
+  gap: 20px !important;
+}
+
+body:not(.amt-compact-mode) > main {
+  max-width: 1440px !important;
+  padding-top: 34px !important;
+  padding-bottom: 50px !important;
+}
+
+#header_brand_logo {
+  min-width: 214px;
+  gap: 11px !important;
+}
+
+#header_brand_logo img {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 12px !important;
+  border: 1px solid color-mix(in srgb, var(--amt-accent) 42%, transparent);
+  background: var(--amt-panel);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--amt-accent) 8%, transparent), 0 8px 24px rgba(0, 0, 0, 0.28) !important;
+}
+
+#header_brand_logo .text-base {
+  color: var(--amt-text) !important;
+  font-size: 0.98rem !important;
+  letter-spacing: 0.01em;
+}
+
+#header_brand_logo .text-xs {
+  color: var(--amt-subtle) !important;
+  font-size: 0.64rem !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+body:not(.amt-compact-mode) header nav {
+  flex: 1 1 auto;
+  justify-content: center;
+  padding: 4px;
+  border: 1px solid var(--amt-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--amt-panel) 76%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+body:not(.amt-compact-mode) header nav button {
+  min-height: 34px;
+  border-radius: 8px !important;
+  padding: 0 12px !important;
+  color: var(--amt-muted) !important;
+  border-color: transparent !important;
+  font-size: 0.69rem !important;
+  letter-spacing: 0.01em;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+body:not(.amt-compact-mode) header nav button:hover {
+  color: var(--amt-text) !important;
+  background: color-mix(in srgb, var(--amt-accent) 9%, transparent) !important;
+}
+
+body:not(.amt-compact-mode) header nav button.tab-btn-active {
+  color: var(--amt-accent) !important;
+  background: var(--amt-accent-soft) !important;
+  border-color: color-mix(in srgb, var(--amt-accent) 30%, transparent) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--amt-accent) 8%, transparent), 0 4px 12px rgba(0, 0, 0, 0.16) !important;
+}
+
+body:not(.amt-compact-mode) header nav .pulse-dot {
+  background: var(--amt-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--amt-accent) 12%, transparent);
+}
+
+#btn_open_sync_modal,
+#header_get_addon {
+  min-height: 34px;
+  border-radius: 9px !important;
+  border-color: var(--amt-line) !important;
+  background: var(--amt-panel) !important;
+  color: var(--amt-muted) !important;
+}
+
+#btn_open_sync_modal:hover,
+#header_get_addon:hover {
+  border-color: color-mix(in srgb, var(--amt-accent) 50%, transparent) !important;
+  background: var(--amt-accent-soft) !important;
+  color: var(--amt-text) !important;
+}
+
+#header_get_addon {
+  background: var(--amt-accent) !important;
+  color: var(--amt-accent-ink) !important;
+  border-color: color-mix(in srgb, var(--amt-accent) 65%, transparent) !important;
+}
+
+#header_get_addon:hover {
+  background: color-mix(in srgb, var(--amt-accent) 84%, white) !important;
+  color: var(--amt-accent-ink) !important;
+}
+
+/* Shared surfaces */
+.glass-panel,
+.glass-card {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--amt-panel) 96%, transparent), color-mix(in srgb, var(--amt-bg-deep) 92%, transparent)) !important;
+  border-color: var(--amt-line) !important;
+  box-shadow: var(--amt-shadow-soft) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.glass-panel {
+  border-radius: var(--amt-radius) !important;
+}
+
+.glass-card {
+  border-radius: var(--amt-radius-sm) !important;
+}
+
+.glass-panel:hover,
+.glass-card:hover {
+  border-color: color-mix(in srgb, var(--amt-accent) 35%, var(--amt-line)) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Homepage / command deck                                                     */
+/* -------------------------------------------------------------------------- */
+
+#view_home {
+  position: relative;
+}
+
+
+.hero-carousel {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  min-height: 400px !important;
+  overflow: hidden;
+  border-radius: 22px !important;
+  border: 1px solid var(--amt-line-strong) !important;
+  background:
+    linear-gradient(106deg, color-mix(in srgb, var(--amt-panel) 96%, transparent) 0%, color-mix(in srgb, var(--amt-bg-deep) 92%, transparent) 68%),
+    radial-gradient(circle at 80% 55%, color-mix(in srgb, var(--amt-accent) 12%, transparent), transparent 22rem) !important;
+  box-shadow: var(--amt-shadow) !important;
+}
+
+.hero-carousel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.68;
+  background:
+    linear-gradient(90deg, transparent 0 58%, color-mix(in srgb, var(--amt-accent) 10%, transparent) 58% 58.1%, transparent 58.1%),
+    repeating-linear-gradient(90deg, transparent 0 74px, color-mix(in srgb, var(--amt-accent) 9%, transparent) 74px 75px),
+    repeating-linear-gradient(0deg, transparent 0 47px, color-mix(in srgb, var(--amt-accent) 6%, transparent) 47px 48px);
+  mask-image: linear-gradient(90deg, transparent, black 17%, black 82%, transparent);
+}
+
+.hero-carousel::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--amt-accent), color-mix(in srgb, var(--amt-accent) 18%, transparent) 62%, transparent);
+  opacity: 0.85;
+}
+
+.hero-carousel .slide > .grid {
+  min-height: 400px !important;
+}
+
+.hero-carousel .slide > .grid > div:first-child {
+  padding: clamp(30px, 4vw, 58px) !important;
+}
+
+.hero-carousel h1 {
+  max-width: 650px;
+  color: var(--amt-text) !important;
+  font-size: clamp(2.25rem, 4.1vw, 4.45rem) !important;
+  line-height: 0.99 !important;
+  letter-spacing: -0.065em !important;
+}
+
+.hero-carousel h1 .cyan,
+.hero-carousel .cyan {
+  color: var(--amt-accent) !important;
+}
+
+.hero-carousel .slide > .grid > div:first-child > div:first-child {
+  color: var(--amt-accent) !important;
+  background: var(--amt-accent-soft) !important;
+  border-color: color-mix(in srgb, var(--amt-accent) 38%, transparent) !important;
+  letter-spacing: 0.16em;
+}
+
+.hero-carousel .slide > .grid > div:first-child > p {
+  max-width: 470px;
+  color: var(--amt-muted) !important;
+  font-size: 0.82rem !important;
+  line-height: 1.8 !important;
+}
+
+.hero-carousel .slide > .grid > div:first-child a,
+.hero-carousel .slide > .grid > div:first-child button {
+  min-height: 40px;
+  border-radius: 9px !important;
+  padding-inline: 15px !important;
+}
+
+.hero-carousel .slide > .grid > div:first-child a {
+  background: var(--amt-accent) !important;
+  color: var(--amt-accent-ink) !important;
+  box-shadow: 0 9px 24px color-mix(in srgb, var(--amt-accent) 20%, transparent) !important;
+}
+
+.hero-carousel .slide > .grid > div:first-child button {
+  background: color-mix(in srgb, var(--amt-panel-raised) 84%, transparent) !important;
+  border-color: var(--amt-line) !important;
+  color: var(--amt-text) !important;
+}
+
+.hero-carousel .slide > .grid > div:first-child kbd {
+  background: color-mix(in srgb, var(--amt-bg-deep) 82%, transparent) !important;
+  border-color: var(--amt-line) !important;
+  color: var(--amt-gold) !important;
+}
+
+/* The fake game/side-panel artwork in the hero is treated like a live ops
+   monitor, not a generic card. */
+.hero-carousel .slide > .grid > div:last-child {
+  padding: 21px 28px 21px 6px !important;
+}
+
+.hero-carousel .slide > .grid > div:last-child > div {
+  border-radius: 16px !important;
+  border-color: var(--amt-line-strong) !important;
+  background: color-mix(in srgb, var(--amt-bg-deep) 94%, transparent) !important;
+  box-shadow: 0 22px 45px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+.hero-carousel .slide-dot {
+  background: color-mix(in srgb, var(--amt-muted) 42%, transparent) !important;
+}
+
+.hero-carousel .slide-dot.active {
+  background: var(--amt-accent) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--amt-accent) 14%, transparent), 0 0 18px color-mix(in srgb, var(--amt-accent) 38%, transparent) !important;
+}
+
+.tool-section {
+  margin-top: 42px !important;
+}
+
+.tool-section-header {
+  margin-bottom: 17px !important;
+  align-items: flex-end !important;
+}
+
+.tool-section-header h2,
+#install-guide h2,
+#homepage_changelog_section h2 {
+  color: var(--amt-text) !important;
+  letter-spacing: -0.045em !important;
+}
+
+.tool-section-header p,
+.section-heading p,
+#install-guide p {
+  color: var(--amt-muted) !important;
+}
+
+.kofi-support {
+  border-color: color-mix(in srgb, var(--amt-gold) 30%, transparent) !important;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--amt-gold) 9%, var(--amt-panel)), var(--amt-panel)) !important;
+  box-shadow: none !important;
+}
+
+.kofi-support:hover {
+  border-color: color-mix(in srgb, var(--amt-gold) 65%, transparent) !important;
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--amt-gold) 10%, transparent) !important;
+}
+
+.tools-grid {
+  gap: 13px !important;
+}
+
+.tool-card {
+  min-height: 238px;
+  padding: 19px 18px 0 !important;
+  border-radius: var(--amt-radius) !important;
+  border-color: var(--amt-line) !important;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--amt-panel) 96%, transparent), color-mix(in srgb, var(--amt-bg-deep) 92%, transparent)) !important;
+  box-shadow: var(--amt-shadow-soft);
+  position: relative;
+  overflow: hidden;
+  contain: layout paint;
+}
+
+.tool-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  height: 3px;
+  background: var(--tool-color, var(--amt-accent));
+  opacity: 0.82;
+}
+
+.tool-card:hover {
+  transform: translateY(-5px) !important;
+  border-color: color-mix(in srgb, var(--tool-color, var(--amt-accent)) 62%, var(--amt-line)) !important;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--tool-color, var(--amt-accent)) 11%, var(--amt-panel)), var(--amt-bg-deep)) !important;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.34), 0 0 0 1px color-mix(in srgb, var(--tool-color, var(--amt-accent)) 10%, transparent) !important;
+}
+
+.tool-icon {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--tool-color, var(--amt-accent)) 12%, var(--amt-panel)) !important;
+  border-color: color-mix(in srgb, var(--tool-color, var(--amt-accent)) 34%, transparent) !important;
+}
+
+.tool-card h3 {
+  margin-top: 18px !important;
+  color: var(--amt-text) !important;
+  font-size: 1rem !important;
+}
+
+.tool-card > p {
+  color: var(--amt-muted) !important;
+  font-size: 0.72rem !important;
+  line-height: 1.75 !important;
+}
+
+.tool-tags span {
+  background: color-mix(in srgb, var(--amt-panel-raised) 70%, transparent) !important;
+  border-color: var(--amt-line) !important;
+  color: var(--amt-subtle) !important;
+}
+
+.tool-link {
+  border-top-color: var(--amt-line) !important;
+  color: var(--tool-color, var(--amt-accent)) !important;
+  letter-spacing: 0.01em;
+}
+
+#install-guide {
+  margin-top: 55px;
+  padding-top: 0 !important;
+}
+
+/* Defer layout/paint work for homepage content below the first viewport. */
+#install-guide,
+#homepage_changelog_section {
+  content-visibility: auto;
+  contain-intrinsic-size: 640px;
+}
+
+#install-guide > div:first-child > span {
+  color: var(--amt-accent) !important;
+  letter-spacing: 0.2em !important;
+}
+
+#install-guide .glass-card {
+  min-height: 214px;
+  border-color: var(--amt-line) !important;
+}
+
+#install-guide code,
+#install-guide .font-mono {
+  color: var(--amt-accent) !important;
+}
+
+#homepage_changelog_section {
+  margin-top: 18px;
+}
+
+#homepage_changelog_section .glass-panel {
+  border-color: var(--amt-line) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Tool views: clear hierarchy, runway-like rails and denser scan pattern      */
+/* -------------------------------------------------------------------------- */
+
+body:not(.amt-compact-mode) #view_zero_out,
+body:not(.amt-compact-mode) #view_seat_config,
+body:not(.amt-compact-mode) #view_route_finder,
+body:not(.amt-compact-mode) #view_circuit_finder {
+  --amt-section-gap: 18px;
+  position: relative;
+}
+
+body:not(.amt-compact-mode) #view_zero_out::before,
+body:not(.amt-compact-mode) #view_seat_config::before,
+body:not(.amt-compact-mode) #view_route_finder::before,
+body:not(.amt-compact-mode) #view_circuit_finder::before {
+  content: '';
+  display: block;
+  height: 2px;
+  margin-bottom: 19px;
+  background: linear-gradient(90deg, var(--amt-accent), color-mix(in srgb, var(--amt-accent) 20%, transparent) 52%, transparent 96%);
+  opacity: 0.8;
+}
+
+body:not(.amt-compact-mode) #view_zero_out > .glass-panel,
+body:not(.amt-compact-mode) #view_seat_config > .glass-panel,
+body:not(.amt-compact-mode) #view_route_finder .glass-panel,
+body:not(.amt-compact-mode) #view_circuit_finder .glass-panel,
+body:not(.amt-compact-mode) #view_route_finder details,
+body:not(.amt-compact-mode) #view_circuit_finder details {
+  border-color: var(--amt-line) !important;
+  box-shadow: var(--amt-shadow-soft) !important;
+}
+
+body:not(.amt-compact-mode) #view_zero_out h2,
+body:not(.amt-compact-mode) #view_seat_config h2,
+body:not(.amt-compact-mode) #view_route_finder h2,
+body:not(.amt-compact-mode) #view_circuit_finder h2 {
+  color: var(--amt-text) !important;
+  letter-spacing: -0.04em;
+}
+
+body:not(.amt-compact-mode) #view_zero_out h3,
+body:not(.amt-compact-mode) #view_seat_config h3,
+body:not(.amt-compact-mode) #view_route_finder h3,
+body:not(.amt-compact-mode) #view_circuit_finder h3 {
+  color: var(--amt-text) !important;
+}
+
+body:not(.amt-compact-mode) #view_zero_out p,
+body:not(.amt-compact-mode) #view_seat_config p,
+body:not(.amt-compact-mode) #view_route_finder p,
+body:not(.amt-compact-mode) #view_circuit_finder p {
+  color: var(--amt-muted);
+}
+
+body:not(.amt-compact-mode) #view_zero_out input:not([type="checkbox"]):not([type="radio"]),
+body:not(.amt-compact-mode) #view_zero_out select,
+body:not(.amt-compact-mode) #view_zero_out textarea,
+body:not(.amt-compact-mode) #view_seat_config input:not([type="checkbox"]):not([type="radio"]),
+body:not(.amt-compact-mode) #view_seat_config select,
+body:not(.amt-compact-mode) #view_seat_config textarea,
+body:not(.amt-compact-mode) #view_route_finder input:not([type="checkbox"]):not([type="radio"]),
+body:not(.amt-compact-mode) #view_route_finder select,
+body:not(.amt-compact-mode) #view_route_finder textarea,
+body:not(.amt-compact-mode) #view_circuit_finder input:not([type="checkbox"]):not([type="radio"]),
+body:not(.amt-compact-mode) #view_circuit_finder select,
+body:not(.amt-compact-mode) #view_circuit_finder textarea {
+  background: color-mix(in srgb, var(--amt-bg-deep) 74%, var(--amt-panel)) !important;
+  border-color: var(--amt-line) !important;
+  border-radius: var(--amt-radius-sm) !important;
+  color: var(--amt-text) !important;
+  min-height: 37px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+body:not(.amt-compact-mode) #view_zero_out input:not([type="checkbox"]):not([type="radio"]):focus,
+body:not(.amt-compact-mode) #view_zero_out select:focus,
+body:not(.amt-compact-mode) #view_seat_config input:not([type="checkbox"]):not([type="radio"]):focus,
+body:not(.amt-compact-mode) #view_seat_config select:focus,
+body:not(.amt-compact-mode) #view_route_finder input:not([type="checkbox"]):not([type="radio"]):focus,
+body:not(.amt-compact-mode) #view_route_finder select:focus,
+body:not(.amt-compact-mode) #view_circuit_finder input:not([type="checkbox"]):not([type="radio"]):focus,
+body:not(.amt-compact-mode) #view_circuit_finder select:focus {
+  border-color: var(--amt-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--amt-accent) 13%, transparent) !important;
+  outline: none;
+}
+
+body:not(.amt-compact-mode) #view_zero_out button,
+body:not(.amt-compact-mode) #view_seat_config button,
+body:not(.amt-compact-mode) #view_route_finder button,
+body:not(.amt-compact-mode) #view_circuit_finder button {
+  border-radius: var(--amt-radius-sm) !important;
+}
+
+body:not(.amt-compact-mode) #view_zero_out button:focus-visible,
+body:not(.amt-compact-mode) #view_seat_config button:focus-visible,
+body:not(.amt-compact-mode) #view_route_finder button:focus-visible,
+body:not(.amt-compact-mode) #view_circuit_finder button:focus-visible,
+body:not(.amt-compact-mode) header button:focus-visible,
+body:not(.amt-compact-mode) a:focus-visible {
+  outline: 2px solid var(--amt-accent) !important;
+  outline-offset: 3px;
+}
+
+/* Control headers read like section labels in an operations console. */
+body:not(.amt-compact-mode) #view_zero_out .border-b,
+body:not(.amt-compact-mode) #view_seat_config .border-b,
+body:not(.amt-compact-mode) #view_route_finder .border-b,
+body:not(.amt-compact-mode) #view_circuit_finder .border-b {
+  border-color: var(--amt-line) !important;
+}
+
+body:not(.amt-compact-mode) #view_route_finder .grid > .glass-panel,
+body:not(.amt-compact-mode) #view_circuit_finder .grid > .glass-panel {
+  min-height: 100%;
+}
+
+body:not(.amt-compact-mode) #view_route_finder .grid,
+body:not(.amt-compact-mode) #view_circuit_finder .grid {
+  align-items: stretch;
+}
+
+/* KPI strips */
+body:not(.amt-compact-mode) #view_zero_out [class*="grid-cols-4"] > div,
+body:not(.amt-compact-mode) #view_seat_config [class*="grid-cols-4"] > div,
+body:not(.amt-compact-mode) #view_route_finder [class*="grid-cols-4"] > div,
+body:not(.amt-compact-mode) #view_circuit_finder [class*="grid-cols-4"] > div {
+  border-color: var(--amt-line) !important;
+}
+
+/* Tables and timelines keep a strong visual axis for scanning. */
+body:not(.amt-compact-mode) table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+body:not(.amt-compact-mode) thead th {
+  color: var(--amt-subtle) !important;
+  background: color-mix(in srgb, var(--amt-bg-deep) 72%, var(--amt-panel)) !important;
+  border-bottom-color: var(--amt-line) !important;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.62rem !important;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+body:not(.amt-compact-mode) tbody tr {
+  border-color: var(--amt-line) !important;
+  transition: background 160ms ease;
+}
+
+body:not(.amt-compact-mode) tbody tr:hover {
+  background: color-mix(in srgb, var(--amt-accent) 5%, transparent) !important;
+}
+
+body:not(.amt-compact-mode) .timeline-day-track {
+  height: 39px;
+  background: color-mix(in srgb, var(--amt-bg-deep) 86%, var(--amt-panel)) !important;
+  border-color: var(--amt-line) !important;
+}
+
+body:not(.amt-compact-mode) .timeline-flight-block {
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+/* Drawer / modal treatment stays within the same airport-control language. */
+body:not(.amt-compact-mode) [id$="_modal_backdrop"],
+body:not(.amt-compact-mode) [id*="_modal_backdrop"] {
+  background: rgba(2, 8, 18, 0.78) !important;
+  backdrop-filter: blur(9px);
+}
+
+body:not(.amt-compact-mode) [id$="_modal_backdrop"] > div,
+body:not(.amt-compact-mode) [id*="_modal_backdrop"] > div {
+  border-color: var(--amt-line-strong) !important;
+  border-radius: var(--amt-radius) !important;
+  background: var(--amt-panel) !important;
+  box-shadow: var(--amt-shadow) !important;
+}
+
+/* Footer */
+body:not(.amt-compact-mode) > footer {
+  background: color-mix(in srgb, var(--amt-bg-deep) 88%, transparent) !important;
+  border-color: var(--amt-line) !important;
+}
+
+body:not(.amt-compact-mode) > footer a:hover {
+  color: var(--amt-accent) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Art-direction variants                                                      */
+/* -------------------------------------------------------------------------- */
+
+html[data-design="terminal"] body:not(.amt-compact-mode) > header > div {
+  padding-block: 10px !important;
+}
+
+html[data-design="terminal"] #header_brand_logo .text-base,
+html[data-design="terminal"] body:not(.amt-compact-mode) header nav button,
+html[data-design="terminal"] .tool-category,
+html[data-design="terminal"] .section-kicker {
+  font-family: 'JetBrains Mono', ui-monospace, monospace !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+html[data-design="terminal"] .hero-carousel {
+  border-radius: 10px !important;
+  background: linear-gradient(112deg, #121c24, #0a1015 70%) !important;
+}
+
+html[data-design="terminal"] .hero-carousel::before {
+  opacity: 0.8;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 94px, rgba(255, 181, 76, 0.08) 94px 95px),
+    repeating-linear-gradient(0deg, transparent 0 38px, rgba(255, 181, 76, 0.055) 38px 39px);
+}
+
+html[data-design="terminal"] .hero-carousel h1 {
+  max-width: 620px;
+  font-size: clamp(2rem, 3.75vw, 3.75rem) !important;
+  letter-spacing: -0.07em !important;
+}
+
+html[data-design="terminal"] .hero-carousel .slide > .grid > div:last-child > div,
+html[data-design="terminal"] .tool-card,
+html[data-design="terminal"] .glass-panel,
+html[data-design="terminal"] .glass-card {
+  border-radius: 8px !important;
+}
+
+
+html[data-design="lounge"] body::before {
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(242, 141, 127, 0.08) 0 1px, transparent 1px),
+    radial-gradient(circle at 70% 65%, rgba(228, 197, 123, 0.08) 0 1px, transparent 1px);
+  background-size: 31px 31px, 47px 47px;
+  mask-image: linear-gradient(to bottom, black, transparent 93%);
+}
+
+html[data-design="lounge"] #header_brand_logo img {
+  border-radius: 14px !important;
+}
+
+html[data-design="lounge"] body:not(.amt-compact-mode) header nav {
+  border-radius: 999px;
+  padding-inline: 6px;
+}
+
+html[data-design="lounge"] body:not(.amt-compact-mode) header nav button {
+  border-radius: 999px !important;
+}
+
+html[data-design="lounge"] .hero-carousel {
+  border-radius: 26px !important;
+  background:
+    linear-gradient(111deg, rgba(20, 21, 42, 0.97), rgba(10, 10, 25, 0.94) 66%),
+    radial-gradient(circle at 82% 54%, rgba(242, 141, 127, 0.12), transparent 25rem) !important;
+}
+
+html[data-design="lounge"] .hero-carousel h1 {
+  font-size: clamp(2.35rem, 4vw, 4.55rem) !important;
+  letter-spacing: -0.075em !important;
+}
+
+html[data-design="lounge"] .tool-card,
+html[data-design="lounge"] .glass-panel,
+html[data-design="lounge"] .glass-card {
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.035) !important;
+}
+
+html[data-design="lounge"] .tool-card::before {
+  height: 4px;
+  opacity: 0.6;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Responsive and accessibility guardrails                                    */
+/* -------------------------------------------------------------------------- */
+
+@media (max-width: 1120px) {
+  body:not(.amt-compact-mode) > header > div {
+    width: min(100% - 32px, 1440px);
+    flex-wrap: wrap;
+  }
+
+  #header_brand_logo {
+    min-width: auto;
+  }
+
+  body:not(.amt-compact-mode) header nav {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+
+  body:not(.amt-compact-mode) header nav button {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 720px) {
+  body:not(.amt-compact-mode) > main {
+    padding-top: 22px !important;
+    padding-inline: 15px !important;
+  }
+
+  body:not(.amt-compact-mode) > header > div {
+    width: calc(100% - 28px);
+    gap: 11px !important;
+  }
+
+  #btn_open_sync_modal,
+  #header_get_addon {
+    padding-inline: 10px !important;
+  }
+
+  .hero-carousel,
+  .hero-carousel .slide > .grid {
+    min-height: 0 !important;
+  }
+
+  .hero-carousel .slide > .grid > div:first-child {
+    padding: 30px 23px 24px !important;
+  }
+
+  .hero-carousel h1 {
+    font-size: clamp(2.2rem, 11vw, 3.35rem) !important;
+  }
+
+  .hero-carousel .slide > .grid > div:last-child {
+    padding: 7px 15px 22px !important;
+  }
+
+  .tool-section-header {
+    align-items: flex-start !important;
+    flex-direction: column;
+  }
+
+  .kofi-support {
+    width: 100%;
+  }
+
+  .tools-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+@media (max-width: 460px) {
+  .tools-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .tool-card {
+    min-height: 205px;
+  }
+
+  #header_brand_logo .text-xs {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body *, body *::before, body *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+  }
+}

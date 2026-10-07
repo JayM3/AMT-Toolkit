@@ -38,6 +38,61 @@ let state = {
   cargo: { dSim: '', r: '', pAudit: '', c: '' }
 };
 
+// Small interaction schedulers keep rapid typing on the animation frame and
+// move synchronous localStorage serialization off the hot input path.
+let zeroOutCalculationFrame = null;
+let zeroOutSaveTimer = null;
+let zeroOutSavePending = false;
+let seatConfigSaveTimer = null;
+let seatConfigSavePending = false;
+
+function scheduleZeroOutCalculation() {
+  if (zeroOutCalculationFrame !== null) return;
+  const run = () => {
+    zeroOutCalculationFrame = null;
+    updateAllCalculations();
+  };
+  zeroOutCalculationFrame = typeof requestAnimationFrame === 'function'
+    ? requestAnimationFrame(run)
+    : setTimeout(run, 16);
+}
+
+function flushZeroOutCalculation() {
+  if (zeroOutCalculationFrame === null) return;
+  if (typeof cancelAnimationFrame === 'function') {
+    cancelAnimationFrame(zeroOutCalculationFrame);
+  } else {
+    clearTimeout(zeroOutCalculationFrame);
+  }
+  zeroOutCalculationFrame = null;
+  updateAllCalculations();
+}
+
+function scheduleSeatConfigSave() {
+  if (typeof localStorage === 'undefined') return;
+  seatConfigSavePending = true;
+  clearTimeout(seatConfigSaveTimer);
+  seatConfigSaveTimer = setTimeout(() => {
+    seatConfigSaveTimer = null;
+    seatConfigSavePending = false;
+    saveSeatConfigToLocalStorage();
+  }, 180);
+}
+
+function flushSeatConfigSave() {
+  if (seatConfigSaveTimer !== null) {
+    clearTimeout(seatConfigSaveTimer);
+    seatConfigSaveTimer = null;
+  }
+  if (seatConfigSavePending) {
+    seatConfigSavePending = false;
+    saveSeatConfigToLocalStorage();
+  }
+}
+
+window.scheduleSeatConfigSave = scheduleSeatConfigSave;
+window.flushSeatConfigSave = flushSeatConfigSave;
+
 // Format numbers with commas
 function formatNumber(val, decimals = 0) {
   if (val === null || val === undefined || isNaN(val) || val === '') return '-';
@@ -554,7 +609,7 @@ window.onCompactInput = function(classId, field, value) {
     }
   }
 
-  updateAllCalculations();
+  scheduleZeroOutCalculation();
 };
 
 // Compact Topline Route Change Handler
@@ -1582,7 +1637,34 @@ function showToast(message, type = 'info') {
 }
 
 // Local Storage auto-save (Zero-Out Price)
-function saveToLocalStorage() {
+function saveToLocalStorage(immediate = false) {
+  if (immediate) {
+    writeZeroOutStateToLocalStorage();
+    return;
+  }
+  zeroOutSavePending = true;
+  clearTimeout(zeroOutSaveTimer);
+  zeroOutSaveTimer = setTimeout(() => {
+    zeroOutSaveTimer = null;
+    zeroOutSavePending = false;
+    writeZeroOutStateToLocalStorage();
+  }, 180);
+}
+
+function flushZeroOutSave() {
+  if (zeroOutSaveTimer !== null) {
+    clearTimeout(zeroOutSaveTimer);
+    zeroOutSaveTimer = null;
+  }
+  if (zeroOutSavePending) {
+    zeroOutSavePending = false;
+    writeZeroOutStateToLocalStorage();
+  }
+}
+
+window.flushZeroOutSave = flushZeroOutSave;
+
+function writeZeroOutStateToLocalStorage() {
   if (isClearingZeroOut || typeof localStorage === 'undefined') return;
 
   const hubVal = window.LAST_ZERO_OUT_HUB || document.getElementById('compact_route_hub')?.value || '';
@@ -1810,10 +1892,20 @@ function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
 /**
  * Lookup airport by IATA code or name
  */
+let airportByIataCache = null;
+function getAirportByIataCache() {
+  if (airportByIataCache || typeof AIRPORTS_DATABASE === 'undefined') return airportByIataCache;
+  airportByIataCache = new Map();
+  for (const airport of AIRPORTS_DATABASE) {
+    if (airport?.iata) airportByIataCache.set(airport.iata, airport);
+  }
+  return airportByIataCache;
+}
+
 function findAirport(str) {
   if (!str || typeof AIRPORTS_DATABASE === 'undefined') return null;
   const clean = str.trim().toUpperCase();
-  const exact = AIRPORTS_DATABASE.find(a => a.iata === clean);
+  const exact = getAirportByIataCache()?.get(clean);
   if (exact) return exact;
   return AIRPORTS_DATABASE.find(a => 
     clean.startsWith(a.iata) || 
@@ -2412,6 +2504,13 @@ function initSeatConfigurator() {
 }
 window.initSeatConfigurator = initSeatConfigurator;
 
+// Flush pending state before the page is backgrounded or closed.
+window.addEventListener('pagehide', () => {
+  flushZeroOutCalculation();
+  flushZeroOutSave();
+  flushSeatConfigSave();
+});
+
 // Attach event listeners when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   if (typeof restoreFromLocalStorage === 'function') {
@@ -2423,16 +2522,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const zeroOutInputs = document.querySelectorAll('#view_zero_out input, #view_zero_out select');
   zeroOutInputs.forEach(input => {
-    input.addEventListener('input', () => {
-      if (typeof updateAllCalculations === 'function') {
-        updateAllCalculations();
-      }
-    });
-    input.addEventListener('change', () => {
-      if (typeof updateAllCalculations === 'function') {
-        updateAllCalculations();
-      }
-    });
+    input.addEventListener('input', scheduleZeroOutCalculation);
+    input.addEventListener('change', scheduleZeroOutCalculation);
   });
 
   const cargoToggle = document.getElementById('toggle_cargo');
@@ -2449,12 +2540,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Attach reactive auto-save listeners on all Seat Configurator inputs & selects
   const scInputs = document.querySelectorAll('#view_seat_config input, #view_seat_config select');
   scInputs.forEach(input => {
-    input.addEventListener('input', () => {
-      saveSeatConfigToLocalStorage();
-    });
-    input.addEventListener('change', () => {
-      saveSeatConfigToLocalStorage();
-    });
+    input.addEventListener('input', scheduleSeatConfigSave);
+    input.addEventListener('change', scheduleSeatConfigSave);
   });
 
   if (typeof updateAuditsBadges === 'function') {

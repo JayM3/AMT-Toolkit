@@ -185,10 +185,20 @@
       };
     }
 
+    let rfAirportByIataCache = null;
+    function getRfAirportByIataCache() {
+      if (rfAirportByIataCache || typeof AIRPORTS_DATABASE === 'undefined') return rfAirportByIataCache;
+      rfAirportByIataCache = new Map();
+      for (const airport of AIRPORTS_DATABASE) {
+        if (airport?.iata) rfAirportByIataCache.set(airport.iata, airport);
+      }
+      return rfAirportByIataCache;
+    }
+
     function findAirport(query) {
       if (!query || typeof AIRPORTS_DATABASE === 'undefined') return null;
       const clean = query.trim().toUpperCase();
-      const exact = AIRPORTS_DATABASE.find(a => a.iata === clean);
+      const exact = getRfAirportByIataCache()?.get(clean);
       if (exact) return exact;
       return AIRPORTS_DATABASE.find(a => 
         (a.city && a.city.toUpperCase() === clean) ||
@@ -201,7 +211,21 @@
     // =========================================================================
     // LOCALSTORAGE PERSISTENCE ENGINE (am_route_finder_state_v1)
     // =========================================================================
-    function rf_saveStateToLocalStorage() {
+    let rf_saveStateDebounceTimer = null;
+    function rf_saveStateToLocalStorage(immediate = false) {
+      if (isRestoringRouteFinderState || typeof localStorage === 'undefined') return;
+      if (!immediate) {
+        clearTimeout(rf_saveStateDebounceTimer);
+        rf_saveStateDebounceTimer = setTimeout(() => {
+          rf_saveStateDebounceTimer = null;
+          rf_executeSaveStateToLocalStorage();
+        }, 180);
+        return;
+      }
+      rf_executeSaveStateToLocalStorage();
+    }
+
+    function rf_executeSaveStateToLocalStorage() {
       if (isRestoringRouteFinderState || typeof localStorage === 'undefined') return;
 
       try {
@@ -256,6 +280,14 @@
         console.warn('Could not save Route Finder state to localStorage:', err);
       }
     }
+
+    window.addEventListener('pagehide', () => {
+      if (rf_saveStateDebounceTimer !== null) {
+        clearTimeout(rf_saveStateDebounceTimer);
+        rf_saveStateDebounceTimer = null;
+        rf_executeSaveStateToLocalStorage();
+      }
+    });
 
     function rf_restoreStateFromLocalStorage() {
       if (typeof localStorage === 'undefined') return false;

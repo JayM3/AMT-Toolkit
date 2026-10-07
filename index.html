@@ -9,6 +9,9 @@
   <meta name="author" content="JayM3">
   <meta name="robots" content="index, follow">
   <meta name="theme-color" content="#020617">
+  <link rel="preconnect" href="https://cdn.tailwindcss.com">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="canonical" href="https://jaym3.github.io/AMT-Toolkit/">
 
   <!-- Open Graph / Social Media -->
@@ -73,9 +76,26 @@
     })();
   </script>
 
+  <!-- Visual-only design direction switcher. The default is Lounge; use
+       ?design=terminal or ?design=lounge to compare the other overhauls. -->
+  <script>
+    (function() {
+      try {
+        var requestedDesign = new URLSearchParams(window.location.search).get('design');
+        var allowedDesigns = ['atlas', 'terminal', 'lounge'];
+        document.documentElement.dataset.design = allowedDesigns.indexOf(requestedDesign) >= 0
+          ? requestedDesign
+          : 'lounge';
+      } catch (e) {
+        document.documentElement.dataset.design = 'lounge';
+      }
+    })();
+  </script>
+
   <!-- Tailwind CSS CDN (v3) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
+    window.tailwind = window.tailwind || {};
     tailwind.config = {
       darkMode: 'class',
       theme: {
@@ -100,6 +120,7 @@
   <link rel="stylesheet" href="css/circuit_finder_compact.css?v=1">
   <link rel="stylesheet" href="css/zero_out_compact.css?v=1">
   <link rel="stylesheet" href="css/homepage.css?v=3.8">
+  <link rel="stylesheet" href="css/airline-overhaul.css?v=2">
   <style>
     body.amt-compact-mode #zero_out_standard_container { display: none !important; }
     body.amt-compact-mode #zero_out_compact_container { display: block !important; }
@@ -222,7 +243,7 @@
       
       <!-- Brand & Title (Clickable to Homepage) -->
       <a href="#home" id="header_brand_logo" onclick="switchTab('home'); return false;" class="flex items-center space-x-3 cursor-pointer group select-none" aria-label="AMT Toolkit Home">
-        <img src="icons/icon48.png" alt="AMT Toolkit Logo" class="w-8 h-8 rounded-lg shadow-md shadow-cyan-500/10 ring-1 ring-white/15 group-hover:ring-cyan-400/50 group-hover:scale-105 transition-all object-contain">
+        <img src="icons/icon48.png" alt="AMT Toolkit Logo" class="w-8 h-8 rounded-lg shadow-md shadow-cyan-500/10 ring-1 ring-white/15 group-hover:ring-cyan-400/50 group-hover:scale-105 transition-all object-contain" decoding="async">
         <div>
           <div class="flex items-center gap-2">
             <span class="text-base font-bold tracking-tight text-white group-hover:text-cyan-300 transition-colors">AMT Toolkit</span>
@@ -4704,13 +4725,13 @@
   </script>
 
   <!-- JavaScript Datasets & Logic -->
-  <script src="data/aircraft.js?v=2.3"></script>
-  <script src="data/airports.js?v=2.3"></script>
-  <script src="js/app.js?v=3.7"></script>
-  <script src="js/route_finder.js?v=2.4"></script>
-  <script src="js/circuit_finder.js?v=2.5"></script>
-  <script src="js/circuit_finder_compact.js?v=1.1"></script>
-  <script src="js/seat_config_compact.js?v=5"></script>
-  <script src="js/changelog.js?v=1"></script>
+  <script src="data/aircraft.min.js?v=1" defer></script>
+  <script src="data/airports.min.js?v=1" defer></script>
+  <script src="js/app.js?v=3.8" defer></script>
+  <script src="js/route_finder.js?v=2.5" defer></script>
+  <script src="js/circuit_finder.js?v=2.5" defer></script>
+  <script src="js/circuit_finder_compact.js?v=1.1" defer></script>
+  <script src="js/seat_config_compact.js?v=5" defer></script>
+  <script src="js/changelog.js?v=1.1" defer></script>
 </body>
 </html>

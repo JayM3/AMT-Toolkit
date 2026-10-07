@@ -260,11 +260,21 @@
     fetchGithubCommits(force);
   };
 
-  // Initialize
+  // Initialize after the first useful paint; the feed is non-critical and already
+  // has a local fallback, so it should not compete with the main toolkit boot.
+  function scheduleInitialFetch() {
+    const run = () => fetchGithubCommits(false);
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(run, { timeout: 1500 });
+    } else {
+      window.setTimeout(run, 900);
+    }
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => fetchGithubCommits(false));
+    document.addEventListener('DOMContentLoaded', scheduleInitialFetch, { once: true });
   } else {
-    fetchGithubCommits(false);
+    scheduleInitialFetch();
   }
 
 })();
