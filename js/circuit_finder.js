@@ -625,6 +625,7 @@
     const typeBadge = document.getElementById('cf_aircraft_type_badge');
     const priceBadge = document.getElementById('cf_aircraft_price_badge');
     const catBadge = document.getElementById('cf_aircraft_category_badge');
+    const categoryRule = document.getElementById('cf_airport_category_rule');
     const specsSummary = document.getElementById('cf_aircraft_specs_summary');
 
     if (planeName) planeName.textContent = ac.name;
@@ -632,6 +633,7 @@
     if (typeBadge) typeBadge.textContent = ac.type || 'Commercial';
     if (priceBadge) priceBadge.textContent = cf_formatAircraftPriceShort(ac.price);
     if (catBadge) catBadge.textContent = `Cat. ${ac.category}`;
+    if (categoryRule) categoryRule.textContent = `Cat ${ac.category}+ airports only`;
     if (specsSummary) {
       specsSummary.textContent = `Speed: ${ac.speed_kmh} km/h | Range: ${ac.range_km.toLocaleString()} km | Seats: ${ac.seats} | Payload: ${(ac.payload_ton || 0).toFixed(1)}T`;
     }
@@ -1817,7 +1819,6 @@
     const maxSlackHours = parseFloat(document.getElementById('cf_slack_tolerance_select')?.value) || 0;
     const routeCountOption = document.getElementById('cf_route_count_select')?.value || 'any';
     const continentFilter = document.getElementById('cf_continent_filter_select')?.value || 'all';
-    const requireCatMatch = document.getElementById('cf_cat_filter_check')?.checked !== false;
     const excludeOwned = !!(document.getElementById('cf_toggle_exclude_owned_hubs')?.checked || document.getElementById('cf_toggle_exclude_owned_hubs_tier3')?.checked);
     const minStarFilter = parseInt(document.getElementById('cf_star_filter_select')?.value) || 0;
     const minLegDur = parseFloat(document.getElementById('cf_min_leg_dur')?.value) || 1.5;
@@ -1859,7 +1860,8 @@
     for (const hubIata of hubsToSearch) {
       const hub = cf_getAirport(hubIata);
       if (!hub) continue;
-      if (requireCatMatch && hub.cat < aircraft.category) continue;
+      // Aircraft category is a hard operating limit, not an optional search filter.
+      if (hub.cat < aircraft.category) continue;
 
       // 1. Filter candidate destinations
       const candidates = [];
@@ -1879,7 +1881,7 @@
           if (incCountriesSet.size > 0 && !incCountriesSet.has(dst.country) && !isMustInclude) continue;
           if (continentFilter !== 'all' && continent !== continentFilter && !isMustInclude) continue;
 
-          if (requireCatMatch && dst.cat < aircraft.category) continue;
+          if (dst.cat < aircraft.category) continue;
           if (isNaN(dst.lat) || isNaN(dst.lon)) continue;
 
           const dist = cf_haversineDistance(hub.lat, hub.lon, dst.lat, dst.lon);
@@ -2618,7 +2620,6 @@
       };
 
       const optimizationMetric = document.getElementById('cf_optimization_metric_select')?.value || 'stars_desc';
-      const catMatchOnly = document.getElementById('cf_cat_filter_check') ? document.getElementById('cf_cat_filter_check').checked : true;
       const excludeOwnedHubs = !!(document.getElementById('cf_toggle_exclude_owned_hubs')?.checked || document.getElementById('cf_toggle_exclude_owned_hubs_tier3')?.checked);
       const minStarRating = document.getElementById('cf_star_filter_select')?.value || '3';
       const continent = document.getElementById('cf_continent_filter_select')?.value || 'all';
@@ -2647,7 +2648,6 @@
         classStrategy,
         customWeights,
         optimizationMetric,
-        catMatchOnly,
         excludeOwnedHubs,
         minStarRating,
         continent,
@@ -2790,10 +2790,7 @@
       }
 
       // 9. Restore Network Filters
-      if (data.catMatchOnly !== undefined) {
-        const catCheck = document.getElementById('cf_cat_filter_check');
-        if (catCheck) catCheck.checked = !!data.catMatchOnly;
-      }
+      // Ignore legacy catMatchOnly: category compatibility is always enforced.
       if (data.excludeOwnedHubs !== undefined) {
         const ex1 = document.getElementById('cf_toggle_exclude_owned_hubs');
         const ex2 = document.getElementById('cf_toggle_exclude_owned_hubs_tier3');
@@ -2922,8 +2919,6 @@
     if (optSel) optSel.value = 'stars_desc';
     const contSel = document.getElementById('cf_continent_filter_select');
     if (contSel) contSel.value = 'all';
-    const catCheck = document.getElementById('cf_cat_filter_check');
-    if (catCheck) catCheck.checked = true;
 
     // Reset Custom Sliders & Drawer
     const wEco = document.getElementById('cf_weight_eco');
@@ -3259,6 +3254,11 @@
 
     const hub = cf_getAirport(circuit.hubIata);
     const aircraft = cf_getAircraft(circuit.aircraftId);
+    if (!hub || !aircraft) return;
+    if (hub.cat < aircraft.category || newAp.cat < aircraft.category) {
+      cf_showToast(`${aircraft.name} requires Cat ${aircraft.category}+ airports.`, 'warn');
+      return;
+    }
     const dist = cf_haversineDistance(hub.lat, hub.lon, newAp.lat, newAp.lon);
     const dur = cf_calculateFlightTimeHours(dist, aircraft.speed_kmh);
     const demand = cf_computeAirportDemandStats(newAp);

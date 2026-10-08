@@ -3324,10 +3324,7 @@
               </span>
             </div>
             <div class="flex items-center gap-3 text-xs text-slate-400">
-              <label class="flex items-center gap-1.5 cursor-pointer hover:text-white transition">
-                <input type="checkbox" id="cf_cat_filter_check" checked onchange="cf_debouncedFindCircuits()" class="w-3.5 h-3.5 rounded text-cyan-600 bg-slate-800 border-slate-600">
-                <span>Cat Match Only</span>
-              </label>
+              <span id="cf_airport_category_rule" class="text-cyan-400" title="Airport category compatibility is always enforced for the selected aircraft.">Cat 8+ airports only</span>
               <label class="flex items-center gap-1.5 cursor-pointer hover:text-white transition">
                 <input type="checkbox" id="cf_toggle_exclude_owned_hubs_tier3" onchange="cf_onExcludeOwnedHubsToggle(this.checked)" class="w-3.5 h-3.5 rounded text-cyan-600 bg-slate-800 border-slate-600">
                 <span>Exclude Owned Hubs</span>
@@ -4729,8 +4726,8 @@
   <script src="data/airports.min.js?v=1" defer></script>
   <script src="js/app.js?v=3.8" defer></script>
   <script src="js/route_finder.js?v=2.5" defer></script>
-  <script src="js/circuit_finder.js?v=2.5" defer></script>
-  <script src="js/circuit_finder_compact.js?v=1.1" defer></script>
+  <script src="js/circuit_finder.js?v=2.6" defer></script>
+  <script src="js/circuit_finder_compact.js?v=1.2" defer></script>
   <script src="js/seat_config_compact.js?v=5" defer></script>
   <script src="js/changelog.js?v=1.1" defer></script>
 </body>

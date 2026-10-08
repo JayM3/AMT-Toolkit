@@ -82,7 +82,6 @@
     minStars: 3,
     continent: 'all',
     maxDistLimit: null,
-    requireCatMatch: true,
     includeMode: 'ap', // 'ap' or 'ct'
     excludeMode: 'ap', // 'ap' or 'ct'
     includedAirports: [],
@@ -340,12 +339,20 @@
       return [];
     }
 
+    // Aircraft category is a hard operating limit for both ends of every route.
+    if (hub.cat < ac.category) {
+      state.discoveredCircuits = [];
+      state.benchmarkMs = Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - startBenchmark);
+      toast(`Hub ${hub.iata} is Cat ${hub.cat}; ${ac.name} requires Cat ${ac.category}+ airports.`, 'warn');
+      return [];
+    }
+
     const airports = getAirports();
     const candidateLegs = [];
 
     for (const ap of airports) {
       if (ap.iata === hub.iata) continue;
-      if (state.requireCatMatch && ap.cat < ac.category) continue;
+      if (ap.cat < ac.category) continue;
 
       const continent = CF_C_CONTINENT_MAP[ap.country] || 'Other';
       if (state.continent !== 'all' && continent !== state.continent) continue;
@@ -384,7 +391,10 @@
       });
     }
 
-    if (candidateLegs.length === 0) {
+    // A required airport must not be silently dropped when it is incompatible.
+    const candidateIatas = new Set(candidateLegs.map(leg => leg.dstIata));
+    const missingRequiredAirport = state.includedAirports.some(iata => !candidateIatas.has(iata));
+    if (candidateLegs.length === 0 || missingRequiredAirport) {
       state.discoveredCircuits = [];
       state.benchmarkMs = Math.round(performance.now() - startBenchmark);
       return [];
@@ -563,7 +573,7 @@
     if (!ac) return [];
 
     const hub = getAirport(circuit.hubIata);
-    if (!hub) return [];
+    if (!hub || hub.cat < ac.category) return [];
 
     const currentIatas = new Set(circuit.legs.map(l => l.dstIata));
     const airports = getAirports();
@@ -573,7 +583,7 @@
       if (dst.iata === hub.iata) continue;
       if (currentIatas.has(dst.iata)) continue;
       if (state.excludedAirportsSet.has(dst.iata)) continue;
-      if (state.requireCatMatch && dst.cat < ac.category) continue;
+      if (dst.cat < ac.category) continue;
 
       const dist = haversineDistance(hub.lat, hub.lon, dst.lat, dst.lon);
       if (dist > ac.range_km) continue;
@@ -612,6 +622,11 @@
 
     const ac = getAircraft(circuit.aircraftId);
     const hub = getAirport(circuit.hubIata);
+    if (!ac || !hub) return false;
+    if (hub.cat < ac.category || newDst.cat < ac.category) {
+      toast(`${ac.name} requires Cat ${ac.category}+ airports.`, 'warn');
+      return false;
+    }
     const dist = haversineDistance(hub.lat, hub.lon, newDst.lat, newDst.lon);
     const dur = calculateFlightTimeHours(dist, ac.speed_kmh);
     const demand = computeAirportDemandStats(newDst);
@@ -963,10 +978,7 @@
           <div class="sc-card">
             <div class="sc-section-title">
               <strong>🎯 Network Targeting &amp; Scope</strong>
-              <label style="display: flex; align-items: center; gap: 4px; font-size: 9px; cursor: pointer;">
-                <input type="checkbox" id="cf_c_check_cat_match" checked style="width: 12px; height: 12px;">
-                <span>Cat Match Only</span>
-              </label>
+              <span id="cf_c_airport_category_rule" style="font-size: 9px; color: var(--sc-cyan);" title="Airport category compatibility is always enforced for the selected aircraft.">Cat 8+ airports only</span>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
@@ -1328,13 +1340,6 @@
     if (continentSelect) {
       continentSelect.addEventListener('change', (e) => {
         state.continent = e.target.value;
-      });
-    }
-
-    const catMatchCheck = document.getElementById('cf_c_check_cat_match');
-    if (catMatchCheck) {
-      catMatchCheck.addEventListener('change', (e) => {
-        state.requireCatMatch = e.target.checked;
       });
     }
 
@@ -1715,7 +1720,7 @@
           if (hub && ac) {
             dist = haversineDistance(hub.lat, hub.lon, ap.lat, ap.lon);
             dur = calculateFlightTimeHours(dist, ac.speed_kmh);
-            if (dist > ac.range_km || (state.requireCatMatch && ap.cat < ac.category)) reachable = false;
+            if (dist > ac.range_km || ap.cat < ac.category) reachable = false;
           }
           const stats = computeAirportDemandStats(ap);
           const durText = formatHoursMinutes(dur);
@@ -2237,8 +2242,10 @@
     if (!ac) return;
     const triggerLabel = document.getElementById('cf_c_ac_trigger_label');
     const catBadge = document.getElementById('cf_c_ac_cat_badge');
+    const categoryRule = document.getElementById('cf_c_airport_category_rule');
     if (triggerLabel) triggerLabel.textContent = ac.name;
     if (catBadge) catBadge.textContent = `Cat ${ac.category}`;
+    if (categoryRule) categoryRule.textContent = `Cat ${ac.category}+ airports only`;
   }
 
   function updateStatusline() {
