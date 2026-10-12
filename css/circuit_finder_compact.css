@@ -886,6 +886,32 @@ select.sc-input option {
 }
 
 /* Tag Chips */
+.cf-filter-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--sc-border-btn);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--sc-text-muted);
+  cursor: pointer;
+}
+.cf-filter-copy:hover {
+  color: var(--sc-text-bright);
+  border-color: var(--sc-cyan);
+}
+.cf-filter-copy:focus-visible {
+  outline: 2px solid var(--sc-cyan);
+  outline-offset: 2px;
+}
+.cf-filter-copy.text-emerald-300 {
+  color: var(--sc-good);
+}
+
 .cf-tag-chip {
   display: inline-flex;
   align-items: center;

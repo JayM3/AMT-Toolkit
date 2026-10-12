@@ -269,6 +269,215 @@
     }
   }
 
+  // Clipboard snapshots keep all scope types together so a reset can be
+  // restored without relying on the currently selected input mode.
+  const CF_FILTER_CLIPBOARD_FORMAT = 'amt-circuit-finder-filter';
+  const CF_FILTER_CLIPBOARD_VERSION = 1;
+
+  function cf_normalizeFilterItems(items, transform = value => value) {
+    if (!Array.isArray(items)) return [];
+    const seen = new Set();
+    const normalized = [];
+    items.forEach(item => {
+      if (typeof item !== 'string') return;
+      const value = transform(item.trim());
+      if (!value || seen.has(value)) return;
+      seen.add(value);
+      normalized.push(value);
+    });
+    return normalized;
+  }
+
+  function cf_buildFilterClipboardPayload(scope, source = {}) {
+    const normalizedScope = scope === 'exclude' ? 'exclude' : 'include';
+    return {
+      format: CF_FILTER_CLIPBOARD_FORMAT,
+      version: CF_FILTER_CLIPBOARD_VERSION,
+      scope: normalizedScope,
+      airports: cf_normalizeFilterItems(source.airports, value => value.toUpperCase()),
+      countries: cf_normalizeFilterItems(source.countries),
+      continents: cf_normalizeFilterItems(source.continents)
+    };
+  }
+
+  function cf_parseFilterClipboardPayload(raw, expectedScope) {
+    if (typeof raw !== 'string' || !/^[{\[]/.test(raw.trim())) return null;
+
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (err) {
+      return { valid: false, error: 'Invalid Circuit Finder filter JSON.' };
+    }
+
+    return cf_validateFilterClipboardPayload(parsed, expectedScope);
+  }
+
+  function cf_validateFilterClipboardPayload(parsed, expectedScope) {
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return { valid: false, error: 'Invalid Circuit Finder filter snapshot.' };
+    }
+    if (parsed.format !== CF_FILTER_CLIPBOARD_FORMAT) {
+      return { valid: false, error: 'This is not a Circuit Finder filter snapshot.' };
+    }
+    if (parsed.version !== CF_FILTER_CLIPBOARD_VERSION) {
+      return { valid: false, error: `Unsupported Circuit Finder filter version: ${parsed.version ?? 'unknown'}.` };
+    }
+    if (parsed.scope !== 'include' && parsed.scope !== 'exclude') {
+      return { valid: false, error: 'Filter snapshot has an invalid scope.' };
+    }
+    if (expectedScope && parsed.scope !== expectedScope) {
+      const label = parsed.scope === 'include' ? 'inclusion' : 'exclusion';
+      return { valid: false, error: `Paste this snapshot into the ${label} field.` };
+    }
+
+    if (['airports', 'countries', 'continents'].some(kind => !Array.isArray(parsed[kind]) || parsed[kind].some(value => typeof value !== 'string' || !value.trim()))) {
+      return { valid: false, error: 'Filter snapshot must contain arrays of airport, country, and continent names.' };
+    }
+    if (parsed.airports.some(value => !/^[A-Za-z]{3}$/.test(value.trim()))) {
+      return { valid: false, error: 'Filter snapshot contains an invalid airport code.' };
+    }
+    const countries = new Set(typeof AIRPORTS_DATABASE === 'undefined' ? [] : AIRPORTS_DATABASE.map(ap => ap.country));
+    if (parsed.countries.some(value => !countries.has(value.trim()))) {
+      return { valid: false, error: 'Filter snapshot contains an unknown country.' };
+    }
+    if (parsed.continents.some(value => !CF_ALL_CONTINENTS.includes(value.trim()))) {
+      return { valid: false, error: 'Filter snapshot contains an unknown continent.' };
+    }
+
+    return {
+      valid: true,
+      payload: cf_buildFilterClipboardPayload(parsed.scope, parsed)
+    };
+  }
+
+  async function cf_writeClipboardText(text) {
+    if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      try {
+        await navigator.clipboard.writeText(text);
+        return;
+      } catch (err) {
+        // Embedded browsers can deny the Clipboard API while allowing copy.
+      }
+    }
+    if (!document.createElement || !document.body || typeof document.execCommand !== 'function') {
+      throw new Error('Clipboard access unavailable');
+    }
+
+    const previousFocus = document.activeElement;
+    const textarea = document.createElement('textarea');
+    try {
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.top = '0';
+      textarea.style.left = '0';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      if (!document.execCommand('copy')) throw new Error('Clipboard copy command failed');
+    } finally {
+      textarea.remove();
+      if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus({ preventScroll: true });
+    }
+  }
+
+  function cf_flashFilterCopyButton(button) {
+    if (!button) return;
+    if (!button.dataset.cfCopyOriginal) button.dataset.cfCopyOriginal = button.innerHTML;
+    if (button._cfCopyTimer) clearTimeout(button._cfCopyTimer);
+    button.innerHTML = '<svg width="14" height="14" class="lucide lucide-check" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><path d="m20 6-11 11-5-5"></path></svg>';
+    button.classList.add('text-emerald-300');
+    button.setAttribute('aria-label', 'Copied');
+    button.title = 'Copied';
+    button._cfCopyTimer = setTimeout(() => {
+      button.innerHTML = button.dataset.cfCopyOriginal;
+      button.classList.remove('text-emerald-300');
+      button.setAttribute('aria-label', button.dataset.cfCopyLabel || 'Copy filters');
+      button.title = button.dataset.cfCopyTitle || 'Copy filters';
+    }, 1400);
+  }
+
+  function cf_copyFilterData(scope, source, button) {
+    const payload = cf_buildFilterClipboardPayload(scope, source);
+    const itemCount = payload.airports.length + payload.countries.length + payload.continents.length;
+    const label = payload.scope === 'include' ? 'inclusions' : 'exclusions';
+    if (itemCount === 0) {
+      cf_showToast(`No ${label} to copy`, 'warning');
+      return Promise.resolve(false);
+    }
+
+    return cf_writeClipboardText(JSON.stringify(payload, null, 2)).then(() => {
+      cf_flashFilterCopyButton(button);
+      cf_showToast(`${label[0].toUpperCase()}${label.slice(1)} copied to clipboard`, 'success');
+      return true;
+    }).catch(() => {
+      cf_showToast('Clipboard access unavailable in this browser', 'warning');
+      return false;
+    });
+  }
+
+  function cf_copyFilterClipboard(scope) {
+    const isInclude = scope === 'include';
+    return cf_copyFilterData(scope, {
+      airports: isInclude ? cf_includedAirports : cf_excludedAirports,
+      countries: isInclude ? cf_includedCountries : cf_excludedCountries,
+      continents: isInclude ? cf_includedContinents : cf_excludedContinents
+    }, document.getElementById(isInclude ? 'cf_copy_include_btn' : 'cf_copy_exclude_btn'));
+  }
+
+  function cf_getPrecisionFilters() {
+    return {
+      includedAirports: [...cf_includedAirports],
+      includedCountries: [...cf_includedCountries],
+      includedContinents: [...cf_includedContinents],
+      excludedAirports: [...cf_excludedAirports],
+      excludedCountries: [...cf_excludedCountries],
+      excludedContinents: [...cf_excludedContinents]
+    };
+  }
+
+  function cf_setPrecisionFilters(filters) {
+    cf_includedAirports = [...filters.includedAirports];
+    cf_includedCountries = [...filters.includedCountries];
+    cf_includedContinents = [...filters.includedContinents];
+    cf_excludedAirports = [...filters.excludedAirports];
+    cf_excludedCountries = [...filters.excludedCountries];
+    cf_excludedContinents = [...filters.excludedContinents];
+    cf_syncIncludeSets();
+    cf_syncExcludeSets();
+    cf_renderIncludeAirportsChips();
+    cf_renderExcludeAirportsChips();
+    cf_saveStateToLocalStorage(true);
+  }
+
+  function cf_mergeFilterClipboardPayload(payload, current) {
+    const filters = {};
+    ['included', 'excluded'].forEach(prefix => {
+      ['Airports', 'Countries', 'Continents'].forEach(kind => {
+        filters[prefix + kind] = [...(current[prefix + kind] || [])];
+      });
+    });
+    const targetPrefix = payload.scope === 'include' ? 'included' : 'excluded';
+    const oppositePrefix = payload.scope === 'include' ? 'excluded' : 'included';
+    let addedCount = 0;
+    ['Airports', 'Countries', 'Continents'].forEach(kind => {
+      const key = targetPrefix + kind;
+      const additions = new Set(payload[kind.toLowerCase()]);
+      const existing = new Set(filters[key]);
+      additions.forEach(value => {
+        if (!existing.has(value)) {
+          filters[key].push(value);
+          existing.add(value);
+          addedCount++;
+        }
+      });
+      const oppositeKey = oppositePrefix + kind;
+      filters[oppositeKey] = filters[oppositeKey].filter(value => !additions.has(value));
+    });
+    return { filters, addedCount };
+  }
+
   // =========================================================================
   // OWNED HUBS MANAGEMENT & COLLAPSIBLE DRAWER
   // =========================================================================
@@ -963,11 +1172,41 @@
     return null;
   }
 
+  function cf_applyFilterClipboardPayload(payload, sourceInput = null) {
+    const parsed = cf_validateFilterClipboardPayload(payload);
+    if (!parsed.valid) {
+      cf_showToast(parsed.error, 'error');
+      return false;
+    }
+    const { filters, addedCount } = cf_mergeFilterClipboardPayload(parsed.payload, cf_getPrecisionFilters());
+    cf_setPrecisionFilters(filters);
+    if (sourceInput) sourceInput.value = '';
+    cf_closeAllDropdowns();
+    cf_debouncedFindCircuits();
+
+    const label = payload.scope === 'include' ? 'inclusions' : 'exclusions';
+    cf_showToast(addedCount > 0 ? `Restored ${addedCount} ${label}` : `Those ${label} are already present`, addedCount > 0 ? 'success' : 'info');
+    return true;
+  }
+
+  function cf_tryApplyFilterClipboardInput(raw, scope, sourceInput = null) {
+    const parsed = cf_parseFilterClipboardPayload(raw, scope);
+    if (!parsed) return false;
+    if (!parsed.valid) {
+      cf_showToast(parsed.error, 'error');
+      return true;
+    }
+    cf_applyFilterClipboardPayload(parsed.payload, sourceInput);
+    return true;
+  }
+
   function cf_submitIncludeInput() {
     const input = document.getElementById('cf_include_airports_input');
     if (!input) return;
     const val = input.value.trim();
     if (!val) return;
+
+    if (cf_tryApplyFilterClipboardInput(val, 'include', input)) return;
 
     const parsed = cf_parseBatchInput(val, cf_includeMode);
     if (!parsed || parsed.length === 0) {
@@ -1048,6 +1287,14 @@
   function cf_onIncludeInput(val) {
     if (!val) {
       cf_closeIncludeDropdown();
+      return;
+    }
+    const trimmed = val.trim();
+    if (/^[{\[]/.test(trimmed)) {
+      const parsed = cf_parseFilterClipboardPayload(trimmed, 'include');
+      if (parsed?.valid) {
+        cf_applyFilterClipboardPayload(parsed.payload, document.getElementById('cf_include_airports_input'));
+      }
       return;
     }
     // If user pasted multi-item string (e.g. contains commas, semicolons, or >1 IATAs)
@@ -1248,6 +1495,8 @@
     const val = input.value.trim();
     if (!val) return;
 
+    if (cf_tryApplyFilterClipboardInput(val, 'exclude', input)) return;
+
     const parsed = cf_parseBatchInput(val, cf_excludeMode);
     if (!parsed || parsed.length === 0) {
       cf_showToast('No matching items found to exclude', 'error');
@@ -1322,6 +1571,14 @@
   function cf_onExcludeInput(val) {
     if (!val) {
       cf_closeExcludeDropdown();
+      return;
+    }
+    const trimmed = val.trim();
+    if (/^[{\[]/.test(trimmed)) {
+      const parsed = cf_parseFilterClipboardPayload(trimmed, 'exclude');
+      if (parsed?.valid) {
+        cf_applyFilterClipboardPayload(parsed.payload, document.getElementById('cf_exclude_airports_input'));
+      }
       return;
     }
     // If user pasted multi-item string (e.g. contains commas, semicolons, or >1 IATAs)
@@ -1511,6 +1768,11 @@
     if (clearIncBtn) {
       clearIncBtn.classList.toggle('hidden', totalInc === 0);
     }
+    const copyIncBtn = document.getElementById('cf_copy_include_btn');
+    if (copyIncBtn) {
+      copyIncBtn.classList.toggle('hidden', totalInc === 0);
+      copyIncBtn.disabled = totalInc === 0;
+    }
 
     if (totalInc === 0) {
       container.innerHTML = '';
@@ -1574,6 +1836,11 @@
     const clearExcBtn = document.getElementById('cf_clear_exclude_btn');
     if (clearExcBtn) {
       clearExcBtn.classList.toggle('hidden', totalExc === 0);
+    }
+    const copyExcBtn = document.getElementById('cf_copy_exclude_btn');
+    if (copyExcBtn) {
+      copyExcBtn.classList.toggle('hidden', totalExc === 0);
+      copyExcBtn.disabled = totalExc === 0;
     }
 
     if (totalExc === 0) {
@@ -2589,6 +2856,7 @@
   function cf_saveStateToLocalStorage(immediate = false) {
     if (isRestoringCircuitFinderState || isResettingCircuitFinder || typeof localStorage === 'undefined') return;
     if (immediate) {
+      clearTimeout(cf_saveStateDebounceTimer);
       cf_executeSaveStateToLocalStorage();
       return;
     }
@@ -3373,6 +3641,13 @@
 
     const incInputEl = document.getElementById('cf_include_airports_input');
     if (incInputEl) {
+      incInputEl.addEventListener('paste', (e) => {
+        const raw = e.clipboardData?.getData('text') || '';
+        if (!/^[{\[]/.test(raw.trim())) return;
+        e.preventDefault();
+        incInputEl.value = raw;
+        cf_tryApplyFilterClipboardInput(raw, 'include', incInputEl);
+      });
       incInputEl.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -3383,6 +3658,13 @@
 
     const excInputEl = document.getElementById('cf_exclude_airports_input');
     if (excInputEl) {
+      excInputEl.addEventListener('paste', (e) => {
+        const raw = e.clipboardData?.getData('text') || '';
+        if (!/^[{\[]/.test(raw.trim())) return;
+        e.preventDefault();
+        excInputEl.value = raw;
+        cf_tryApplyFilterClipboardInput(raw, 'exclude', excInputEl);
+      });
       excInputEl.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -3451,6 +3733,18 @@
   window.cf_removeExcludeContinent = cf_removeExcludeContinent;
   window.cf_clearIncludedAirports = cf_clearIncludedAirports;
   window.cf_clearExcludedAirports = cf_clearExcludedAirports;
+  window.cf_copyIncludedFilters = () => cf_copyFilterClipboard('include');
+  window.cf_copyExcludedFilters = () => cf_copyFilterClipboard('exclude');
+  window.cf_buildFilterClipboardPayload = cf_buildFilterClipboardPayload;
+  window.cf_parseFilterClipboardPayload = cf_parseFilterClipboardPayload;
+  window.cf_validateFilterClipboardPayload = cf_validateFilterClipboardPayload;
+  window.cf_writeClipboardText = cf_writeClipboardText;
+  window.cf_copyFilterData = cf_copyFilterData;
+  window.cf_applyFilterClipboardPayload = cf_applyFilterClipboardPayload;
+  window.cf_mergeFilterClipboardPayload = cf_mergeFilterClipboardPayload;
+  window.cf_getPrecisionFilters = cf_getPrecisionFilters;
+  window.cf_setPrecisionFilters = cf_setPrecisionFilters;
+  window.cf_getAirportContinent = country => CF_CONTINENT_MAP[country] || 'Other';
   window.cf_excludeCircuitRoutes = cf_excludeCircuitRoutes;
   window.cf_excludeSingleRoute = cf_excludeSingleRoute;
   window.cf_openPickRoutesModal = cf_openPickRoutesModal;
@@ -3461,8 +3755,10 @@
   window.cf_toggleExcludeExpand = cf_toggleExcludeExpand;
   window.cf_getExcludedAirports = () => cf_excludedAirports;
   window.cf_getExcludedCountries = () => cf_excludedCountries;
+  window.cf_getExcludedContinents = () => cf_excludedContinents;
   window.cf_getIncludedAirports = () => cf_includedAirports;
   window.cf_getIncludedCountries = () => cf_includedCountries;
+  window.cf_getIncludedContinents = () => cf_includedContinents;
   window.cf_getDiscoveredCircuits = () => cf_discoveredCircuits;
   window.cf_closeAllDropdowns = cf_closeAllDropdowns;
   window.cf_closeIncludeDropdown = cf_closeIncludeDropdown;

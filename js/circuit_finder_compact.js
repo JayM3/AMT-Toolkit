@@ -82,16 +82,20 @@
     minStars: 3,
     continent: 'all',
     maxDistLimit: null,
-    includeMode: 'ap', // 'ap' or 'ct'
-    excludeMode: 'ap', // 'ap' or 'ct'
+    includeMode: 'ap', // 'ap', 'ct', or 'cn'
+    excludeMode: 'ap', // 'ap', 'ct', or 'cn'
     includedAirports: [],
     includedCountries: [],
+    includedContinents: [],
     excludedAirports: [],
     excludedCountries: [],
+    excludedContinents: [],
     excludedAirportsSet: new Set(),
     excludedCountriesSet: new Set(),
+    excludedContinentsSet: new Set(),
     includedAirportsSet: new Set(),
     includedCountriesSet: new Set(),
+    includedContinentsSet: new Set(),
     isExcludeExpanded: false,
     discoveredCircuits: [],
     savedCircuits: [],
@@ -107,11 +111,13 @@
   function syncExcludeSets() {
     state.excludedAirportsSet = new Set(state.excludedAirports);
     state.excludedCountriesSet = new Set(state.excludedCountries);
+    state.excludedContinentsSet = new Set(state.excludedContinents);
   }
 
   function syncIncludeSets() {
     state.includedAirportsSet = new Set(state.includedAirports);
     state.includedCountriesSet = new Set(state.includedCountries);
+    state.includedContinentsSet = new Set(state.includedContinents);
   }
 
   function isCompactMode() {
@@ -134,6 +140,12 @@
     if (!iata) return null;
     const code = iata.toUpperCase().trim();
     return getAirports().find(a => a.iata === code) || null;
+  }
+
+  function getContinent(country) {
+    return typeof window.cf_getAirportContinent === 'function'
+      ? window.cf_getAirportContinent(country)
+      : CF_C_CONTINENT_MAP[country] || 'Other';
   }
 
   function getAircraftList() {
@@ -162,7 +174,7 @@
       if (!cMap[a.country]) {
         cMap[a.country] = {
           name: a.country,
-          continent: CF_C_CONTINENT_MAP[a.country] || 'Other',
+          continent: getContinent(a.country),
           count: 0
         };
       }
@@ -248,6 +260,16 @@
     if (!str || typeof str !== 'string') return [];
     const trimmed = str.trim();
     if (!trimmed) return [];
+
+    if (mode === 'cn') {
+      const continents = ['Africa', 'Asia', 'Europe', 'North America', 'South America', 'Oceania'];
+      const rawTokens = trimmed.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
+      return rawTokens.reduce((results, token) => {
+        const match = continents.find(continent => continent.toLowerCase() === token.toLowerCase());
+        if (match && !results.includes(match)) results.push(match);
+        return results;
+      }, []);
+    }
 
     if (mode === 'ct') {
       const rawTokens = trimmed.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
@@ -354,11 +376,14 @@
       if (ap.iata === hub.iata) continue;
       if (ap.cat < ac.category) continue;
 
-      const continent = CF_C_CONTINENT_MAP[ap.country] || 'Other';
+      const continent = getContinent(ap.country);
+      const isMustInclude = state.includedAirportsSet.has(ap.iata);
       if (state.continent !== 'all' && continent !== state.continent) continue;
 
+      if (state.excludedContinentsSet.has(continent)) continue;
       if (state.excludedAirportsSet.has(ap.iata)) continue;
       if (state.excludedCountriesSet.has(ap.country)) continue;
+      if (state.includedContinentsSet.size > 0 && !state.includedContinentsSet.has(continent) && !isMustInclude) continue;
 
       const dist = haversineDistance(hub.lat, hub.lon, ap.lat, ap.lon);
       if (dist > ac.range_km) continue;
@@ -381,6 +406,7 @@
         name: ap.name,
         city: ap.city,
         country: ap.country,
+        continent,
         cat: ap.cat,
         dist,
         dur,
@@ -792,6 +818,66 @@
     });
   }
 
+  function copyFilterSnapshot(scope) {
+    const isInclude = scope === 'include';
+    const source = {
+      airports: isInclude ? state.includedAirports : state.excludedAirports,
+      countries: isInclude ? state.includedCountries : state.excludedCountries,
+      continents: isInclude ? state.includedContinents : state.excludedContinents
+    };
+    const button = document.getElementById(isInclude ? 'cf_c_btn_copy_inc' : 'cf_c_btn_copy_exc');
+    if (typeof window.cf_copyFilterData === 'function') {
+      return window.cf_copyFilterData(scope, source, button);
+    }
+    toast('Filter snapshot copying is unavailable', 'warn');
+    return Promise.resolve(false);
+  }
+
+  function applyFilterSnapshot(payload, sourceInput = null) {
+    const parsed = window.cf_validateFilterClipboardPayload(payload);
+    if (!parsed.valid) {
+      toast(parsed.error, 'warn');
+      return false;
+    }
+    const { filters, addedCount } = window.cf_mergeFilterClipboardPayload(parsed.payload, state);
+    Object.assign(state, filters);
+    syncIncludeSets();
+    syncExcludeSets();
+    if (sourceInput) sourceInput.value = '';
+    const incDropdown = document.getElementById('cf_c_inc_dropdown');
+    const excDropdown = document.getElementById('cf_c_exc_dropdown');
+    if (incDropdown) incDropdown.style.display = 'none';
+    if (excDropdown) excDropdown.style.display = 'none';
+    renderIncludeChips();
+    renderExcludeChips();
+    persistPrecisionFilters();
+    state.discoveredCircuits = findCircuits();
+    renderCircuitsList();
+
+    const label = payload.scope === 'include' ? 'inclusions' : 'exclusions';
+    toast(addedCount > 0 ? `Restored ${addedCount} ${label}` : `Those ${label} are already present`, addedCount > 0 ? 'success' : 'info');
+    return true;
+  }
+
+  function tryApplyFilterSnapshot(raw, scope, sourceInput = null) {
+    if (typeof window.cf_parseFilterClipboardPayload !== 'function') return false;
+    const parsed = window.cf_parseFilterClipboardPayload(raw, scope);
+    if (!parsed) return false;
+    if (!parsed.valid) {
+      toast(parsed.error, 'warn');
+      return true;
+    }
+    applyFilterSnapshot(parsed.payload, sourceInput);
+    return true;
+  }
+
+  function persistPrecisionFilters() {
+    if (typeof window.cf_setPrecisionFilters === 'function') {
+      window.cf_setPrecisionFilters(state);
+      window.cf_debouncedFindCircuits();
+    }
+  }
+
   // =========================================================================
   // DOM RENDERING & TAB WORKFLOW
   // =========================================================================
@@ -1020,16 +1106,22 @@
 
             <!-- Must Include Box -->
             <div id="cf_c_inc_box_wrapper" style="padding: 5px 6px; background: #060c18; border: 1px solid var(--sc-border-input); border-radius: 5px; display: flex; flex-direction: column; gap: 4px; position: relative;">
-              <div style="display: flex; align-items: center; justify-content: space-between;">
-                <span style="font-size: 9px; font-weight: 700; color: #6ee7b7;">✈ Must-Include Routes (Must-Fly)</span>
-                <div style="display: flex; gap: 4px; align-items: center;">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px;">
+                <span style="font-size: 9px; font-weight: 700; color: #6ee7b7;">✈ Must-Include Routes (Must-Fly) <span id="cf_c_inc_badge" class="badge-pill good" hidden>0</span></span>
+                <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
                   <button type="button" id="cf_c_btn_clear_inc" class="sc-chip" style="display:none; color: #f87171; border-color: #ef444455; background: rgba(239, 68, 68, 0.1); padding: 1px 5px; font-size: 8px;">✕ Clear</button>
-                  <button type="button" class="sc-chip active" id="cf_c_btn_inc_ap">Airports</button>
-                  <button type="button" class="sc-chip" id="cf_c_btn_inc_ct">Country</button>
+                  <button type="button" id="cf_c_btn_copy_inc" class="cf-filter-copy" style="display:none;" title="Copy inclusions as JSON" aria-label="Copy inclusions" data-cf-copy-label="Copy inclusions" data-cf-copy-title="Copy inclusions as JSON" disabled>
+                    <svg width="14" height="14" class="lucide lucide-copy" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                  </button>
                 </div>
               </div>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                  <button type="button" class="sc-chip active" id="cf_c_btn_inc_ap">Airports</button>
+                  <button type="button" class="sc-chip" id="cf_c_btn_inc_ct">Country</button>
+                  <button type="button" class="sc-chip" id="cf_c_btn_inc_cn">Continent</button>
+              </div>
               <div style="position: relative; display: flex; gap: 4px;">
-                <input type="text" id="cf_c_inc_input" placeholder="Search airport (e.g. CPH, BKK, Tokyo) or paste IATAs..." autocomplete="off" style="flex: 1; padding: 3px 5px; font-size: 9px; background: var(--sc-bg-input); border: 1px solid var(--sc-border-input); border-radius: 4px; color: #fff;">
+                <input type="text" id="cf_c_inc_input" placeholder="Search airport (e.g. CPH, BKK, Tokyo) or paste IATAs..." autocomplete="off" style="flex: 1; min-width: 0; padding: 3px 5px; font-size: 9px; background: var(--sc-bg-input); border: 1px solid var(--sc-border-input); border-radius: 4px; color: #fff;">
                 <button type="button" id="cf_c_btn_add_inc" style="padding: 2px 6px; font-size: 9px; background: #064e3b; border: 1px solid #059669; color: #a7f3d0; border-radius: 4px; cursor: pointer; white-space: nowrap;">+ Add</button>
                 <div id="cf_c_inc_dropdown" class="cf-autocomplete-dropdown" style="display: none;"></div>
               </div>
@@ -1038,16 +1130,22 @@
 
             <!-- Avoid / Exclude Box -->
             <div id="cf_c_exc_box_wrapper" style="padding: 5px 6px; background: #060c18; border: 1px solid var(--sc-border-input); border-radius: 5px; display: flex; flex-direction: column; gap: 4px; position: relative;">
-              <div style="display: flex; align-items: center; justify-content: space-between;">
-                <span style="font-size: 9px; font-weight: 700; color: #fca5a5;">🚫 Avoid / Exclude</span>
-                <div style="display: flex; gap: 4px; align-items: center;">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px;">
+                <span style="font-size: 9px; font-weight: 700; color: #fca5a5;">🚫 Avoid / Exclude <span id="cf_c_exc_badge" class="badge-pill rose" hidden>0</span></span>
+                <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
                   <button type="button" id="cf_c_btn_clear_exc" class="sc-chip" style="display:none; color: #f87171; border-color: #ef444455; background: rgba(239, 68, 68, 0.1); padding: 1px 5px; font-size: 8px;">✕ Clear</button>
-                  <button type="button" class="sc-chip active" id="cf_c_btn_exc_ap">Airports</button>
-                  <button type="button" class="sc-chip" id="cf_c_btn_exc_ct">Country</button>
+                  <button type="button" id="cf_c_btn_copy_exc" class="cf-filter-copy" style="display:none;" title="Copy exclusions as JSON" aria-label="Copy exclusions" data-cf-copy-label="Copy exclusions" data-cf-copy-title="Copy exclusions as JSON" disabled>
+                    <svg width="14" height="14" class="lucide lucide-copy" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                  </button>
                 </div>
               </div>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                  <button type="button" class="sc-chip active" id="cf_c_btn_exc_ap">Airports</button>
+                  <button type="button" class="sc-chip" id="cf_c_btn_exc_ct">Country</button>
+                  <button type="button" class="sc-chip" id="cf_c_btn_exc_cn">Continent</button>
+              </div>
               <div style="position: relative; display: flex; gap: 4px;">
-                <input type="text" id="cf_c_exc_input" placeholder="Search airport to avoid (e.g. BAX, OVB, Moscow)..." autocomplete="off" style="flex: 1; padding: 3px 5px; font-size: 9px; background: var(--sc-bg-input); border: 1px solid var(--sc-border-input); border-radius: 4px; color: #fff;">
+                <input type="text" id="cf_c_exc_input" placeholder="Search airport to avoid (e.g. BAX, OVB, Moscow)..." autocomplete="off" style="flex: 1; min-width: 0; padding: 3px 5px; font-size: 9px; background: var(--sc-bg-input); border: 1px solid var(--sc-border-input); border-radius: 4px; color: #fff;">
                 <button type="button" id="cf_c_btn_add_exc" style="padding: 2px 6px; font-size: 9px; background: #7f1d1d; border: 1px solid #b91c1c; color: #fecaca; border-radius: 4px; cursor: pointer; white-space: nowrap;">+ Add</button>
                 <div id="cf_c_exc_dropdown" class="cf-autocomplete-dropdown" style="display: none;"></div>
               </div>
@@ -1358,15 +1456,17 @@
     // Must-Include Controls (Airport / Country Toggle + Autocomplete)
     const btnIncAp = document.getElementById('cf_c_btn_inc_ap');
     const btnIncCt = document.getElementById('cf_c_btn_inc_ct');
+    const btnIncCn = document.getElementById('cf_c_btn_inc_cn');
     const incInput = document.getElementById('cf_c_inc_input');
     const incDropdown = document.getElementById('cf_c_inc_dropdown');
     const btnAddInc = document.getElementById('cf_c_btn_add_inc');
 
-    if (btnIncAp && btnIncCt && incInput) {
+    if (btnIncAp && btnIncCt && btnIncCn && incInput) {
       btnIncAp.addEventListener('click', () => {
         state.includeMode = 'ap';
         btnIncAp.classList.add('active');
         btnIncCt.classList.remove('active');
+        btnIncCn.classList.remove('active');
         incInput.placeholder = 'Search airport (e.g. CPH, BKK, Tokyo) or paste IATAs...';
         incInput.focus();
         renderIncludeDropdown(incInput.value);
@@ -1375,15 +1475,39 @@
         state.includeMode = 'ct';
         btnIncCt.classList.add('active');
         btnIncAp.classList.remove('active');
+        btnIncCn.classList.remove('active');
         incInput.placeholder = 'Search country to include... (e.g. Japan, Thailand)';
+        incInput.focus();
+        renderIncludeDropdown(incInput.value);
+      });
+      btnIncCn.addEventListener('click', () => {
+        state.includeMode = 'cn';
+        btnIncCn.classList.add('active');
+        btnIncAp.classList.remove('active');
+        btnIncCt.classList.remove('active');
+        incInput.placeholder = 'Search continent to include... (e.g. Asia, Europe)';
         incInput.focus();
         renderIncludeDropdown(incInput.value);
       });
 
       let incDebounceTimer = null;
       incInput.addEventListener('focus', () => renderIncludeDropdown(incInput.value));
+      incInput.addEventListener('paste', (e) => {
+        const raw = e.clipboardData?.getData('text') || '';
+        if (!/^[{\[]/.test(raw.trim())) return;
+        e.preventDefault();
+        incInput.value = raw;
+        tryApplyFilterSnapshot(raw, 'include', incInput);
+      });
       incInput.addEventListener('input', (e) => {
         const val = e.target.value;
+        if (/^[{\[]/.test(val.trim())) {
+          const parsed = typeof window.cf_parseFilterClipboardPayload === 'function'
+            ? window.cf_parseFilterClipboardPayload(val.trim(), 'include')
+            : null;
+          if (parsed?.valid) handleAddInc();
+          return;
+        }
         if (/[,;\n]/.test(val) || (val.trim().split(/\s+/).length > 1 && val.trim().split(/\s+/).every(t => /^[A-Za-z]{3}$/.test(t)))) {
           handleAddInc();
           return;
@@ -1411,6 +1535,8 @@
       const val = incInput.value.trim();
       if (!val) return;
 
+      if (tryApplyFilterSnapshot(val, 'include', incInput)) return;
+
       const tokens = parseBatchInput(val, state.includeMode);
       if (tokens && tokens.length > 0) {
         let addedCount = 0;
@@ -1420,18 +1546,25 @@
               addIncludeAirport(code, true);
               addedCount++;
             }
-          } else {
+          } else if (state.includeMode === 'ct') {
             if (!state.includedCountriesSet.has(code)) {
               addIncludeCountry(code, true);
               addedCount++;
             }
+          } else if (!state.includedContinentsSet.has(code)) {
+            addIncludeContinent(code, true);
+            addedCount++;
           }
         });
         incInput.value = '';
         if (incDropdown) incDropdown.style.display = 'none';
         renderIncludeChips();
+        renderExcludeChips();
+        persistPrecisionFilters();
         if (addedCount > 0) {
-          toast(`Added ${addedCount} ${state.includeMode === 'ap' ? 'airport' : 'countr'}${addedCount > 1 ? (state.includeMode === 'ap' ? 's' : 'ies') : (state.includeMode === 'ap' ? '' : 'y')} to Must-Fly`, 'success');
+          const itemLabel = state.includeMode === 'ap' ? 'airport' : state.includeMode === 'ct' ? 'country' : 'continent';
+          const label = addedCount === 1 ? itemLabel : itemLabel === 'country' ? 'countries' : `${itemLabel}s`;
+          toast(`Added ${addedCount} ${label} to Must-Fly`, 'success');
         } else {
           toast('Item(s) already included', 'info');
         }
@@ -1442,24 +1575,29 @@
         const match = getAirports().find(a => a.iata.toLowerCase() === val.toLowerCase() || (a.city && a.city.toLowerCase() === val.toLowerCase()));
         if (match) addIncludeAirport(match.iata);
         else if (val.length === 3) addIncludeAirport(val.toUpperCase());
-      } else {
+      } else if (state.includeMode === 'ct') {
         const match = getCountries().find(c => c.name.toLowerCase() === val.toLowerCase() || c.name.toLowerCase().startsWith(val.toLowerCase()));
         if (match) addIncludeCountry(match.name);
+      } else {
+        const match = ['Africa', 'Asia', 'Europe', 'North America', 'South America', 'Oceania'].find(c => c.toLowerCase() === val.toLowerCase() || c.toLowerCase().startsWith(val.toLowerCase()));
+        if (match) addIncludeContinent(match);
       }
     }
 
     // Avoid / Exclude Controls (Airport / Country Toggle + Autocomplete)
     const btnExcAp = document.getElementById('cf_c_btn_exc_ap');
     const btnExcCt = document.getElementById('cf_c_btn_exc_ct');
+    const btnExcCn = document.getElementById('cf_c_btn_exc_cn');
     const excInput = document.getElementById('cf_c_exc_input');
     const excDropdown = document.getElementById('cf_c_exc_dropdown');
     const btnAddExc = document.getElementById('cf_c_btn_add_exc');
 
-    if (btnExcAp && btnExcCt && excInput) {
+    if (btnExcAp && btnExcCt && btnExcCn && excInput) {
       btnExcAp.addEventListener('click', () => {
         state.excludeMode = 'ap';
         btnExcAp.classList.add('active');
         btnExcCt.classList.remove('active');
+        btnExcCn.classList.remove('active');
         excInput.placeholder = 'Search airport to avoid (e.g. BAX, OVB, Moscow)...';
         excInput.focus();
         renderExcludeDropdown(excInput.value);
@@ -1468,15 +1606,39 @@
         state.excludeMode = 'ct';
         btnExcCt.classList.add('active');
         btnExcAp.classList.remove('active');
+        btnExcCn.classList.remove('active');
         excInput.placeholder = 'Search country to exclude... (e.g. Russia, Belarus)';
+        excInput.focus();
+        renderExcludeDropdown(excInput.value);
+      });
+      btnExcCn.addEventListener('click', () => {
+        state.excludeMode = 'cn';
+        btnExcCn.classList.add('active');
+        btnExcAp.classList.remove('active');
+        btnExcCt.classList.remove('active');
+        excInput.placeholder = 'Search continent to exclude... (e.g. Asia, Europe)';
         excInput.focus();
         renderExcludeDropdown(excInput.value);
       });
 
       let excDebounceTimer = null;
       excInput.addEventListener('focus', () => renderExcludeDropdown(excInput.value));
+      excInput.addEventListener('paste', (e) => {
+        const raw = e.clipboardData?.getData('text') || '';
+        if (!/^[{\[]/.test(raw.trim())) return;
+        e.preventDefault();
+        excInput.value = raw;
+        tryApplyFilterSnapshot(raw, 'exclude', excInput);
+      });
       excInput.addEventListener('input', (e) => {
         const val = e.target.value;
+        if (/^[{\[]/.test(val.trim())) {
+          const parsed = typeof window.cf_parseFilterClipboardPayload === 'function'
+            ? window.cf_parseFilterClipboardPayload(val.trim(), 'exclude')
+            : null;
+          if (parsed?.valid) handleAddExc();
+          return;
+        }
         if (/[,;\n]/.test(val) || (val.trim().split(/\s+/).length > 1 && val.trim().split(/\s+/).every(t => /^[A-Za-z]{3}$/.test(t)))) {
           handleAddExc();
           return;
@@ -1504,6 +1666,8 @@
       const val = excInput.value.trim();
       if (!val) return;
 
+      if (tryApplyFilterSnapshot(val, 'exclude', excInput)) return;
+
       const tokens = parseBatchInput(val, state.excludeMode);
       if (tokens && tokens.length > 0) {
         let addedCount = 0;
@@ -1513,18 +1677,25 @@
               addExcludeAirport(code, true);
               addedCount++;
             }
-          } else {
+          } else if (state.excludeMode === 'ct') {
             if (!state.excludedCountriesSet.has(code)) {
               addExcludeCountry(code, true);
               addedCount++;
             }
+          } else if (!state.excludedContinentsSet.has(code)) {
+            addExcludeContinent(code, true);
+            addedCount++;
           }
         });
         excInput.value = '';
         if (excDropdown) excDropdown.style.display = 'none';
+        renderIncludeChips();
         renderExcludeChips();
+        persistPrecisionFilters();
         if (addedCount > 0) {
-          toast(`Avoided ${addedCount} ${state.excludeMode === 'ap' ? 'airport' : 'countr'}${addedCount > 1 ? (state.excludeMode === 'ap' ? 's' : 'ies') : (state.excludeMode === 'ap' ? '' : 'y')}`, 'info');
+          const itemLabel = state.excludeMode === 'ap' ? 'airport' : state.excludeMode === 'ct' ? 'country' : 'continent';
+          const label = addedCount === 1 ? itemLabel : itemLabel === 'country' ? 'countries' : `${itemLabel}s`;
+          toast(`Avoided ${addedCount} ${label}`, 'info');
         } else {
           toast('Item(s) already excluded', 'info');
         }
@@ -1535,9 +1706,12 @@
         const match = getAirports().find(a => a.iata.toLowerCase() === val.toLowerCase() || (a.city && a.city.toLowerCase() === val.toLowerCase()));
         if (match) addExcludeAirport(match.iata);
         else if (val.length === 3) addExcludeAirport(val.toUpperCase());
-      } else {
+      } else if (state.excludeMode === 'ct') {
         const match = getCountries().find(c => c.name.toLowerCase() === val.toLowerCase() || c.name.toLowerCase().startsWith(val.toLowerCase()));
         if (match) addExcludeCountry(match.name);
+      } else {
+        const match = ['Africa', 'Asia', 'Europe', 'North America', 'South America', 'Oceania'].find(c => c.toLowerCase() === val.toLowerCase() || c.toLowerCase().startsWith(val.toLowerCase()));
+        if (match) addExcludeContinent(match);
       }
     }
 
@@ -1551,6 +1725,7 @@
         const val = btn.dataset.val;
         if (type === 'ap') removeIncludeAirport(val);
         else if (type === 'ct') removeIncludeCountry(val);
+        else if (type === 'cn') removeIncludeContinent(val);
       });
     }
 
@@ -1568,6 +1743,8 @@
           removeExcludeAirport(val);
         } else if (type === 'ct') {
           removeExcludeCountry(val);
+        } else if (type === 'cn') {
+          removeExcludeContinent(val);
         }
       });
     }
@@ -1628,11 +1805,20 @@
         state.maxDistLimit = null;
         state.includedAirports = [];
         state.includedCountries = [];
+        state.includedContinents = [];
         state.excludedAirports = [];
         state.excludedCountries = [];
+        state.excludedContinents = [];
         state.isExcludeExpanded = false;
         syncIncludeSets();
         syncExcludeSets();
+        persistPrecisionFilters();
+        if (incInput) incInput.value = '';
+        if (excInput) excInput.value = '';
+        if (incDropdown) incDropdown.style.display = 'none';
+        if (excDropdown) excDropdown.style.display = 'none';
+        state.discoveredCircuits = [];
+        renderCircuitsList();
 
         if (targetDurSelect) targetDurSelect.value = '168';
         if (slackSelect) slackSelect.value = '0';
@@ -1667,8 +1853,14 @@
     const btnClearInc = document.getElementById('cf_c_btn_clear_inc');
     if (btnClearInc) btnClearInc.addEventListener('click', clearInclude);
 
+    const btnCopyInc = document.getElementById('cf_c_btn_copy_inc');
+    if (btnCopyInc) btnCopyInc.addEventListener('click', () => copyFilterSnapshot('include'));
+
     const btnClearExc = document.getElementById('cf_c_btn_clear_exc');
     if (btnClearExc) btnClearExc.addEventListener('click', clearExclude);
+
+    const btnCopyExc = document.getElementById('cf_c_btn_copy_exc');
+    if (btnCopyExc) btnCopyExc.addEventListener('click', () => copyFilterSnapshot('exclude'));
 
     // Swap modal close buttons
     const btnCloseSwap = document.getElementById('cf_c_btn_close_swap');
@@ -1743,7 +1935,7 @@
           item.addEventListener('click', () => addIncludeAirport(item.dataset.val));
         });
       }
-    } else {
+    } else if (state.includeMode === 'ct') {
       // Country mode
       const countries = getCountries();
       const matches = countries.filter(c => {
@@ -1768,6 +1960,30 @@
 
         incDropdown.querySelectorAll('.cf-autocomplete-item').forEach(item => {
           item.addEventListener('click', () => addIncludeCountry(item.dataset.val));
+        });
+      }
+    } else {
+      const continents = ['Africa', 'Asia', 'Europe', 'North America', 'South America', 'Oceania'];
+      const matches = continents.filter(continent => {
+        if (state.includedContinentsSet.has(continent)) return false;
+        return !q || continent.toLowerCase().includes(q);
+      });
+
+      if (matches.length === 0) {
+        incDropdown.innerHTML = `<div class="cf-autocomplete-empty">No continents matching "${query}"</div>`;
+      } else {
+        incDropdown.innerHTML = matches.map(continent => `
+          <div class="cf-autocomplete-item inc" data-val="${continent}">
+            <div style="display: flex; align-items: center; gap: 4px; min-width: 0; overflow: hidden;">
+              <span style="font-size: 10px;">🌍</span>
+              <span style="color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${continent}</span>
+            </div>
+            <span style="font-family: ui-monospace, monospace; font-size: 8px; color: #67e8f9; flex-shrink: 0;">Entire continent</span>
+          </div>
+        `).join('');
+
+        incDropdown.querySelectorAll('.cf-autocomplete-item').forEach(item => {
+          item.addEventListener('click', () => addIncludeContinent(item.dataset.val));
         });
       }
     }
@@ -1813,7 +2029,7 @@
           item.addEventListener('click', () => addExcludeAirport(item.dataset.val));
         });
       }
-    } else {
+    } else if (state.excludeMode === 'ct') {
       // Country mode
       const countries = getCountries();
       const matches = countries.filter(c => {
@@ -1840,6 +2056,30 @@
           item.addEventListener('click', () => addExcludeCountry(item.dataset.val));
         });
       }
+    } else {
+      const continents = ['Africa', 'Asia', 'Europe', 'North America', 'South America', 'Oceania'];
+      const matches = continents.filter(continent => {
+        if (state.excludedContinentsSet.has(continent)) return false;
+        return !q || continent.toLowerCase().includes(q);
+      });
+
+      if (matches.length === 0) {
+        excDropdown.innerHTML = `<div class="cf-autocomplete-empty">No continents matching "${query}"</div>`;
+      } else {
+        excDropdown.innerHTML = matches.map(continent => `
+          <div class="cf-autocomplete-item exc" data-val="${continent}">
+            <div style="display: flex; align-items: center; gap: 4px; min-width: 0; overflow: hidden;">
+              <span style="font-size: 10px;">🚫</span>
+              <span style="color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${continent}</span>
+            </div>
+            <span style="font-family: ui-monospace, monospace; font-size: 8px; color: #fca5a5; flex-shrink: 0;">Block continent</span>
+          </div>
+        `).join('');
+
+        excDropdown.querySelectorAll('.cf-autocomplete-item').forEach(item => {
+          item.addEventListener('click', () => addExcludeContinent(item.dataset.val));
+        });
+      }
     }
 
     excDropdown.style.display = 'flex';
@@ -1863,6 +2103,7 @@
       const dd = document.getElementById('cf_c_inc_dropdown');
       if (dd) dd.style.display = 'none';
       renderIncludeChips();
+      persistPrecisionFilters();
     }
   }
 
@@ -1884,6 +2125,29 @@
       const dd = document.getElementById('cf_c_inc_dropdown');
       if (dd) dd.style.display = 'none';
       renderIncludeChips();
+      persistPrecisionFilters();
+    }
+  }
+
+  function addIncludeContinent(continent, skipRender = false) {
+    const value = (continent || '').trim();
+    if (value && !state.includedContinentsSet.has(value)) {
+      state.includedContinents.push(value);
+      state.includedContinentsSet.add(value);
+      if (state.excludedContinentsSet.has(value)) {
+        state.excludedContinentsSet.delete(value);
+        state.excludedContinents = state.excludedContinents.filter(item => item !== value);
+        if (!skipRender) renderExcludeChips();
+      }
+      if (!skipRender) toast(`Added ${value} to Must-Fly Continents`, 'success');
+    }
+    if (!skipRender) {
+      const inp = document.getElementById('cf_c_inc_input');
+      if (inp) inp.value = '';
+      const dd = document.getElementById('cf_c_inc_dropdown');
+      if (dd) dd.style.display = 'none';
+      renderIncludeChips();
+      persistPrecisionFilters();
     }
   }
 
@@ -1905,6 +2169,7 @@
       const dd = document.getElementById('cf_c_exc_dropdown');
       if (dd) dd.style.display = 'none';
       renderExcludeChips();
+      persistPrecisionFilters();
     }
   }
 
@@ -1926,6 +2191,29 @@
       const dd = document.getElementById('cf_c_exc_dropdown');
       if (dd) dd.style.display = 'none';
       renderExcludeChips();
+      persistPrecisionFilters();
+    }
+  }
+
+  function addExcludeContinent(continent, skipRender = false) {
+    const value = (continent || '').trim();
+    if (value && !state.excludedContinentsSet.has(value)) {
+      state.excludedContinents.push(value);
+      state.excludedContinentsSet.add(value);
+      if (state.includedContinentsSet.has(value)) {
+        state.includedContinentsSet.delete(value);
+        state.includedContinents = state.includedContinents.filter(item => item !== value);
+        if (!skipRender) renderIncludeChips();
+      }
+      if (!skipRender) toast(`Excluded ${value}`, 'info');
+    }
+    if (!skipRender) {
+      const inp = document.getElementById('cf_c_exc_input');
+      if (inp) inp.value = '';
+      const dd = document.getElementById('cf_c_exc_dropdown');
+      if (dd) dd.style.display = 'none';
+      renderExcludeChips();
+      persistPrecisionFilters();
     }
   }
 
@@ -1933,48 +2221,81 @@
     state.includedAirports = state.includedAirports.filter(x => x !== code);
     state.includedAirportsSet.delete(code);
     renderIncludeChips();
+    persistPrecisionFilters();
   }
 
   function removeIncludeCountry(country) {
     state.includedCountries = state.includedCountries.filter(x => x !== country);
     state.includedCountriesSet.delete(country);
     renderIncludeChips();
+    persistPrecisionFilters();
+  }
+
+  function removeIncludeContinent(continent) {
+    state.includedContinents = state.includedContinents.filter(x => x !== continent);
+    state.includedContinentsSet.delete(continent);
+    renderIncludeChips();
+    persistPrecisionFilters();
   }
 
   function removeExcludeAirport(code) {
     state.excludedAirports = state.excludedAirports.filter(x => x !== code);
     state.excludedAirportsSet.delete(code);
     renderExcludeChips();
+    persistPrecisionFilters();
   }
 
   function removeExcludeCountry(country) {
     state.excludedCountries = state.excludedCountries.filter(x => x !== country);
     state.excludedCountriesSet.delete(country);
     renderExcludeChips();
+    persistPrecisionFilters();
+  }
+
+  function removeExcludeContinent(continent) {
+    state.excludedContinents = state.excludedContinents.filter(x => x !== continent);
+    state.excludedContinentsSet.delete(continent);
+    renderExcludeChips();
+    persistPrecisionFilters();
   }
 
   function clearInclude() {
     state.includedAirports = [];
     state.includedCountries = [];
+    state.includedContinents = [];
     syncIncludeSets();
     renderIncludeChips();
+    persistPrecisionFilters();
     toast('Cleared all inclusions', 'info');
   }
 
   function clearExclude() {
     state.excludedAirports = [];
     state.excludedCountries = [];
+    state.excludedContinents = [];
     state.isExcludeExpanded = false;
     syncExcludeSets();
     renderExcludeChips();
+    persistPrecisionFilters();
     toast('Cleared all exclusions', 'info');
   }
 
   function renderIncludeChips() {
     const c = document.getElementById('cf_c_inc_chips');
     const clearBtn = document.getElementById('cf_c_btn_clear_inc');
+    const copyBtn = document.getElementById('cf_c_btn_copy_inc');
+    const totalInc = state.includedAirports.length + state.includedCountries.length + state.includedContinents.length;
+    const badge = document.getElementById('cf_c_inc_badge');
+    if (badge) {
+      badge.textContent = totalInc;
+      badge.hidden = totalInc === 0;
+    }
     if (clearBtn) {
-      clearBtn.style.display = (state.includedAirports.length + state.includedCountries.length > 0) ? 'inline-block' : 'none';
+      clearBtn.style.display = totalInc > 0 ? 'inline-block' : 'none';
+    }
+    if (copyBtn) {
+      copyBtn.style.display = totalInc > 0 ? 'inline-flex' : 'none';
+      copyBtn.disabled = totalInc === 0;
     }
     if (!c) return;
     let html = '';
@@ -1994,15 +2315,33 @@
         </span>
       `;
     });
+    state.includedContinents.forEach(continent => {
+      html += `
+        <span class="cf-tag-chip inc" style="border-color: #155e75; background: #082f49;">
+          <span>🌍 ${continent}</span>
+          <button type="button" data-type="cn" data-val="${continent}">&times;</button>
+        </span>
+      `;
+    });
     c.innerHTML = html;
   }
 
   function renderExcludeChips() {
     const c = document.getElementById('cf_c_exc_chips');
     const clearBtn = document.getElementById('cf_c_btn_clear_exc');
-    const totalExc = state.excludedAirports.length + state.excludedCountries.length;
+    const copyBtn = document.getElementById('cf_c_btn_copy_exc');
+    const totalExc = state.excludedAirports.length + state.excludedCountries.length + state.excludedContinents.length;
+    const badge = document.getElementById('cf_c_exc_badge');
+    if (badge) {
+      badge.textContent = totalExc;
+      badge.hidden = totalExc === 0;
+    }
     if (clearBtn) {
       clearBtn.style.display = totalExc > 0 ? 'inline-block' : 'none';
+    }
+    if (copyBtn) {
+      copyBtn.style.display = totalExc > 0 ? 'inline-flex' : 'none';
+      copyBtn.disabled = totalExc === 0;
     }
     if (!c) return;
 
@@ -2030,6 +2369,14 @@
         <span class="cf-tag-chip exc" style="border-color: #be123c; background: #4c0519;">
           <span>🏳 ${country}</span>
           <button type="button" data-type="ct" data-val="${country}">&times;</button>
+        </span>
+      `;
+    });
+    state.excludedContinents.forEach(continent => {
+      html += `
+        <span class="cf-tag-chip exc" style="border-color: #92400e; background: #451a03;">
+          <span>🌍 ${continent}</span>
+          <button type="button" data-type="cn" data-val="${continent}">&times;</button>
         </span>
       `;
     });
@@ -2075,6 +2422,7 @@
 
     renderIncludeChips();
     renderExcludeChips();
+    persistPrecisionFilters();
     if (addedCount > 0) {
       toast(`Excluded ${addedCount} route(s) from circuit`, 'info');
     } else {
@@ -2094,6 +2442,7 @@
         renderIncludeChips();
       }
       renderExcludeChips();
+      persistPrecisionFilters();
       toast(`Excluded ${iata} from searches`, 'info');
     } else {
       toast(`${iata} is already excluded`, 'info');
@@ -2187,6 +2536,7 @@
     closeCompactPickModal();
     renderIncludeChips();
     renderExcludeChips();
+    persistPrecisionFilters();
     if (addedCount > 0) {
       toast(`Excluded ${addedCount} selected route(s)`, 'info');
     }
@@ -2573,33 +2923,10 @@
       state.aircraftId = window.cf_activeAircraftId;
     }
 
-    if (typeof window.cf_getExcludedAirports === 'function') {
-      const desktopExc = window.cf_getExcludedAirports();
-      if (Array.isArray(desktopExc) && desktopExc.length > 0 && state.excludedAirports.length === 0) {
-        state.excludedAirports = [...desktopExc];
-        syncExcludeSets();
-      }
-    }
-    if (typeof window.cf_getExcludedCountries === 'function') {
-      const desktopExcCt = window.cf_getExcludedCountries();
-      if (Array.isArray(desktopExcCt) && desktopExcCt.length > 0 && state.excludedCountries.length === 0) {
-        state.excludedCountries = [...desktopExcCt];
-        syncExcludeSets();
-      }
-    }
-    if (typeof window.cf_getIncludedAirports === 'function') {
-      const desktopInc = window.cf_getIncludedAirports();
-      if (Array.isArray(desktopInc) && desktopInc.length > 0 && state.includedAirports.length === 0) {
-        state.includedAirports = [...desktopInc];
-        syncIncludeSets();
-      }
-    }
-    if (typeof window.cf_getIncludedCountries === 'function') {
-      const desktopIncCt = window.cf_getIncludedCountries();
-      if (Array.isArray(desktopIncCt) && desktopIncCt.length > 0 && state.includedCountries.length === 0) {
-        state.includedCountries = [...desktopIncCt];
-        syncIncludeSets();
-      }
+    if (typeof window.cf_getPrecisionFilters === 'function') {
+      Object.assign(state, window.cf_getPrecisionFilters());
+      syncIncludeSets();
+      syncExcludeSets();
     }
 
     loadPersistedData();
@@ -2613,6 +2940,18 @@
     updateStrategyLabel();
     renderIncludeChips();
     renderExcludeChips();
+    ['inc', 'exc'].forEach(scope => {
+      const mode = scope === 'inc' ? state.includeMode : state.excludeMode;
+      ['ap', 'ct', 'cn'].forEach(kind => {
+        const button = document.getElementById(`cf_c_btn_${scope}_${kind}`);
+        if (button) button.classList.toggle('active', mode === kind);
+      });
+      const input = document.getElementById(`cf_c_${scope}_input`);
+      if (input) {
+        const kind = mode === 'ct' ? 'country' : mode === 'cn' ? 'continent' : 'airport';
+        input.placeholder = `Search ${kind} to ${scope === 'inc' ? 'include' : 'exclude'}...`;
+      }
+    });
     renderSavedLibrary();
 
     if (state.discoveredCircuits.length > 0) {
@@ -2633,6 +2972,9 @@
     deleteSavedCircuit,
     exportCircuitsJson,
     copyCircuitSummary,
+    copyFilterSnapshot,
+    applyFilterSnapshot,
+    tryApplyFilterSnapshot,
     getAirports,
     getAirport,
     getAircraftList,
@@ -2648,6 +2990,10 @@
     renderIncludeDropdown,
     clearInclude,
     clearExclude,
+    addIncludeContinent,
+    addExcludeContinent,
+    removeIncludeContinent,
+    removeExcludeContinent,
     excludeCircuitRoutes,
     excludeSingleRoute,
     openCompactPickModal,

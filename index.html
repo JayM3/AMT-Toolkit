@@ -3383,13 +3383,16 @@
             
             <!-- LEFT COLUMN: MUST INCLUDE (MUST-FLY) -->
             <div class="space-y-1.5 relative z-30" id="cf_inc_root">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-1.5">
+              <div class="flex flex-wrap items-center justify-between gap-1.5">
+                <div class="flex flex-wrap items-center gap-1.5">
                   <label class="block text-[11px] font-semibold text-emerald-400 flex items-center gap-1.5">
                     <span>Must Include (Must-Fly)</span>
                     <span id="cf_inc_badge" class="hidden text-[9px] px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">0</span>
                   </label>
                   <button type="button" id="cf_clear_include_btn" onclick="cf_clearIncludedAirports()" class="hidden text-[10px] text-slate-400 hover:text-emerald-300 transition">Clear All</button>
+                  <button type="button" id="cf_copy_include_btn" onclick="cf_copyIncludedFilters()" class="hidden inline-flex items-center justify-center w-6 h-6 shrink-0 rounded text-slate-400 hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 transition" title="Copy inclusions as JSON" aria-label="Copy inclusions" data-cf-copy-label="Copy inclusions" data-cf-copy-title="Copy inclusions as JSON" disabled>
+                    <svg width="14" height="14" class="lucide lucide-copy" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                  </button>
                 </div>
                 <!-- Ultra-Compact Scope Switcher Pills -->
                 <div class="inline-flex p-0.5 bg-slate-950 rounded border border-slate-800 text-[10px]">
@@ -3419,13 +3422,16 @@
 
             <!-- RIGHT COLUMN: EXCLUDE (AVOID DESTINATIONS) -->
             <div class="space-y-1.5 relative z-30" id="cf_exc_root">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-1.5">
+              <div class="flex flex-wrap items-center justify-between gap-1.5">
+                <div class="flex flex-wrap items-center gap-1.5">
                   <label class="block text-[11px] font-semibold text-rose-400 flex items-center gap-1.5">
                     <span>Exclude (Avoid Destinations)</span>
                     <span id="cf_exc_badge" class="hidden text-[9px] px-1 py-0.2 rounded bg-rose-950 text-rose-300 border border-rose-800 font-mono">0</span>
                   </label>
                   <button type="button" id="cf_clear_exclude_btn" onclick="cf_clearExcludedAirports()" class="hidden text-[10px] text-slate-400 hover:text-rose-300 transition">Clear All</button>
+                  <button type="button" id="cf_copy_exclude_btn" onclick="cf_copyExcludedFilters()" class="hidden inline-flex items-center justify-center w-6 h-6 shrink-0 rounded text-slate-400 hover:text-rose-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-400 transition" title="Copy exclusions as JSON" aria-label="Copy exclusions" data-cf-copy-label="Copy exclusions" data-cf-copy-title="Copy exclusions as JSON" disabled>
+                    <svg width="14" height="14" class="lucide lucide-copy" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                  </button>
                 </div>
 
                 <!-- Ultra-Compact Scope Switcher Pills -->
