@@ -26,6 +26,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Generate compact database files
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const vm = require('vm');
+
+          const datasets = [
+            { source: 'data/aircraft.js', target: 'data/aircraft.min.js', name: 'AIRCRAFT_DATABASE' },
+            { source: 'data/airports.js', target: 'data/airports.min.js', name: 'AIRPORTS_DATABASE' },
+          ];
+
+          for (const { source, target, name } of datasets) {
+            const context = {};
+            const code = fs.readFileSync(source, 'utf8') + `; globalThis.__data = ${name};`;
+            vm.runInNewContext(code, context, { filename: source });
+            const output = `/* Generated compact dataset. Source: ${source} */\nconst ${name} = ${JSON.stringify(context.__data)};\n`;
+            fs.writeFileSync(target, output);
+          }
+          NODE
+
       - name: Inject Cache-Bust Commit SHA into index.html
         env:
           COMMIT_SHA: ${{ github.sha }}
